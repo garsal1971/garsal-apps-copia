@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.1.6</title>
+<title>AppSphere v1.1.7</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -255,7 +255,7 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.1.6';
+const APP_VERSION = 'v1.1.7';
 const BUILD_TIME  = '2026-03-01T00:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -305,11 +305,11 @@ let W, H;
 
 // ── SIZE ──
 // Area proporzionale al punteggio: area_i = (score_i / maxScore) × MAX_AREA
-// Minimo 2 cm² (≈ 2858 CSS px²) per garantire il click.
+// Minimo 6 cm² (≈ 8575 CSS px²) per garantire il click.
 // Il cerchio col punteggio massimo ha diametro MAX_D (220 px).
 function sizeOf(score) {
   const PX_PER_CM = 96 / 2.54;                       // ≈ 37.8 CSS px/cm
-  const MIN_AREA  = 2 * PX_PER_CM * PX_PER_CM;       // 2 cm²  ≈ 2858 px²
+  const MIN_AREA  = 6 * PX_PER_CM * PX_PER_CM;       // 6 cm²  ≈ 8575 px²
   const MAX_D     = 220;                              // diametro massimo (px)
   const MAX_AREA  = Math.PI * (MAX_D / 2) * (MAX_D / 2);
   const maxScore  = Math.max(...CURRENT_APPS.map(a => a.score), 1);
