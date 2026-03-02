@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.1.2</title>
+<title>AppSphere v1.1.3</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -255,7 +255,7 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.1.2';
+const APP_VERSION = 'v1.1.3';
 const BUILD_TIME  = '2026-03-01T00:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -325,12 +325,19 @@ function initialPlace(r, existingNodes) {
 
 // ── COLLISION RESOLUTION (during drag) ──
 // Outer loop: Phase1 (push others, D pinned) → Phase2 (push D back) → repeat.
-// Phase 1 uses epsilon-based convergence to avoid infinite spin when circles
-// are pinned against a wall/panel. Phase 2 accumulates all back-pressure
-// forces simultaneously to avoid directional oscillation.
+//
+// Phase 1 key fix: convergence is measured via start-of-iteration snapshots
+// (net position change) rather than just the constraint-pass delta. This
+// correctly detects oscillation (circle sandwiched between D and panel: pair
+// push ≠ 0 but net displacement ≈ 0) and breaks the inner loop so Phase 2 can
+// push D back. Chain reactions (D→B→C) propagate naturally because each pair
+// is processed with up-to-date positions within the same iteration.
+//
+// Phase 2: all overlap forces on D are accumulated simultaneously to avoid
+// directional bias from sequential processing.
 function resolveCollisions(draggedId) {
   const OUTER = 8;
-  const INNER = 40;
+  const INNER = 60;
   const panel = getScorePanelRect();
   const dn = nodes.find(n => n.id === draggedId);
   if (!dn) return;
@@ -338,7 +345,8 @@ function resolveCollisions(draggedId) {
   for (let outer = 0; outer < OUTER; outer++) {
     // ── Phase 1: push non-dragged circles away (D pinned) ──
     for (let iter = 0; iter < INNER; iter++) {
-      let netMove = 0;
+      // Snapshot BEFORE this iteration — measures true net displacement
+      const snap = nodes.map(n => [n.x, n.y]);
 
       for (let a = 0; a < nodes.length; a++) {
         for (let b = a + 1; b < nodes.length; b++) {
@@ -347,31 +355,37 @@ function resolveCollisions(draggedId) {
           const dx = nb.x - na.x, dy = nb.y - na.y;
           const dist = Math.hypot(dx, dy) || 0.01;
           if (dist >= minDist) continue;
-          const push = (minDist - dist) / dist;
+          const ov = minDist - dist;
+          const nx = dx / dist, ny = dy / dist;
           if (na.id === draggedId) {
-            nb.x += dx * push; nb.y += dy * push;
+            nb.x += nx * ov; nb.y += ny * ov;
           } else if (nb.id === draggedId) {
-            na.x -= dx * push; na.y -= dy * push;
+            na.x -= nx * ov; na.y -= ny * ov;
           } else {
-            na.x -= dx * push * 0.5; na.y -= dy * push * 0.5;
-            nb.x += dx * push * 0.5; nb.y += dy * push * 0.5;
+            na.x -= nx * ov * 0.5; na.y -= ny * ov * 0.5;
+            nb.x += nx * ov * 0.5; nb.y += ny * ov * 0.5;
           }
         }
       }
 
+      // Viewport + panel constraints for every non-D circle
       nodes.forEach(n => {
         if (n.id === draggedId) return;
-        const oldX = n.x, oldY = n.y;
         const p = pushFromPanel(n.x, n.y, n.r, panel);
         n.x = clamp(p.x, n.r + PAD, W - n.r - PAD);
         n.y = clamp(p.y, n.r + PAD, H - n.r - PAD);
-        netMove += Math.abs(n.x - oldX) + Math.abs(n.y - oldY);
       });
 
+      // Convergence: compare against snapshot (catches push↔constraint oscillation)
+      let netMove = 0;
+      nodes.forEach((n, i) => {
+        if (n.id === draggedId) return;
+        netMove += Math.abs(n.x - snap[i][0]) + Math.abs(n.y - snap[i][1]);
+      });
       if (netMove < 0.01) break;
     }
 
-    // ── Phase 2: back-pressure — accumulate all forces simultaneously ──
+    // ── Phase 2: back-pressure — accumulate all forces on D simultaneously ──
     let pushDx = 0, pushDy = 0;
     for (const n of nodes) {
       if (n.id === draggedId) continue;
@@ -379,9 +393,9 @@ function resolveCollisions(draggedId) {
       const dx = n.x - dn.x, dy = n.y - dn.y;
       const dist = Math.hypot(dx, dy) || 0.01;
       if (dist < minDist) {
-        const push = (minDist - dist) / dist;
-        pushDx -= dx * push;
-        pushDy -= dy * push;
+        const ov = minDist - dist;
+        pushDx -= (dx / dist) * ov;
+        pushDy -= (dy / dist) * ov;
       }
     }
     if (Math.hypot(pushDx, pushDy) < 0.01) break; // D is clear → done
@@ -398,10 +412,11 @@ function resolveCollisions(draggedId) {
 
 // ── SETTLE ALL POSITIONS (after initial render) ──
 // Resolves any residual overlaps left by initialPlace. No node is pinned.
+// Same snapshot-based convergence as resolveCollisions Phase 1.
 function settlePositions() {
   const panel = getScorePanelRect();
   for (let iter = 0; iter < 300; iter++) {
-    let netMove = 0;
+    const snap = nodes.map(n => [n.x, n.y]);
     for (let a = 0; a < nodes.length; a++) {
       for (let b = a + 1; b < nodes.length; b++) {
         const na = nodes[a], nb = nodes[b];
@@ -409,18 +424,19 @@ function settlePositions() {
         const dx = nb.x - na.x, dy = nb.y - na.y;
         const dist = Math.hypot(dx, dy) || 0.01;
         if (dist >= minDist) continue;
-        const push = (minDist - dist) / dist;
-        na.x -= dx * push * 0.5; na.y -= dy * push * 0.5;
-        nb.x += dx * push * 0.5; nb.y += dy * push * 0.5;
+        const ov = minDist - dist;
+        const nx = dx / dist, ny = dy / dist;
+        na.x -= nx * ov * 0.5; na.y -= ny * ov * 0.5;
+        nb.x += nx * ov * 0.5; nb.y += ny * ov * 0.5;
       }
     }
     nodes.forEach(n => {
-      const oldX = n.x, oldY = n.y;
       const p = pushFromPanel(n.x, n.y, n.r, panel);
       n.x = clamp(p.x, n.r + PAD, W - n.r - PAD);
       n.y = clamp(p.y, n.r + PAD, H - n.r - PAD);
-      netMove += Math.abs(n.x - oldX) + Math.abs(n.y - oldY);
     });
+    let netMove = 0;
+    nodes.forEach((n, i) => netMove += Math.abs(n.x - snap[i][0]) + Math.abs(n.y - snap[i][1]));
     if (netMove < 0.01) break;
   }
 }
