@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.1</title>
+    <title>Weight Quest v3.3.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -437,6 +437,59 @@
                 display: none;
             }
         }
+        /* STATISTICHE PAGE */
+        .stat-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .stat-summary-card .ssv {
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .stat-summary-card .ssl {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .diet-period-card {
+            border-left: 4px solid #00B894;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-radius: 0 8px 8px 0;
+            background: #f0faf7;
+        }
+        .diet-period-card .dp-header {
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #00B894;
+        }
+        .diet-period-card .dp-meta {
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stats-loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -467,6 +520,10 @@
                 <span class="icon">📈</span>
                 <span class="label">Grafico</span>
             </div>
+            <div class="icon-nav-item" data-page="statistiche">
+                <span class="icon">📉</span>
+                <span class="label">Statistiche</span>
+            </div>
             <div class="icon-nav-item" data-action="sync">
                 <span class="icon">🔄</span>
                 <span class="label">Sync</span>
@@ -490,6 +547,10 @@
                     <div class="sidebar-nav-item" data-page="grafico">
                         <span class="nav-icon">📈</span>
                         <span>Grafico</span>
+                    </div>
+                    <div class="sidebar-nav-item" data-page="statistiche">
+                        <span class="nav-icon">📉</span>
+                        <span>Statistiche</span>
                     </div>
                     <div class="sidebar-nav-item" data-action="sync">
                         <span class="nav-icon">🔄</span>
@@ -649,6 +710,13 @@
                     </div>
                 </div>
             </div>
+
+            <!-- PAGE 4: STATISTICHE -->
+            <div id="statistichePage" class="page">
+                <div id="statsContent">
+                    <div class="stats-loading">Seleziona "Statistiche" per caricare i dati.</div>
+                </div>
+            </div>
         </div>
 
         </div> <!-- /content-wrapper -->
@@ -683,8 +751,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.1';
-        var BUILD_TIME  = '2026-03-03T10:00:00Z';
+        var APP_VERSION = 'v3.3.2';
+        var BUILD_TIME  = '2026-03-03T11:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1162,7 +1230,8 @@
                         var titles = {
                             'obiettivi': 'Obiettivi',
                             'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso'
+                            'grafico': 'Grafico Peso',
+                            'statistiche': 'Statistiche'
                         };
                         var elTitle = document.getElementById('topTitle'); if (elTitle) elTitle.textContent = titles[pageName] || 'Weight Quest';
 
@@ -1175,6 +1244,8 @@
                             } else if (userData.weights && userData.weights.length > 0) {
                                 updateWeightChart(userData.weights);
                             }
+                        } else if (pageName === 'statistiche') {
+                            refreshStatistiche();
                         }
                     });
                 });
@@ -1201,7 +1272,8 @@
                         var titles = {
                             'obiettivi': 'Obiettivi',
                             'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso'
+                            'grafico': 'Grafico Peso',
+                            'statistiche': 'Statistiche'
                         };
                         var elTitle2 = document.getElementById('topTitle'); if (elTitle2) elTitle2.textContent = titles[pageName] || 'Weight Quest';
 
@@ -1214,6 +1286,8 @@
                             } else if (userData.weights && userData.weights.length > 0) {
                                 updateWeightChart(userData.weights);
                             }
+                        } else if (pageName === 'statistiche') {
+                            refreshStatistiche();
                         }
                     });
                 });
@@ -3625,6 +3699,224 @@
                 bindBtn('chartScrollRight',  1);
             }
         })();
+
+        // ============================================================
+        // STATISTICHE
+        // ============================================================
+
+        // Individua periodi di dieta: calo >= 5 kg in <= 120 giorni
+        // Algoritmo: peak-to-valley sulla media mobile a 7 giorni
+        function detectDietPeriods(data) {
+            if (!data || data.length < 10) return [];
+
+            // Medie giornaliere
+            var dayMap = {};
+            data.forEach(function(r) {
+                if (!dayMap[r.date]) dayMap[r.date] = { sum: 0, n: 0 };
+                dayMap[r.date].sum += r.weight;
+                dayMap[r.date].n++;
+            });
+            var days = Object.keys(dayMap).sort().map(function(d) {
+                return { date: d, w: dayMap[d].sum / dayMap[d].n };
+            });
+            if (days.length < 5) return [];
+
+            // Media mobile a 7 giorni per ridurre il rumore
+            var smoothed = days.map(function(_, i) {
+                var lo = Math.max(0, i - 3), hi = Math.min(days.length - 1, i + 3);
+                var sum = 0, cnt = 0;
+                for (var k = lo; k <= hi; k++) { sum += days[k].w; cnt++; }
+                return { date: days[i].date, w: sum / cnt };
+            });
+
+            var MAX_DAYS = 120; // finestra massima (giorni)
+            var MIN_DROP = 5.0; // calo minimo (kg)
+            var periods  = [];
+
+            for (var i = 0; i < smoothed.length; i++) {
+                // Picco locale: massimo nella finestra di ±7 punti
+                var isPeak = true;
+                for (var k = Math.max(0, i - 7); k <= Math.min(smoothed.length - 1, i + 7); k++) {
+                    if (k !== i && smoothed[k].w > smoothed[i].w) { isPeak = false; break; }
+                }
+                if (!isPeak) continue;
+
+                // Cerca il minimo nei prossimi MAX_DAYS giorni
+                var peakDate = new Date(smoothed[i].date);
+                var bestDrop = 0, bestJ = -1;
+                for (var j = i + 1; j < smoothed.length; j++) {
+                    var daysDiff = (new Date(smoothed[j].date) - peakDate) / 86400000;
+                    if (daysDiff > MAX_DAYS) break;
+                    var drop = smoothed[i].w - smoothed[j].w;
+                    if (drop > bestDrop) { bestDrop = drop; bestJ = j; }
+                }
+
+                if (bestDrop < MIN_DROP || bestJ < 0) continue;
+
+                // Evita duplicati ravvicinati (< 30 giorni di distanza dal picco)
+                var tooClose = periods.some(function(p) {
+                    return Math.abs(new Date(p.startDate) - new Date(smoothed[i].date)) < 30 * 86400000;
+                });
+                if (tooClose) continue;
+
+                var durDays = Math.round((new Date(days[bestJ].date) - new Date(days[i].date)) / 86400000);
+                periods.push({
+                    startDate:   days[i].date,
+                    endDate:     days[bestJ].date,
+                    startWeight: Math.round(smoothed[i].w * 10) / 10,
+                    endWeight:   Math.round(smoothed[bestJ].w * 10) / 10,
+                    drop:        Math.round(bestDrop * 10) / 10,
+                    days:        durDays
+                });
+            }
+
+            // Ordina per calo decrescente
+            return periods.sort(function(a, b) { return b.drop - a.drop; });
+        }
+
+        function updateStatistiche(data) {
+            var el = document.getElementById('statsContent');
+            if (!el) return;
+            if (!data || data.length === 0) {
+                el.innerHTML = '<div class="stats-loading">Nessun dato disponibile.</div>';
+                return;
+            }
+
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+
+            // ── Riepilogo ───────────────────────────────────────────
+            var n = data.length;
+            var daySet = {};
+            data.forEach(function(r) { daySet[r.date] = true; });
+            var uniqueDays = Object.keys(daySet).sort();
+            var nDays     = uniqueDays.length;
+            var firstDate = uniqueDays[0];
+            var lastDate  = uniqueDays[uniqueDays.length - 1];
+            var spanDays  = Math.round((new Date(lastDate) - new Date(firstDate)) / 86400000);
+            var nYears    = new Date(lastDate).getFullYear() - new Date(firstDate).getFullYear() + 1;
+
+            var weights = data.map(function(r) { return r.weight; });
+            var wMin = Math.min.apply(null, weights);
+            var wMax = Math.max.apply(null, weights);
+            var wAvg = weights.reduce(function(s, w) { return s + w; }, 0) / weights.length;
+
+            // Variazione totale: confronto prima vs ultima settimana con dati
+            var firstWeekCut = new Date(firstDate); firstWeekCut.setDate(firstWeekCut.getDate() + 7);
+            var lastWeekCut  = new Date(lastDate);  lastWeekCut.setDate(lastWeekCut.getDate() - 7);
+            var firstW = data.filter(function(r) { return new Date(r.date) <= firstWeekCut; });
+            var lastW  = data.filter(function(r) { return new Date(r.date) >= lastWeekCut;  });
+            var firstAvg = firstW.length ? firstW.reduce(function(s, r) { return s + r.weight; }, 0) / firstW.length : null;
+            var lastAvg  = lastW.length  ? lastW.reduce(function(s, r)  { return s + r.weight; }, 0) / lastW.length  : null;
+            var totalDelta  = (firstAvg !== null && lastAvg !== null) ? (lastAvg - firstAvg) : null;
+            var deltaStr    = totalDelta !== null
+                ? '<span style="color:' + (totalDelta < 0 ? '#00B894' : '#E74C3C') + '">' +
+                  (totalDelta < 0 ? '▼' : '▲') + ' ' + Math.abs(totalDelta).toFixed(1) + ' kg</span>'
+                : '-';
+
+            // ── Anno per Anno ────────────────────────────────────────
+            var yearMap = {};
+            data.forEach(function(r) {
+                var y = r.date.substring(0, 4);
+                if (!yearMap[y]) yearMap[y] = [];
+                yearMap[y].push(r.weight);
+            });
+            var years = Object.keys(yearMap).sort();
+            var yearRows = years.map(function(y, idx) {
+                var ws  = yearMap[y];
+                var avg = ws.reduce(function(s, w) { return s + w; }, 0) / ws.length;
+                var mn  = Math.min.apply(null, ws);
+                var mx  = Math.max.apply(null, ws);
+                var prevWs  = idx > 0 ? yearMap[years[idx - 1]] : null;
+                var prevAvg = prevWs ? prevWs.reduce(function(s, w) { return s + w; }, 0) / prevWs.length : null;
+                return { year: y, n: ws.length, avg: avg, min: mn, max: mx, delta: prevAvg !== null ? avg - prevAvg : null };
+            });
+
+            // ── Periodi di dieta ─────────────────────────────────────
+            var periods = detectDietPeriods(data);
+
+            // ── Render ───────────────────────────────────────────────
+            var html = '';
+
+            // Riepilogo overview
+            html += '<div class="stat-summary-grid">';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #667eea"><div class="ssv" style="color:#667eea">' + n + '</div><div class="ssl">Misurazioni</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #764ba2"><div class="ssv" style="color:#764ba2">' + nDays + '</div><div class="ssl">Giorni pesati</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #FF3366"><div class="ssv" style="color:#FF3366">' + nYears + '</div><div class="ssl">Anni di dati</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #00B894"><div class="ssv" style="color:#00B894">' + wMin.toFixed(1) + '</div><div class="ssl">Min storico</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #E74C3C"><div class="ssv" style="color:#E74C3C">' + wMax.toFixed(1) + '</div><div class="ssl">Max storico</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #F39C12"><div class="ssv" style="color:#F39C12">' + wAvg.toFixed(1) + '</div><div class="ssl">Media globale</div></div>';
+            html += '<div class="stat-summary-card" style="border-top:4px solid #636e72"><div class="ssv">' + deltaStr + '</div><div class="ssl">Variazione totale</div></div>';
+            html += '</div>';
+
+            // Periodo coperto
+            html += '<div class="card" style="margin-bottom:15px">';
+            html += '<p style="color:#555;font-size:14px;margin:0">📅 Dal <strong>' + fmt(firstDate) + '</strong> al <strong>' + fmt(lastDate) + '</strong> — ' + spanDays + ' giorni · ' + nYears + ' ann' + (nYears === 1 ? 'o' : 'i') + '</p>';
+            html += '</div>';
+
+            // Tabella anno per anno
+            html += '<div class="card">';
+            html += '<h3>📅 Anno per Anno</h3>';
+            html += '<div style="overflow-x:auto"><table>';
+            html += '<thead><tr><th>Anno</th><th>Pesate</th><th>Media</th><th>Min</th><th>Max</th><th>Δ anno prec.</th></tr></thead><tbody>';
+            yearRows.forEach(function(r) {
+                var dStr = '-';
+                if (r.delta !== null) {
+                    var sign  = r.delta < 0 ? '▼' : '▲';
+                    var color = r.delta < 0 ? '#00B894' : '#E74C3C';
+                    dStr = '<span style="color:' + color + ';font-weight:bold">' + sign + ' ' + Math.abs(r.delta).toFixed(1) + ' kg</span>';
+                }
+                html += '<tr>';
+                html += '<td><strong>' + r.year + '</strong></td>';
+                html += '<td>' + r.n + '</td>';
+                html += '<td>' + r.avg.toFixed(1) + ' kg</td>';
+                html += '<td style="color:#00B894">' + r.min.toFixed(1) + '</td>';
+                html += '<td style="color:#E74C3C">' + r.max.toFixed(1) + '</td>';
+                html += '<td>' + dStr + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table></div></div>';
+
+            // Periodi di dieta
+            html += '<div class="card">';
+            html += '<h3>🏃 Periodi di Dieta <small style="font-size:13px;font-weight:normal;color:#888">(calo ≥ 5 kg in ≤ 120 giorni)</small></h3>';
+            if (periods.length === 0) {
+                html += '<p style="color:#888;font-size:14px">Nessun periodo con calo ≥ 5 kg rilevato.</p>';
+            } else {
+                periods.forEach(function(p, idx) {
+                    var ratePM = (p.drop / Math.max(p.days / 30, 0.1)).toFixed(2);
+                    html += '<div class="diet-period-card">';
+                    html += '<div class="dp-header">#' + (idx + 1) + ' — −' + p.drop.toFixed(1) + ' kg</div>';
+                    html += '<div class="dp-meta">';
+                    html += '<span>📅 ' + fmt(p.startDate) + ' → ' + fmt(p.endDate) + '</span>';
+                    html += '<span>⏱ ' + p.days + ' giorni</span>';
+                    html += '<span>⚖️ ' + p.startWeight.toFixed(1) + ' → ' + p.endWeight.toFixed(1) + ' kg</span>';
+                    html += '<span>📈 ' + ratePM + ' kg/mese</span>';
+                    html += '</div></div>';
+                });
+            }
+            html += '</div>';
+
+            el.innerHTML = html;
+        }
+
+        // Carica TUTTI i dati storici (senza filtro data) e aggiorna le statistiche
+        function refreshStatistiche() {
+            var el = document.getElementById('statsContent');
+            if (!el) return;
+            el.innerHTML = '<div class="stats-loading">⏳ Caricamento dati storici...</div>';
+            fetchAllWeights('date', true) // tutti i dati, ordinati ASC
+                .then(function(res) {
+                    if (res.error) {
+                        el.innerHTML = '<div class="stats-loading">Errore: ' + (res.error.message || res.error) + '</div>';
+                        return;
+                    }
+                    log('Statistiche: ' + (res.data ? res.data.length : 0) + ' record totali');
+                    updateStatistiche(res.data || []);
+                })
+                .catch(function(e) {
+                    el.innerHTML = '<div class="stats-loading">Errore: ' + e.message + '</div>';
+                });
+        }
 
         // START
         console.log('%c⚖ Weight Quest ' + APP_VERSION, 'color:#00B894;font-size:16px;font-weight:bold;');
