@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.1.5</title>
+    <title>Events Log v2.1.6</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -765,6 +765,18 @@
     </main>
 </div>
 
+<!-- ====== MODAL: QUICK LOG CONFIRM ====== -->
+<div class="modal" id="quickLogModal">
+    <div class="modal-content" style="max-width:300px; padding:1.25rem; border-radius:16px;">
+        <div id="quickLogInfo" style="text-align:center; margin-bottom:1.25rem;"></div>
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <button class="btn btn-primary" onclick="quickConfirmLog()">✅ Registra</button>
+            <button class="btn btn-secondary" onclick="quickOpenDetails()">📝 Aggiungi dettagli</button>
+            <button class="btn btn-ghost" onclick="closeQuickLogModal()" style="opacity:0.7;">Annulla</button>
+        </div>
+    </div>
+</div>
+
 <!-- ====== MODAL: LOG CONFIRM ====== -->
 <div class="modal" id="logModal">
     <div class="modal-content" style="max-width:420px;">
@@ -918,7 +930,7 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.1.5';
+    var APP_VERSION = 'v2.1.6';
     var BUILD_TIME  = '2026-03-03T11:30:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -1087,12 +1099,31 @@ function openLogModal(eventId) {
     const pts = ev.points >= 0 ? '+' + ev.points : String(ev.points);
     const ptsColor = ev.points > 0 ? '#00B894' : ev.points < 0 ? '#E74C3C' : '#6B7280';
 
+    document.getElementById('quickLogInfo').innerHTML = `
+        <div style="font-weight:900; font-size:1.1rem; color:${ev.color || '#1F2937'}; margin-bottom:0.3rem;">${ev.name}</div>
+        ${g ? `<div style="font-size:0.8rem; color:var(--muted);">${g.icon || ''} ${g.name}</div>` : ''}
+        <div style="font-family:'Space Mono',monospace; color:${ptsColor}; font-size:1rem; font-weight:700; margin-top:0.4rem;">${pts} punti</div>
+    `;
+    document.getElementById('quickLogModal').classList.add('active');
+}
+
+function closeQuickLogModal() {
+    document.getElementById('quickLogModal').classList.remove('active');
+    pendingLogEventId = null;
+}
+
+function quickOpenDetails() {
+    document.getElementById('quickLogModal').classList.remove('active');
+    const ev = events.find(e => e.id === pendingLogEventId);
+    if (!ev) return;
+
+    const g = groups.find(g => g.id === ev.groupId);
+    const pts = ev.points >= 0 ? '+' + ev.points : String(ev.points);
+    const ptsColor = ev.points > 0 ? '#00B894' : ev.points < 0 ? '#E74C3C' : '#6B7280';
+
     document.getElementById('logModalTitle').textContent = ev.name;
     document.getElementById('logModalNote').value = '';
-
-    const now = new Date();
-    document.getElementById('logModalDateTime').value = toLocalISO(now);
-
+    document.getElementById('logModalDateTime').value = toLocalISO(new Date());
     document.getElementById('logModalEventInfo').innerHTML = `
         <span style="font-size:2.5rem; line-height:1;">${ev.icon || '📌'}</span>
         <div>
@@ -1102,7 +1133,6 @@ function openLogModal(eventId) {
             <div style="font-family:'Space Mono',monospace; color:${ptsColor}; font-size:1.2rem; font-weight:700; margin-top:0.3rem;">${pts} punti</div>
         </div>
     `;
-
     document.getElementById('logModal').classList.add('active');
     setTimeout(() => document.getElementById('logModalNote').focus(), 100);
 }
@@ -1735,6 +1765,15 @@ async function deleteEvent(eventId) {
 // ==========================================
 // SUPABASE: LOGS CRUD
 // ==========================================
+async function quickConfirmLog() {
+    if (!pendingLogEventId) return;
+    document.getElementById('quickLogModal').classList.remove('active');
+    const ev = events.find(e => e.id === pendingLogEventId);
+    if (!ev) return;
+    await _saveLog(ev, null, new Date().toISOString());
+    pendingLogEventId = null;
+}
+
 async function confirmLog() {
     if (!pendingLogEventId) return;
     const ev = events.find(e => e.id === pendingLogEventId);
@@ -1744,11 +1783,16 @@ async function confirmLog() {
     const dtValue = document.getElementById('logModalDateTime').value;
     const loggedAt = dtValue ? new Date(dtValue).toISOString() : new Date().toISOString();
 
+    await _saveLog(ev, note || null, loggedAt);
+    closeLogModal();
+}
+
+async function _saveLog(ev, note, loggedAt) {
     const newLog = {
-        id:           crypto.randomUUID(),
-        event_id:     pendingLogEventId,
-        note:         note || null,
-        logged_at:    loggedAt,
+        id:            crypto.randomUUID(),
+        event_id:      ev.id,
+        note:          note || null,
+        logged_at:     loggedAt,
         points_at_log: ev.points,
     };
 
@@ -1765,7 +1809,6 @@ async function confirmLog() {
         pointsAtLog: newLog.points_at_log,
     });
 
-    closeLogModal();
     renderRecentLogs();
     updateAllStats();
 
