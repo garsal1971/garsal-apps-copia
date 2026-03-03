@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.1.6</title>
+    <title>Events Log v2.1.7</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -930,7 +930,7 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.1.6';
+    var APP_VERSION = 'v2.1.7';
     var BUILD_TIME  = '2026-03-03T11:30:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -1810,7 +1810,12 @@ async function _saveLog(ev, note, loggedAt) {
     });
 
     renderRecentLogs();
+    renderEventsGrid();
     updateAllStats();
+
+    const activePage = document.querySelector('.page.active');
+    if (activePage?.id === 'historyPage') renderHistory();
+    if (activePage?.id === 'statsPage')   renderStats();
 
     const scoreEl = document.getElementById('totalScore');
     scoreEl.classList.add('score-pulse');
