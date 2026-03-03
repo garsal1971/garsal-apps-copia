@@ -930,8 +930,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.1.7';
-    var BUILD_TIME  = '2026-03-03T11:30:00Z';
+    var APP_VERSION = 'v2.1.8';
+    var BUILD_TIME  = '2026-03-03T12:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1573,16 +1573,33 @@ function renderStatsPerGroup() {
 // ==========================================
 // STATS UPDATER
 // ==========================================
+function calcScoreFromLogs(filteredLogs) {
+    // MANUALE: somma tutti i log del periodo
+    const manualTotal = filteredLogs
+        .filter(l => { const ev = events.find(e => e.id === l.eventId); return ev && ev.event_type !== 'DA_SELECT'; })
+        .reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    // DA_SELECT: per ogni evento prendi solo il log più recente (valore cumulativo)
+    const daEvents = events.filter(e => e.event_type === 'DA_SELECT');
+    const daTotal = daEvents.reduce((sum, ev) => {
+        const evLogs = filteredLogs.filter(l => l.eventId === ev.id);
+        if (!evLogs.length) return sum;
+        const latest = evLogs.reduce((a, b) => new Date(a.loggedAt) > new Date(b.loggedAt) ? a : b);
+        return sum + (latest.pointsAtLog || 0);
+    }, 0);
+    return manualTotal + daTotal;
+}
+
 function updateAllStats() {
-    const total = logs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    const total = calcScoreFromLogs(logs);
     document.getElementById('totalScore').textContent = (total >= 0 ? '+' : '') + total;
 
     const today = new Date().toDateString();
     const todayLogs = logs.filter(l => new Date(l.loggedAt).toDateString() === today);
-    const todayPts = todayLogs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    const todayPts = calcScoreFromLogs(todayLogs);
 
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekPts = logs.filter(l => new Date(l.loggedAt) >= weekAgo).reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    const weekLogs = logs.filter(l => new Date(l.loggedAt) >= weekAgo);
+    const weekPts = calcScoreFromLogs(weekLogs);
 
     document.getElementById('sPtsOggi').textContent = (todayPts >= 0 ? '+' : '') + todayPts;
     document.getElementById('sLogOggi').textContent = todayLogs.length;
