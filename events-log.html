@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.1.1</title>
+    <title>Events Log v2.1.2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -935,8 +935,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.1.1';
-    var BUILD_TIME  = '2026-03-03T10:00:00Z';
+    var APP_VERSION = 'v2.1.2';
+    var BUILD_TIME  = '2026-03-03T11:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1899,8 +1899,10 @@ function loadSettings() {
 
 function applyBadgeScales(smartScale, dashScale) {
     const root = document.documentElement;
+    // il nome cresce al ritmo pieno; il punteggio cresce a metà ritmo
+    const ptsScale = 1 + (smartScale - 100) / 200;
     root.style.setProperty('--badge-smart-name', (0.78 * smartScale / 100).toFixed(3) + 'rem');
-    root.style.setProperty('--badge-smart-pts',  (0.80 * smartScale / 100).toFixed(3) + 'rem');
+    root.style.setProperty('--badge-smart-pts',  (0.80 * ptsScale).toFixed(3) + 'rem');
     root.style.setProperty('--badge-dash-val',   (1.60 * dashScale  / 100).toFixed(3) + 'rem');
     root.style.setProperty('--badge-dash-lbl',   (0.70 * dashScale  / 100).toFixed(3) + 'rem');
 }
