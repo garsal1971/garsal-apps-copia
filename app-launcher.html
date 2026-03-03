@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.1.7</title>
+<title>AppSphere v1.2.0</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -214,6 +214,152 @@
     transition: border-color 0.2s;
   }
   #logout-btn:hover { border-color: #aaa; color: #111; }
+
+  /* ── SETTINGS BTN ── */
+  #settings-btn {
+    padding: 5px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  #settings-btn:hover { border-color: #aaa; color: #111; }
+
+  /* ── BADGE SETTINGS MODAL ── */
+  #badge-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 8000;
+    align-items: center;
+    justify-content: center;
+  }
+  #badge-modal-overlay.open { display: flex; }
+  #badge-modal {
+    background: #fff;
+    border-radius: 14px;
+    border: 2px solid #111;
+    width: min(600px, 94vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  #badge-modal-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #badge-modal-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+  }
+  #badge-modal-header span {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #aaa;
+  }
+  #badge-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  #badge-modal-close:hover { color: #111; }
+  #badge-modal-body {
+    overflow-y: auto;
+    padding: 16px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .bq-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bq-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bq-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #111;
+    flex-shrink: 0;
+  }
+  .bq-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+  }
+  .bq-textarea {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 10px;
+    resize: vertical;
+    min-height: 52px;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .bq-textarea:focus { outline: none; border-color: #0081C8; }
+  .bq-save-btn {
+    align-self: flex-end;
+    padding: 4px 12px;
+    border: 1px solid #0081C8;
+    border-radius: 5px;
+    background: #0081C8;
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .bq-save-btn:hover { opacity: 0.85; }
+  .bq-save-btn:disabled { opacity: 0.4; cursor: default; }
+  .bq-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #00A651;
+    display: none;
+  }
+  .bq-status.err { color: #EE334E; }
+  #badge-modal-footer {
+    padding: 12px 22px;
+    border-top: 1px solid #eee;
+    text-align: right;
+  }
+  #badge-reload-btn {
+    padding: 7px 18px;
+    border: 1.5px solid #111;
+    border-radius: 7px;
+    background: #111;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  #badge-reload-btn:hover { opacity: 0.8; }
 </style>
 </head>
 <body>
@@ -238,7 +384,23 @@
 <!-- UTENTE BAR -->
 <div id="user-bar">
   <span id="user-name"></span>
+  <button id="settings-btn" onclick="openBadgeSettings()">⚙ Badge</button>
   <button id="logout-btn" onclick="logout()">Esci</button>
+</div>
+
+<!-- BADGE SETTINGS MODAL -->
+<div id="badge-modal-overlay">
+  <div id="badge-modal">
+    <div id="badge-modal-header">
+      <h2>Badge Settings</h2>
+      <span>score_query per cerchio</span>
+      <button id="badge-modal-close" onclick="closeBadgeSettings()">✕</button>
+    </div>
+    <div id="badge-modal-body"></div>
+    <div id="badge-modal-footer">
+      <button id="badge-reload-btn" onclick="closeBadgeSettings(); loadApps();">Ricarica cerchi</button>
+    </div>
+  </div>
 </div>
 
 <div id="field"></div>
@@ -255,8 +417,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.1.7';
-const BUILD_TIME  = '2026-03-01T00:00:00Z';
+const APP_VERSION = 'v1.2.0';
+const BUILD_TIME  = '2026-03-03T00:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -777,6 +939,84 @@ async function loadApps() {
 
   render(apps);
 }
+
+// ── BADGE SETTINGS ──
+let _badgeRows = []; // cache delle righe cm_apps
+
+async function openBadgeSettings() {
+  const token = sessionStorage.getItem('sb_token');
+  const overlay = document.getElementById('badge-modal-overlay');
+  const body    = document.getElementById('badge-modal-body');
+  body.innerHTML = '<div style="padding:20px;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
+  overlay.classList.add('open');
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_apps?select=id,title,score_query,color&order=id.asc`,
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+  );
+  if (!res.ok) {
+    body.innerHTML = '<div style="padding:20px;color:#EE334E;font-family:DM Mono,monospace;font-size:12px;">Errore caricamento app.</div>';
+    return;
+  }
+  _badgeRows = await res.json();
+  body.innerHTML = _badgeRows.map((row, i) => `
+    <div class="bq-row" data-id="${row.id}">
+      <div class="bq-label">
+        <div class="bq-dot" style="background:${row.color || OLYMPIC[i % OLYMPIC.length]}"></div>
+        <span class="bq-title">${row.title}</span>
+        <span class="bq-status" id="bq-status-${row.id}"></span>
+      </div>
+      <textarea class="bq-textarea" id="bq-query-${row.id}" rows="2">${row.score_query || ''}</textarea>
+      <button class="bq-save-btn" onclick="saveBadgeQuery('${row.id}')">Salva</button>
+    </div>
+  `).join('');
+}
+
+function closeBadgeSettings() {
+  document.getElementById('badge-modal-overlay').classList.remove('open');
+}
+
+async function saveBadgeQuery(id) {
+  const token    = sessionStorage.getItem('sb_token');
+  const textarea = document.getElementById('bq-query-' + id);
+  const statusEl = document.getElementById('bq-status-' + id);
+  const btn      = textarea.closest('.bq-row').querySelector('.bq-save-btn');
+  const query    = textarea.value.trim();
+
+  btn.disabled = true;
+  statusEl.textContent = '';
+  statusEl.style.display = 'none';
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_apps?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ score_query: query }),
+    }
+  );
+
+  btn.disabled = false;
+  statusEl.style.display = 'inline';
+  if (res.ok) {
+    statusEl.className = 'bq-status';
+    statusEl.textContent = '✓ salvato';
+    setTimeout(() => { statusEl.style.display = 'none'; }, 2000);
+  } else {
+    statusEl.className = 'bq-status err';
+    statusEl.textContent = '✗ errore';
+  }
+}
+
+// chiudi modale cliccando fuori
+document.getElementById('badge-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeBadgeSettings();
+});
 
 async function init() {
   const token = parseHash() || sessionStorage.getItem('sb_token');
