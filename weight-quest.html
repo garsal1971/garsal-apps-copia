@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.4.1</title>
+    <title>Weight Quest v3.4.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -498,25 +498,30 @@
         .stat-tab-btn {
             flex: 1;
             min-width: 0;
-            padding: 0.55rem 0.75rem;
+            padding: 0.4rem 0.75rem;
             border-radius: 0;
             border: none;
             background: #E5E7EB;
             color: #1F2937;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 700;
             font-family: inherit;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s;
+            transition: all 0.3s ease;
         }
         .stat-tab-btn.active {
-            background: #00B894;
+            background: #FF3366;
             color: white;
         }
         .stat-tab-btn:not(.active):hover {
-            background: #d1d5db;
+            background: #6B7280;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .stat-tab-btn:active {
+            transform: translateY(0);
         }
         .stat-tab-panel { display: none; }
         .stat-tab-panel.active { display: block; }
@@ -833,8 +838,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.4.1';
-        var BUILD_TIME  = '2026-03-04T18:00:00Z';
+        var APP_VERSION = 'v3.4.2';
+        var BUILD_TIME  = '2026-03-04T19:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
