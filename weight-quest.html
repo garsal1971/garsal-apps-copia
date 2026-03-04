@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.4</title>
+    <title>Weight Quest v3.3.5</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -490,6 +490,44 @@
             color: #888;
             font-size: 16px;
         }
+        /* STAT TABS */
+        .stat-tab-bar {
+            display: flex;
+            gap: 8px;
+        }
+        .stat-tab-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            color: #666;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s;
+            font-family: inherit;
+        }
+        .stat-tab-btn.active {
+            background: #00B894;
+            color: white;
+            border-color: #00B894;
+        }
+        .stat-tab-btn:not(.active):hover {
+            border-color: #00B894;
+            color: #00B894;
+        }
+        .stat-tab-panel { display: none; }
+        .stat-tab-panel.active { display: block; }
+        /* Tabella dati storici */
+        #statDataContent table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        #statDataContent thead th { background: #f5f5f5; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; border-bottom: 2px solid #e0e0e0; }
+        #statDataContent tbody tr:nth-child(even) { background: #fafafa; }
+        #statDataContent tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+        .stat-filter-bar { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .stat-filter-bar label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+        .stat-filter-bar input[type="date"] { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .stat-filter-btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -713,9 +751,55 @@
 
             <!-- PAGE 4: STATISTICHE -->
             <div id="statistichePage" class="page">
-                <div id="statsContent">
-                    <div class="stats-loading">Seleziona "Statistiche" per caricare i dati.</div>
+
+                <!-- Tab bar -->
+                <div class="card" style="margin-bottom:15px">
+                    <div class="stat-tab-bar">
+                        <button id="statTabBtn1" class="stat-tab-btn active" onclick="switchStatTab(1)">📊 Riepilogo</button>
+                        <button id="statTabBtn2" class="stat-tab-btn" onclick="switchStatTab(2)">📋 Dati</button>
+                        <button id="statTabBtn3" class="stat-tab-btn" onclick="switchStatTab(3)">📈 Grafico</button>
+                    </div>
                 </div>
+
+                <!-- Tab 1: riepilogo (contenuto attuale) -->
+                <div id="statTabPanel1" class="stat-tab-panel active">
+                    <div id="statsContent">
+                        <div class="stats-loading">Seleziona "Statistiche" per caricare i dati.</div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: tabella dati con filtri -->
+                <div id="statTabPanel2" class="stat-tab-panel">
+                    <div class="card" style="margin-bottom:15px">
+                        <div class="stat-filter-bar">
+                            <div><label>Dal</label><input type="date" id="statFilterFrom"></div>
+                            <div><label>Al</label><input type="date" id="statFilterTo"></div>
+                            <button class="stat-filter-btn" style="background:#00B894;color:white" onclick="applyStatFilter()">🔍 Filtra</button>
+                            <button class="stat-filter-btn" style="background:#f0f0f0;color:#555" onclick="resetStatFilter()">✕ Reset</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="statDataContent"><div class="stats-loading">Carica le Statistiche per vedere i dati.</div></div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: grafico storico con filtri -->
+                <div id="statTabPanel3" class="stat-tab-panel">
+                    <div class="card" style="margin-bottom:15px">
+                        <div class="stat-filter-bar">
+                            <div><label>Dal</label><input type="date" id="statChartFrom"></div>
+                            <div><label>Al</label><input type="date" id="statChartTo"></div>
+                            <button class="stat-filter-btn" style="background:#00B894;color:white" onclick="applyStatChartFilter()">🔍 Filtra</button>
+                            <button class="stat-filter-btn" style="background:#f0f0f0;color:#555" onclick="resetStatChartFilter()">✕ Reset</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="statChartWrapper" style="height:420px;position:relative">
+                            <canvas id="statChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -751,8 +835,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.4';
-        var BUILD_TIME  = '2026-03-04T09:00:00Z';
+        var APP_VERSION = 'v3.3.5';
+        var BUILD_TIME  = '2026-03-04T10:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3794,6 +3878,7 @@
         function updateStatistiche(data) {
             var el = document.getElementById('statsContent');
             if (!el) return;
+            _statAllData = data || []; // cache per i tab Dati e Grafico
             if (!data || data.length === 0) {
                 el.innerHTML = '<div class="stats-loading">Nessun dato disponibile.</div>';
                 return;
@@ -3914,6 +3999,166 @@
             html += '</div>';
 
             el.innerHTML = html;
+        }
+
+        // ── Cache globale per i tab Dati e Grafico ────────────────
+        var _statAllData = [];
+        var _statChartInst = null;
+
+        function switchStatTab(n) {
+            [1, 2, 3].forEach(function(i) {
+                document.getElementById('statTabBtn'   + i).classList.toggle('active', i === n);
+                document.getElementById('statTabPanel' + i).classList.toggle('active', i === n);
+            });
+            if (n === 2 && _statAllData.length) renderStatDataTable(_statAllData);
+            if (n === 3 && _statAllData.length) renderStatChart(_statAllData);
+        }
+
+        // ── Filtri tab 2 ──────────────────────────────────────────
+        function applyStatFilter() {
+            var from = document.getElementById('statFilterFrom').value;
+            var to   = document.getElementById('statFilterTo').value;
+            var filtered = _statAllData.filter(function(r) {
+                return (!from || r.date >= from) && (!to || r.date <= to);
+            });
+            renderStatDataTable(filtered);
+        }
+        function resetStatFilter() {
+            document.getElementById('statFilterFrom').value = '';
+            document.getElementById('statFilterTo').value   = '';
+            renderStatDataTable(_statAllData);
+        }
+
+        // ── Filtri tab 3 ──────────────────────────────────────────
+        function applyStatChartFilter() {
+            var from = document.getElementById('statChartFrom').value;
+            var to   = document.getElementById('statChartTo').value;
+            var filtered = _statAllData.filter(function(r) {
+                return (!from || r.date >= from) && (!to || r.date <= to);
+            });
+            renderStatChart(filtered);
+        }
+        function resetStatChartFilter() {
+            document.getElementById('statChartFrom').value = '';
+            document.getElementById('statChartTo').value   = '';
+            renderStatChart(_statAllData);
+        }
+
+        // ── Tabella dati storici ──────────────────────────────────
+        function renderStatDataTable(data) {
+            var el = document.getElementById('statDataContent');
+            if (!data || data.length === 0) {
+                el.innerHTML = '<div class="stats-loading">Nessun dato nel periodo selezionato.</div>';
+                return;
+            }
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+            // Ordina per data decrescente, poi timestamp decrescente
+            var sorted = data.slice().sort(function(a, b) {
+                var dc = b.date.localeCompare(a.date);
+                return dc !== 0 ? dc : ((b.timestamp || 0) - (a.timestamp || 0));
+            });
+            var html = '<p style="font-size:13px;color:#888;margin:0 0 12px">' + sorted.length + ' misurazioni</p>';
+            html += '<div style="overflow-x:auto"><table>';
+            html += '<thead><tr><th>Data</th><th>Peso</th><th>Sorgente</th></tr></thead><tbody>';
+            sorted.forEach(function(r) {
+                var src = r.source || r.time || '—';
+                html += '<tr>';
+                html += '<td><strong>' + fmt(r.date) + '</strong></td>';
+                html += '<td style="font-weight:bold;color:#00B894">' + parseFloat(r.weight).toFixed(1) + ' kg</td>';
+                html += '<td style="color:#888;font-size:13px">' + src + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+        }
+
+        // ── Grafico storico ───────────────────────────────────────
+        function renderStatChart(data) {
+            var wrapper = document.getElementById('statChartWrapper');
+            if (!wrapper) return;
+            if (_statChartInst) { _statChartInst.destroy(); _statChartInst = null; }
+            if (!data || data.length === 0) {
+                wrapper.innerHTML = '<div class="stats-loading">Nessun dato nel periodo selezionato.</div>';
+                return;
+            }
+            // Assicura che il canvas esista
+            if (!wrapper.querySelector('canvas')) {
+                wrapper.innerHTML = '<canvas id="statChartCanvas"></canvas>';
+            }
+            var canvas = document.getElementById('statChartCanvas');
+            // Medie giornaliere, ordinate ASC
+            var dayMap = {};
+            data.forEach(function(r) {
+                if (!dayMap[r.date]) dayMap[r.date] = { sum: 0, n: 0 };
+                dayMap[r.date].sum += r.weight;
+                dayMap[r.date].n++;
+            });
+            var days = Object.keys(dayMap).sort().map(function(d) {
+                return { date: d, w: dayMap[d].sum / dayMap[d].n };
+            });
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+            var labels  = days.map(function(d) { return fmt(d.date); });
+            var weights = days.map(function(d) { return parseFloat(d.w.toFixed(2)); });
+            // Media mobile 7 giorni
+            var maData = days.map(function(_, i) {
+                var lo = Math.max(0, i - 3), hi = Math.min(days.length - 1, i + 3);
+                var s = 0, c = 0;
+                for (var k = lo; k <= hi; k++) { s += days[k].w; c++; }
+                return parseFloat((s / c).toFixed(2));
+            });
+            var dense = days.length > 180;
+            _statChartInst = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Peso (media giornaliera)',
+                            data: weights,
+                            borderColor: '#00B894',
+                            backgroundColor: 'rgba(0,184,148,0.08)',
+                            borderWidth: dense ? 1 : 1.5,
+                            pointRadius: dense ? 0 : 3,
+                            pointHoverRadius: 5,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Media mobile 7gg',
+                            data: maData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' kg';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 14, maxRotation: 45 } },
+                        y: {
+                            ticks: {
+                                callback: function(v) { return v.toFixed(1) + ' kg'; }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Carica TUTTI i dati storici (senza filtro data) e aggiorna le statistiche
