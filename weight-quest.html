@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.7</title>
+    <title>Weight Quest v3.3.8</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -836,8 +836,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.7';
-        var BUILD_TIME  = '2026-03-04T12:00:00Z';
+        var APP_VERSION = 'v3.3.8';
+        var BUILD_TIME  = '2026-03-04T13:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2586,7 +2586,13 @@
             var maxWeightData = [];
             var minWeightEstimatedData = [];
             var maxWeightEstimatedData = [];
-            
+
+            // Per obiettivi chiusi: pre-filtra i dati al range [start-1mese, end+1mese]
+            var _objRange = objectiveClosedRange(userData.currentObjective);
+            if (_objRange && data) {
+                data = data.filter(function(r) { return r.date >= _objRange.from && r.date <= _objRange.to; });
+            }
+
             // Aggrega i dati per giorno
             var dayGroups = {};
             if (data && data.length > 0) {
@@ -2620,10 +2626,21 @@
                 if (milestoneEndDate && lastDataDate < milestoneEndDate) {
                     lastDataDate = milestoneEndDate;
                 }
-                
+
+                // Per obiettivi chiusi: espandi a [start-1mese, end+1mese]
+                if (_objRange) {
+                    var _objFrom = new Date(_objRange.from + 'T12:00:00');
+                    if (firstDataDate > _objFrom) firstDataDate = _objFrom;
+                }
+
                 // Genera TUTTE le date dal primo giorno fino a OGGI (o all'ultimo dato se più recente)
                 var todayForRange = new Date();
                 todayForRange.setHours(0, 0, 0, 0);
+                // Per obiettivi chiusi: non andare oltre end+1mese
+                if (_objRange) {
+                    var _objTo = new Date(_objRange.to + 'T12:00:00');
+                    if (_objTo < todayForRange) todayForRange = _objTo;
+                }
                 var rangeEnd = lastDataDate > todayForRange ? lastDataDate : todayForRange;
                 var currentDate = new Date(firstDataDate);
                 var allCalendarDates = [];
@@ -3400,10 +3417,27 @@
             tableRenderPage();
         }
 
+        // Restituisce {from, to} per obiettivi chiusi (±1 mese), null per obiettivi aperti/assenti
+        function objectiveClosedRange(obj) {
+            if (!obj || !obj.start_date || !obj.end_date) return null;
+            if (obj.status === 'active') return null;
+            function shiftMonth(dateStr, months) {
+                var d = new Date(dateStr + 'T12:00:00');
+                d.setMonth(d.getMonth() + months);
+                return d.toISOString().split('T')[0];
+            }
+            return { from: shiftMonth(obj.start_date, -1), to: shiftMonth(obj.end_date, 1) };
+        }
+
         function tableFilteredDays() {
             var q = (document.getElementById('tableSearchDate') ? document.getElementById('tableSearchDate').value : '').trim().toLowerCase();
-            if (!q) return tableAllDays;
-            return tableAllDays.filter(function(d) { return d.toLowerCase().indexOf(q) !== -1; });
+            var days = tableAllDays;
+            var range = objectiveClosedRange(tableObj);
+            if (range) {
+                days = days.filter(function(d) { return d >= range.from && d <= range.to; });
+            }
+            if (!q) return days;
+            return days.filter(function(d) { return d.toLowerCase().indexOf(q) !== -1; });
         }
 
         function tableRenderPage() {
