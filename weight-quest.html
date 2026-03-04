@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.9</title>
+    <title>Weight Quest v3.4.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -836,8 +836,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.9';
-        var BUILD_TIME  = '2026-03-04T14:00:00Z';
+        var APP_VERSION = 'v3.4.0';
+        var BUILD_TIME  = '2026-03-04T15:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2340,8 +2340,6 @@
 
             var dailyBonus  = obj.daily_bonus  || 10;
             var dailyMalus  = obj.daily_malus  || 5;
-            var finalBonus  = obj.final_bonus  || 100;
-            var finalMalus  = obj.final_malus  || 50;
             var startDateStr = obj.start_date;
             var endDateStr   = obj.end_date;
 
@@ -2394,15 +2392,7 @@
 
                 if (target === null || effectiveWeight === null) return;
 
-                var isLastDay = (date === endDateStr);
-                var daily;
-                if (effectiveWeight <= target) {
-                    daily = dailyBonus;
-                    if (isLastDay) daily += finalBonus;
-                } else {
-                    daily = -dailyMalus;
-                    if (isLastDay) daily -= finalMalus;
-                }
+                var daily = effectiveWeight <= target ? dailyBonus : -dailyMalus;
                 totalScore += daily;
             });
 
@@ -3319,8 +3309,6 @@
             var endDateStr   = obj ? obj.end_date   : null;
             var dailyBonus   = obj ? (obj.daily_bonus || 10)  : 10;
             var dailyMalus   = obj ? (obj.daily_malus || 5)   : 5;
-            var finalBonus   = obj ? (obj.final_bonus || 100) : 100;
-            var finalMalus   = obj ? (obj.final_malus || 50)  : 50;
 
             // Aggrega i dati per giorno (MIN e MAX)
             var dayGroups = {};
@@ -3378,17 +3366,7 @@
 
                     if (target === null || effectiveWeight === null) return;
 
-                    var isLastDay = (date === endDateStr);
-                    var daily;
-
-                    if (effectiveWeight <= target) {
-                        daily = dailyBonus;
-                        if (isLastDay) daily += finalBonus;
-                    } else {
-                        daily = -dailyMalus;
-                        if (isLastDay) daily -= finalMalus;
-                    }
-
+                    var daily = effectiveWeight <= target ? dailyBonus : -dailyMalus;
                     cumulative += daily;
                     dailyScoreMap[date] = daily;
                     cumulativeMap[date] = cumulative;
