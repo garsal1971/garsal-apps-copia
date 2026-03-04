@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.3.0</title>
+<title>AppSphere v1.3.1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -553,6 +553,65 @@
   .rw-empty-icon { font-size: 52px; margin-bottom: 14px; }
   .rw-empty-text { font-size: 14px; line-height: 1.6; }
 
+  /* ── Mobile nav ── */
+  #rw-topbar {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: #1F2937;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  .rw-hamburger {
+    background: #FF3366;
+    border: none;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  #rw-topbar-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+  }
+  #rw-sidebar-backdrop {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9;
+  }
+  #rw-sidebar-backdrop.open { display: block; }
+
+  @media (max-width: 768px) {
+    #rewards-overlay { flex-direction: column; position: relative; }
+    #rw-topbar { display: flex; }
+    .rw-sidebar {
+      position: absolute;
+      top: 0; left: -280px; bottom: 0;
+      z-index: 11;
+      transition: left 0.28s ease;
+    }
+    .rw-sidebar.open { left: 0; }
+    .rw-main { padding: 16px; padding-top: 72px; width: 100%; }
+    .rw-page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .rw-add-btn { width: 100%; justify-content: center; }
+    .rw-card { flex-wrap: wrap; }
+    .rw-card-right { flex-direction: row; align-items: center; gap: 10px; }
+    .rw-card-pts-lbl { display: none; }
+  }
+
   /* Form modal */
   #rw-form-overlay {
     display: none;
@@ -707,7 +766,17 @@
 
 <!-- PREMI OVERLAY -->
 <div id="rewards-overlay">
-  <div class="rw-sidebar">
+
+  <!-- topbar mobile -->
+  <div id="rw-topbar">
+    <button class="rw-hamburger" onclick="rwToggleSidebar()">☰</button>
+    <span id="rw-topbar-title">🎁 Premi</span>
+  </div>
+
+  <!-- backdrop mobile -->
+  <div id="rw-sidebar-backdrop" onclick="rwCloseSidebar()"></div>
+
+  <div class="rw-sidebar" id="rw-sidebar">
     <div class="rw-sidebar-header">
       <div class="rw-sidebar-brand">🎁 Premi</div>
       <div class="rw-sidebar-sub">// catalogo ricompense</div>
@@ -719,7 +788,7 @@
       </div>
     </nav>
     <div class="rw-sidebar-footer">
-      <button class="rw-close-btn" onclick="closeRewards()">← Torna a AppSphere</button>
+      <button class="rw-close-btn" onclick="rwCloseSidebar(); closeRewards()">← Torna a AppSphere</button>
     </div>
   </div>
 
@@ -773,8 +842,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.3.0';
-const BUILD_TIME  = '2026-03-04T09:00:00Z';
+const APP_VERSION = 'v1.3.1';
+const BUILD_TIME  = '2026-03-04T10:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1378,8 +1447,21 @@ document.getElementById('badge-modal-overlay').addEventListener('click', functio
 let _editingRewardId = null;
 let _rewardsList = [];
 
+function rwToggleSidebar() {
+  const sb = document.getElementById('rw-sidebar');
+  const bd = document.getElementById('rw-sidebar-backdrop');
+  const open = sb.classList.toggle('open');
+  bd.classList.toggle('open', open);
+}
+
+function rwCloseSidebar() {
+  document.getElementById('rw-sidebar').classList.remove('open');
+  document.getElementById('rw-sidebar-backdrop').classList.remove('open');
+}
+
 function openRewards() {
   document.getElementById('rewards-overlay').classList.add('open');
+  rwCloseSidebar();
   loadRewards();
 }
 
