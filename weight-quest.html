@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.5</title>
+    <title>Weight Quest v3.3.6</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -835,8 +835,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.5';
-        var BUILD_TIME  = '2026-03-04T10:00:00Z';
+        var APP_VERSION = 'v3.3.6';
+        var BUILD_TIME  = '2026-03-04T11:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3986,8 +3986,9 @@
             } else {
                 periods.forEach(function(p, idx) {
                     var ratePM = (p.drop / Math.max(p.days / 30, 0.1)).toFixed(2);
-                    html += '<div class="diet-period-card">';
-                    html += '<div class="dp-header">#' + (idx + 1) + ' — −' + p.drop.toFixed(1) + ' kg</div>';
+                    html += '<div class="diet-period-card" style="cursor:pointer" title="Clicca per filtrare Dati e Grafico su questo periodo"'
+                          + ' onclick="applyDietPeriodFilter(\'' + p.startDate + '\',\'' + p.endDate + '\')">';
+                    html += '<div class="dp-header">#' + (idx + 1) + ' — −' + p.drop.toFixed(1) + ' kg <span style="font-size:11px;font-weight:normal;color:#80d5c4;margin-left:8px">↗ filtra dati/grafico</span></div>';
                     html += '<div class="dp-meta">';
                     html += '<span>📅 ' + fmt(p.startDate) + ' → ' + fmt(p.endDate) + '</span>';
                     html += '<span>⏱ ' + p.days + ' giorni</span>';
@@ -4004,6 +4005,22 @@
         // ── Cache globale per i tab Dati e Grafico ────────────────
         var _statAllData = [];
         var _statChartInst = null;
+
+        // Imposta i filtri Dal/Al su tutti i tab e passa al tab Dati
+        function applyDietPeriodFilter(from, to) {
+            // Tab 2 — Dati
+            document.getElementById('statFilterFrom').value = from;
+            document.getElementById('statFilterTo').value   = to;
+            // Tab 3 — Grafico
+            document.getElementById('statChartFrom').value  = from;
+            document.getElementById('statChartTo').value    = to;
+            // Passa al tab 2 e applica il filtro
+            switchStatTab(2);
+            var filtered = _statAllData.filter(function(r) {
+                return r.date >= from && r.date <= to;
+            });
+            renderStatDataTable(filtered);
+        }
 
         function switchStatTab(n) {
             [1, 2, 3].forEach(function(i) {
