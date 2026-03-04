@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.4.12</title>
+    <title>Weight Quest v3.4.13</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -449,7 +449,6 @@
             border-radius: 0;
             padding: 16px 10px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .stat-summary-card .ssv {
             font-size: 26px;
@@ -829,8 +828,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.4.12';
-        var BUILD_TIME  = '2026-03-04T23:10:00Z';
+        var APP_VERSION = 'v3.4.13';
+        var BUILD_TIME  = '2026-03-04T23:20:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3933,13 +3932,13 @@
 
             // Riepilogo overview
             html += '<div class="stat-summary-grid">';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #667eea"><div class="ssv" style="color:#667eea">' + n + '</div><div class="ssl">Misurazioni</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #764ba2"><div class="ssv" style="color:#764ba2">' + nDays + '</div><div class="ssl">Giorni pesati</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #FF3366"><div class="ssv" style="color:#FF3366">' + nYears + '</div><div class="ssl">Anni di dati</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #00B894"><div class="ssv" style="color:#00B894">' + wMin.toFixed(1) + '</div><div class="ssl">Min storico</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #E74C3C"><div class="ssv" style="color:#E74C3C">' + wMax.toFixed(1) + '</div><div class="ssl">Max storico</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #F39C12"><div class="ssv" style="color:#F39C12">' + wAvg.toFixed(1) + '</div><div class="ssl">Media globale</div></div>';
-            html += '<div class="stat-summary-card" style="border-top:4px solid #636e72"><div class="ssv">' + deltaStr + '</div><div class="ssl">Variazione totale</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#667eea"><div class="ssv" style="color:#667eea">' + n + '</div><div class="ssl">Misurazioni</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#764ba2"><div class="ssv" style="color:#764ba2">' + nDays + '</div><div class="ssl">Giorni pesati</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#FF3366"><div class="ssv" style="color:#FF3366">' + nYears + '</div><div class="ssl">Anni di dati</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#00B894"><div class="ssv" style="color:#00B894">' + wMin.toFixed(1) + '</div><div class="ssl">Min storico</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#E74C3C"><div class="ssv" style="color:#E74C3C">' + wMax.toFixed(1) + '</div><div class="ssl">Max storico</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#F39C12"><div class="ssv" style="color:#F39C12">' + wAvg.toFixed(1) + '</div><div class="ssl">Media globale</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#636e72"><div class="ssv">' + deltaStr + '</div><div class="ssl">Variazione totale</div></div>';
             html += '</div>';
 
             // Periodo coperto
