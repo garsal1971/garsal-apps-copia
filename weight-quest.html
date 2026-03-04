@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.8</title>
+    <title>Weight Quest v3.3.9</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -836,8 +836,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.8';
-        var BUILD_TIME  = '2026-03-04T13:00:00Z';
+        var APP_VERSION = 'v3.3.9';
+        var BUILD_TIME  = '2026-03-04T14:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -982,21 +982,24 @@
         // Recupera i record da ps_weight_tracking con paginazione automatica
         // (Supabase PostgREST ha un limite di 1000 record per request)
         // fromDate: stringa 'YYYY-MM-DD' — se fornita, recupera solo i record >= quella data
-        function fetchAllWeights(orderCol, ascending, fromDate) {
+        function fetchAllWeights(orderCol, ascending, fromDate, toDate) {
             var PAGE = 1000;
             var allRows = [];
             function fetchPage(offset) {
+                var filterParts = [];
+                if (fromDate) filterParts.push('date=gte.' + fromDate);
+                if (toDate)   filterParts.push('date=lte.' + toDate);
                 return supabase._query(
                     'ps_weight_tracking', '*',
                     orderCol || 'date', { ascending: !!ascending },
                     PAGE, offset,
-                    fromDate ? 'date=gte.' + fromDate : null
+                    filterParts.length ? filterParts.join('&') : null
                 ).then(function(res) {
                     if (res.error) return Promise.reject(res.error);
                     var rows = res.data || [];
                     allRows = allRows.concat(rows);
                     if (rows.length === PAGE) {
-                        return fetchPage(offset + PAGE); // c'è ancora un'altra pagina
+                        return fetchPage(offset + PAGE);
                     }
                     return { data: allRows, error: null };
                 });
@@ -2173,18 +2176,23 @@
         // Calcola la data minima da cui caricare i dati peso:
         // - obiettivo attivo → 1 mese prima della prima data milestone
         // - nessun obiettivo attivo → 2 mesi prima di oggi
-        function calcFetchFromDate() {
+        function calcFetchRange() {
             var obj = userData.currentObjective;
-            var isActive = obj && obj.status !== 'success' && obj.status !== 'failed';
-            if (isActive && userData.milestones && userData.milestones.length >= 1) {
-                var firstDate = userData.milestones[0].date; // 'YYYY-MM-DD'
-                var d = new Date(firstDate + 'T00:00:00');
-                d.setMonth(d.getMonth() - 1);
-                return d.toISOString().split('T')[0];
+            if (!obj) {
+                // Nessun obiettivo: ultimi 3 mesi
+                var d = new Date();
+                d.setMonth(d.getMonth() - 3);
+                return { from: d.toISOString().split('T')[0], to: null };
             }
-            var today = new Date();
-            today.setMonth(today.getMonth() - 2);
-            return today.toISOString().split('T')[0];
+            var isClosed = obj.status === 'success' || obj.status === 'failed';
+            if (isClosed) {
+                // Chiuso: esattamente tra start_date e end_date
+                return { from: obj.start_date, to: obj.end_date || null };
+            }
+            // Aperto: start_date - 2 settimane → end_date (o nessun limite superiore)
+            var startD = new Date(obj.start_date + 'T12:00:00');
+            startD.setDate(startD.getDate() - 14);
+            return { from: startD.toISOString().split('T')[0], to: obj.end_date || null };
         }
 
         function loadData() {
@@ -2196,9 +2204,9 @@
             isLoadingData = true;
             log('Caricamento dati da Supabase...');
 
-            var fromDate = calcFetchFromDate();
-            log('Data minima caricamento: ' + fromDate);
-            fetchAllWeights('date', false, fromDate)
+            var fetchRange = calcFetchRange();
+            log('Range caricamento: ' + fetchRange.from + ' → ' + (fetchRange.to || 'oggi'));
+            fetchAllWeights('date', false, fetchRange.from, fetchRange.to)
                 .then(function(response) {
                     if (response.error) {
                         log('ERROR: ' + response.error.message);
@@ -2239,24 +2247,24 @@
             
             log('Aggiornamento target_weight per nuovo obiettivo...');
 
-            var fromDate = calcFetchFromDate();
-            log('Data minima caricamento: ' + fromDate);
+            var fetchRange = calcFetchRange();
+            log('Range caricamento: ' + fetchRange.from + ' → ' + (fetchRange.to || 'oggi'));
 
             // Prima rileggi i record nel range visualizzato per aggiornarli
-            fetchAllWeights('date', false, fromDate)
+            fetchAllWeights('date', false, fetchRange.from, fetchRange.to)
                 .then(function(response) {
                     if (response.error) {
                         log('ERROR reload select: ' + response.error.message);
                         return;
                     }
-                    
+
                     if (!response.data || response.data.length === 0) {
                         log('Nessun dato peso da aggiornare');
                         return;
                     }
-                    
+
                     log('Aggiornamento target su ' + response.data.length + ' record...');
-                    
+
                     // Aggiorna i target_weight in batch - IMPORTANTE: serve TUTTA la riga per l'upsert
                     var updates = response.data.map(function(row) {
                         var newTarget = getInterpolatedTarget(row.date);
@@ -2268,10 +2276,10 @@
                             target_weight: newTarget
                         };
                     });
-                    
+
                     // Esegue UPDATE per ogni record (Supabase upsert con timestamp come chiave)
                     var url = supabase.url + '/rest/v1/ps_weight_tracking?on_conflict=timestamp';
-                    
+
                     return fetch(url, {
                         method: 'POST',
                         headers: {
@@ -2289,9 +2297,9 @@
                     } else {
                         log('Target aggiornati nel DB');
                     }
-                    
+
                     // Ora ricarica i dati aggiornati
-                    return fetchAllWeights('date', false, fromDate);
+                    return fetchAllWeights('date', false, fetchRange.from, fetchRange.to);
                 })
                 .then(function(response) {
                     if (response.error) {
