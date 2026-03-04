@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.4.0</title>
+    <title>Weight Quest v3.4.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -548,16 +548,8 @@
         <!-- ICON NAVIGATION -->
         <div class="icon-nav">
             <div class="icon-nav-item active" data-page="obiettivi">
-                <span class="icon">⚙️</span>
+                <span class="icon">🎯</span>
                 <span class="label">Obiettivi</span>
-            </div>
-            <div class="icon-nav-item" data-page="tabella">
-                <span class="icon">📊</span>
-                <span class="label">Tabella</span>
-            </div>
-            <div class="icon-nav-item" data-page="grafico">
-                <span class="icon">📈</span>
-                <span class="label">Grafico</span>
             </div>
             <div class="icon-nav-item" data-page="statistiche">
                 <span class="icon">📉</span>
@@ -576,16 +568,8 @@
                 <div class="sidebar-logo">⚖️ Weight</div>
                 <nav>
                     <div class="sidebar-nav-item active" data-page="obiettivi">
-                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-icon">🎯</span>
                         <span>Obiettivi</span>
-                    </div>
-                    <div class="sidebar-nav-item" data-page="tabella">
-                        <span class="nav-icon">📊</span>
-                        <span>Tabella</span>
-                    </div>
-                    <div class="sidebar-nav-item" data-page="grafico">
-                        <span class="nav-icon">📈</span>
-                        <span>Grafico</span>
                     </div>
                     <div class="sidebar-nav-item" data-page="statistiche">
                         <span class="nav-icon">📉</span>
@@ -600,157 +584,170 @@
 
             <!-- MAIN CONTENT -->
             <div class="content main-content">
-            <!-- PAGE 1: OBIETTIVI -->
+            <!-- PAGE 1: OBIETTIVI (con tab interni) -->
             <div id="obiettiviPage" class="page active">
-                <!-- Stats + Peso su una sola riga -->
-                <div class="stats-grid">
-                    <div class="stat-box" style="background: linear-gradient(135deg, #FF3366, #ff6b9d); color: white;">
-                        <div class="stat-value" id="weightValue" style="color: white;">--</div>
-                        <div class="stat-label" style="color: rgba(255,255,255,0.85);">⚖️ Peso kg</div>
-                    </div>
-                    <div class="stat-box" style="border: 3px solid #F39C12;">
-                        <div class="stat-value" id="avgScoreValue" style="color: #F39C12;">-</div>
-                        <div class="stat-label" style="color: #F39C12;">Kg alla fine</div>
-                    </div>
-                    <div class="stat-box teal">
-                        <div class="stat-value" id="statsCompleted">0</div>
-                        <div class="stat-label">Completati</div>
-                    </div>
-                    <div class="stat-box red">
-                        <div class="stat-value" id="statsFailed">0</div>
-                        <div class="stat-label">Falliti</div>
-                    </div>
-                    <div class="stat-box yellow">
-                        <div class="stat-value" id="statsActive">0</div>
-                        <div class="stat-label">Attivi</div>
-                    </div>
-                    <div class="stat-box gradient">
-                        <div class="stat-value" id="statsScore">0</div>
-                        <div class="stat-label">Punteggio</div>
-                    </div>
-                    <div class="stat-box" style="border: 3px solid #FF3366;">
-                        <div class="stat-value" id="scoreValue" style="color: #FF3366;">-</div>
-                        <div class="stat-label" style="color: #FF3366;">Punti oggi</div>
+
+                <!-- Tab bar -->
+                <div class="card" style="margin-bottom:15px">
+                    <div class="stat-tab-bar">
+                        <button id="objTabBtn1" class="stat-tab-btn active" onclick="switchObjTab(1)">🎯 Obiettivi</button>
+                        <button id="objTabBtn2" class="stat-tab-btn" onclick="switchObjTab(2)">📊 Tabella</button>
+                        <button id="objTabBtn3" class="stat-tab-btn" onclick="switchObjTab(3)">📈 Grafico</button>
                     </div>
                 </div>
 
-                <!-- Gestione Obiettivo Corrente -->
-                <div class="card">
-                    <h3>🎯 Gestione Obiettivo</h3>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Seleziona Obiettivo</label>
-                        <select id="objectiveSelect"></select>
-                    </div>
-
-                    <div id="objectiveStatusBar" class="hidden" style="padding: 10px; margin: 10px 0; border-radius: 8px; text-align: center; font-weight: bold;"></div>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Nome Obiettivo</label>
-                        <input type="text" id="objectiveName" placeholder="Es: Dieta Primavera 2026">
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Giornaliero</label>
-                            <input type="number" id="objectiveDailyBonus" value="10">
+                <!-- Tab 1: Obiettivi -->
+                <div id="objTabPanel1" class="stat-tab-panel active">
+                    <!-- Stats + Peso su una sola riga -->
+                    <div class="stats-grid">
+                        <div class="stat-box" style="background: linear-gradient(135deg, #FF3366, #ff6b9d); color: white;">
+                            <div class="stat-value" id="weightValue" style="color: white;">--</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.85);">⚖️ Peso kg</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Giornaliero</label>
-                            <input type="number" id="objectiveDailyMalus" value="5">
+                        <div class="stat-box" style="border: 3px solid #F39C12;">
+                            <div class="stat-value" id="avgScoreValue" style="color: #F39C12;">-</div>
+                            <div class="stat-label" style="color: #F39C12;">Kg alla fine</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Finale</label>
-                            <input type="number" id="objectiveFinalBonus" value="100">
+                        <div class="stat-box teal">
+                            <div class="stat-value" id="statsCompleted">0</div>
+                            <div class="stat-label">Completati</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Finale</label>
-                            <input type="number" id="objectiveFinalMalus" value="50">
+                        <div class="stat-box red">
+                            <div class="stat-value" id="statsFailed">0</div>
+                            <div class="stat-label">Falliti</div>
+                        </div>
+                        <div class="stat-box yellow">
+                            <div class="stat-value" id="statsActive">0</div>
+                            <div class="stat-label">Attivi</div>
+                        </div>
+                        <div class="stat-box gradient">
+                            <div class="stat-value" id="statsScore">0</div>
+                            <div class="stat-label">Punteggio</div>
+                        </div>
+                        <div class="stat-box" style="border: 3px solid #FF3366;">
+                            <div class="stat-value" id="scoreValue" style="color: #FF3366;">-</div>
+                            <div class="stat-label" style="color: #FF3366;">Punti oggi</div>
                         </div>
                     </div>
 
-                    <div id="multiplierDisplay" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 13px;"></div>
+                    <!-- Gestione Obiettivo Corrente -->
+                    <div class="card">
+                        <h3>🎯 Gestione Obiettivo</h3>
 
-                    <h4 style="margin: 20px 0 10px 0;">Milestone Progressive</h4>
-                    <div id="milestoneList" style="margin-bottom: 15px;"></div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Seleziona Obiettivo</label>
+                            <select id="objectiveSelect"></select>
+                        </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <input type="date" id="newMilestoneDate" placeholder="Data">
-                        <input type="number" step="0.1" id="newMilestoneWeight" placeholder="Peso (kg)">
-                    </div>
-                    <button id="btnAddMilestone">➕ Aggiungi Milestone</button>
+                        <div id="objectiveStatusBar" class="hidden" style="padding: 10px; margin: 10px 0; border-radius: 8px; text-align: center; font-weight: bold;"></div>
 
-                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Nome Obiettivo</label>
+                            <input type="text" id="objectiveName" placeholder="Es: Dieta Primavera 2026">
+                        </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button id="btnSaveObjective">💾 Salva</button>
-                        <button id="btnCloseSuccess" style="background: #00B894;">🏆 Successo</button>
-                        <button id="btnCloseFailed" style="background: #E74C3C;">💀 Fallito</button>
-                        <button id="btnDeleteObjective" style="background: #666;">🗑️ Elimina</button>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- PAGE 2: TABELLA -->
-            <div id="tabellaPage" class="page">
-                <div class="card">
-                    <h3>📊 Storico Pesate</h3>
-                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
-                        <input type="text" id="tableSearchDate" placeholder="Cerca data (es. 2025-03)"
-                               style="flex:1; min-width:140px; padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;"
-                               oninput="tableSearch()">
-                        <select id="tableRowsPerPage" onchange="tableChangeRows()" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-                            <option value="20">20 righe</option>
-                            <option value="50">50 righe</option>
-                            <option value="100">100 righe</option>
-                        </select>
-                    </div>
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Target</th>
-                                    <th>Peso MIN</th>
-                                    <th>Peso MAX</th>
-                                    <th>Punti</th>
-                                    <th>Cumul.</th>
-                                </tr>
-                            </thead>
-                            <tbody id="weightTableBody"></tbody>
-                        </table>
-                    </div>
-                    <div id="tablePagination" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap;">
-                        <button id="tablePrevBtn" onclick="tableGoPage(tablePage-1)" style="padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:white; cursor:pointer; font-size:14px;">◀</button>
-                        <span id="tablePageInfo" style="font-size:14px; color:#555;"></span>
-                        <button id="tableNextBtn" onclick="tableGoPage(tablePage+1)" style="padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:white; cursor:pointer; font-size:14px;">▶</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PAGE 3: GRAFICO -->
-            <div id="graficoPage" class="page">
-                <div class="card">
-                    <h3>📈 Andamento Peso</h3>
-                    <div id="chartNavWrapper">
-                        <button class="chart-scroll-btn" id="chartScrollLeft">&#8249;</button>
-                        <div id="chartScrollWrapper">
-                            <div id="chartContainer" style="position: relative; height: 400px;">
-                                <canvas id="weightChart" width="1000" height="400"></canvas>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Giornaliero</label>
+                                <input type="number" id="objectiveDailyBonus" value="10">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Giornaliero</label>
+                                <input type="number" id="objectiveDailyMalus" value="5">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Finale</label>
+                                <input type="number" id="objectiveFinalBonus" value="100">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Finale</label>
+                                <input type="number" id="objectiveFinalMalus" value="50">
                             </div>
                         </div>
-                        <button class="chart-scroll-btn" id="chartScrollRight">&#8250;</button>
-                    </div>
-                    <div style="margin-top: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <button id="btnZoomIn" style="padding: 10px 20px;">🔍 Zoom In</button>
-                        <button id="btnResetZoom" style="padding: 10px 20px; background: #666;">⟲ Reset</button>
-                        <button id="btnZoomOut" style="padding: 10px 20px;">🔍 Zoom Out</button>
+
+                        <div id="multiplierDisplay" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 13px;"></div>
+
+                        <h4 style="margin: 20px 0 10px 0;">Milestone Progressive</h4>
+                        <div id="milestoneList" style="margin-bottom: 15px;"></div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <input type="date" id="newMilestoneDate" placeholder="Data">
+                            <input type="number" step="0.1" id="newMilestoneWeight" placeholder="Peso (kg)">
+                        </div>
+                        <button id="btnAddMilestone">➕ Aggiungi Milestone</button>
+
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button id="btnSaveObjective">💾 Salva</button>
+                            <button id="btnCloseSuccess" style="background: #00B894;">🏆 Successo</button>
+                            <button id="btnCloseFailed" style="background: #E74C3C;">💀 Fallito</button>
+                            <button id="btnDeleteObjective" style="background: #666;">🗑️ Elimina</button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Tab 2: Tabella -->
+                <div id="objTabPanel2" class="stat-tab-panel">
+                    <div class="card">
+                        <h3>📊 Storico Pesate</h3>
+                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+                            <input type="text" id="tableSearchDate" placeholder="Cerca data (es. 2025-03)"
+                                   style="flex:1; min-width:140px; padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;"
+                                   oninput="tableSearch()">
+                            <select id="tableRowsPerPage" onchange="tableChangeRows()" style="padding:8px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+                                <option value="20">20 righe</option>
+                                <option value="50">50 righe</option>
+                                <option value="100">100 righe</option>
+                            </select>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Target</th>
+                                        <th>Peso MIN</th>
+                                        <th>Peso MAX</th>
+                                        <th>Punti</th>
+                                        <th>Cumul.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weightTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="tablePagination" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap;">
+                            <button id="tablePrevBtn" onclick="tableGoPage(tablePage-1)" style="padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:white; cursor:pointer; font-size:14px;">◀</button>
+                            <span id="tablePageInfo" style="font-size:14px; color:#555;"></span>
+                            <button id="tableNextBtn" onclick="tableGoPage(tablePage+1)" style="padding:7px 14px; border:1px solid #ddd; border-radius:6px; background:white; cursor:pointer; font-size:14px;">▶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Grafico -->
+                <div id="objTabPanel3" class="stat-tab-panel">
+                    <div class="card">
+                        <h3>📈 Andamento Peso</h3>
+                        <div id="chartNavWrapper">
+                            <button class="chart-scroll-btn" id="chartScrollLeft">&#8249;</button>
+                            <div id="chartScrollWrapper">
+                                <div id="chartContainer" style="position: relative; height: 400px;">
+                                    <canvas id="weightChart" width="1000" height="400"></canvas>
+                                </div>
+                            </div>
+                            <button class="chart-scroll-btn" id="chartScrollRight">&#8250;</button>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button id="btnZoomIn" style="padding: 10px 20px;">🔍 Zoom In</button>
+                            <button id="btnResetZoom" style="padding: 10px 20px; background: #666;">⟲ Reset</button>
+                            <button id="btnZoomOut" style="padding: 10px 20px;">🔍 Zoom Out</button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- PAGE 4: STATISTICHE -->
+            <!-- PAGE 2: STATISTICHE -->
             <div id="statistichePage" class="page">
 
                 <!-- Tab bar -->
@@ -836,8 +833,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.4.0';
-        var BUILD_TIME  = '2026-03-04T15:00:00Z';
+        var APP_VERSION = 'v3.4.1';
+        var BUILD_TIME  = '2026-03-04T18:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1317,22 +1314,11 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso',
                             'statistiche': 'Statistiche'
                         };
                         var elTitle = document.getElementById('topTitle'); if (elTitle) elTitle.textContent = titles[pageName] || 'Weight Quest';
 
-                        // Refresh data when switching to tabella or grafico
-                        if (pageName === 'tabella' && userData.weights && userData.weights.length > 0) {
-                            updateWeightTable(userData.weights);
-                        } else if (pageName === 'grafico') {
-                            if (weightChart) {
-                                scrollChartToToday();
-                            } else if (userData.weights && userData.weights.length > 0) {
-                                updateWeightChart(userData.weights);
-                            }
-                        } else if (pageName === 'statistiche') {
+                        if (pageName === 'statistiche') {
                             refreshStatistiche();
                         }
                     });
@@ -1359,22 +1345,11 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso',
                             'statistiche': 'Statistiche'
                         };
                         var elTitle2 = document.getElementById('topTitle'); if (elTitle2) elTitle2.textContent = titles[pageName] || 'Weight Quest';
 
-                        // Refresh data
-                        if (pageName === 'tabella' && userData.weights && userData.weights.length > 0) {
-                            updateWeightTable(userData.weights);
-                        } else if (pageName === 'grafico') {
-                            if (weightChart) {
-                                scrollChartToToday();
-                            } else if (userData.weights && userData.weights.length > 0) {
-                                updateWeightChart(userData.weights);
-                            }
-                        } else if (pageName === 'statistiche') {
+                        if (pageName === 'statistiche') {
                             refreshStatistiche();
                         }
                     });
@@ -4050,6 +4025,22 @@
             });
             if (n === 2 && _statAllData.length) renderStatDataTable(_statAllData);
             if (n === 3 && _statAllData.length) renderStatChart(_statAllData);
+        }
+
+        function switchObjTab(n) {
+            [1, 2, 3].forEach(function(i) {
+                document.getElementById('objTabBtn'   + i).classList.toggle('active', i === n);
+                document.getElementById('objTabPanel' + i).classList.toggle('active', i === n);
+            });
+            if (n === 2 && userData.weights && userData.weights.length > 0) {
+                updateWeightTable(userData.weights);
+            } else if (n === 3) {
+                if (weightChart) {
+                    scrollChartToToday();
+                } else if (userData.weights && userData.weights.length > 0) {
+                    updateWeightChart(userData.weights);
+                }
+            }
         }
 
         // ── Filtri tab 2 ──────────────────────────────────────────
