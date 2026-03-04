@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.2.0</title>
+<title>AppSphere v1.3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -107,9 +107,11 @@
     flex-direction: column;
     gap: 2px;
     min-width: 110px;
-    pointer-events: none;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
   }
   #score-panel.visible { display: flex; }
+  #score-panel:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(238,51,78,0.35); }
   .sp-label {
     font-family: 'DM Sans', sans-serif;
     font-size: 10px;
@@ -360,6 +362,298 @@
     transition: opacity 0.15s;
   }
   #badge-reload-btn:hover { opacity: 0.8; }
+
+  /* ── PREMI ── */
+  #rewards-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: #F3F4F6;
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    user-select: text;
+  }
+  #rewards-overlay.open { display: flex; }
+
+  .rw-sidebar {
+    width: 280px;
+    background: #1F2937;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .rw-sidebar-header {
+    padding: 28px 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .rw-sidebar-brand {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .rw-sidebar-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 3px;
+  }
+  .rw-nav { padding: 12px 0; flex: 1; }
+  .rw-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 20px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.13s, color 0.13s;
+    border-left: 3px solid transparent;
+  }
+  .rw-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .rw-nav-item.active {
+    background: #FF3366;
+    color: #fff;
+    border-left-color: #FF3366;
+  }
+  .rw-nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .rw-sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .rw-close-btn {
+    width: 100%;
+    padding: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.65);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.13s, color 0.13s;
+  }
+  .rw-close-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+  .rw-main { flex: 1; overflow-y: auto; padding: 32px; }
+  .rw-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .rw-page-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1F2937;
+  }
+  .rw-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: #FF3366;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .rw-add-btn:hover { opacity: 0.88; }
+
+  .rw-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .rw-card {
+    background: #fff;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .rw-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+  .rw-card-emoji { font-size: 28px; flex-shrink: 0; }
+  .rw-card-body { flex: 1; min-width: 0; }
+  .rw-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1F2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rw-card-meta {
+    font-size: 12px;
+    color: #6B7280;
+    font-family: 'DM Mono', monospace;
+    margin-top: 3px;
+  }
+  .rw-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .rw-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .rw-badge.once { background: #FEF3C7; color: #92400E; }
+  .rw-badge.repeat { background: #D1FAE5; color: #065F46; }
+  .rw-card-pts {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    color: #FF3366;
+    line-height: 1;
+  }
+  .rw-card-pts-lbl {
+    font-size: 10px;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .rw-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .rw-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid #E5E7EB;
+    background: #fff;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s, border-color 0.13s;
+  }
+  .rw-icon-btn:hover { background: #F9FAFB; }
+  .rw-icon-btn.del:hover { background: #FEE2E2; border-color: #EF4444; }
+
+  .rw-empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: #6B7280;
+  }
+  .rw-empty-icon { font-size: 52px; margin-bottom: 14px; }
+  .rw-empty-text { font-size: 14px; line-height: 1.6; }
+
+  /* Form modal */
+  #rw-form-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9500;
+    align-items: center;
+    justify-content: center;
+  }
+  #rw-form-overlay.open { display: flex; }
+  #rw-form-modal {
+    background: #fff;
+    border-radius: 14px;
+    border: 2px solid #111;
+    width: min(480px, 94vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .rw-form-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rw-form-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+  }
+  .rw-form-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .rw-form-body {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .rw-field { display: flex; flex-direction: column; gap: 6px; }
+  .rw-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .rw-input, .rw-select {
+    padding: 10px 12px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #111;
+    background: #F9FAFB;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .rw-input:focus, .rw-select:focus { border-color: #FF3366; background: #fff; }
+  .rw-per-use-row { display: none; }
+  .rw-per-use-row.show { display: flex; }
+  .rw-form-footer {
+    padding: 14px 22px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .rw-btn-cancel {
+    padding: 9px 18px;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+  }
+  .rw-btn-cancel:hover { border-color: #aaa; }
+  .rw-btn-save {
+    padding: 9px 18px;
+    background: #FF3366;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .rw-btn-save:hover { opacity: 0.88; }
+
 </style>
 </head>
 <body>
@@ -406,9 +700,71 @@
 <div id="field"></div>
 
 <!-- SCORE PANEL -->
-<div id="score-panel">
+<div id="score-panel" onclick="openRewards()" title="Apri Catalogo Premi">
   <div class="sp-label">Totale</div>
   <div class="sp-value" id="sp-value">—</div>
+</div>
+
+<!-- PREMI OVERLAY -->
+<div id="rewards-overlay">
+  <div class="rw-sidebar">
+    <div class="rw-sidebar-header">
+      <div class="rw-sidebar-brand">🎁 Premi</div>
+      <div class="rw-sidebar-sub">// catalogo ricompense</div>
+    </div>
+    <nav class="rw-nav">
+      <div class="rw-nav-item active">
+        <span class="rw-nav-icon">🏆</span>
+        <span>Catalogo Premi</span>
+      </div>
+    </nav>
+    <div class="rw-sidebar-footer">
+      <button class="rw-close-btn" onclick="closeRewards()">← Torna a AppSphere</button>
+    </div>
+  </div>
+
+  <div class="rw-main">
+    <div class="rw-page-header">
+      <div class="rw-page-title">Catalogo Premi</div>
+      <button class="rw-add-btn" onclick="openRewardForm(null)">+ Aggiungi Premio</button>
+    </div>
+    <div id="rw-list" class="rw-list"></div>
+  </div>
+</div>
+
+<!-- FORM PREMIO -->
+<div id="rw-form-overlay">
+  <div id="rw-form-modal">
+    <div class="rw-form-header">
+      <span class="rw-form-title" id="rw-form-title">Nuovo Premio</span>
+      <button class="rw-form-close" onclick="closeRewardForm()">✕</button>
+    </div>
+    <div class="rw-form-body">
+      <div class="rw-field">
+        <label class="rw-label">Nome Premio</label>
+        <input class="rw-input" id="rw-name" type="text" placeholder="es. Film al cinema">
+      </div>
+      <div class="rw-field">
+        <label class="rw-label">Tipo</label>
+        <select class="rw-select" id="rw-type" onchange="rwTypeChange()">
+          <option value="una_tantum">Una tantum (una sola volta)</option>
+          <option value="ripetibile">Ripetibile (ogni volta che lo usi)</option>
+        </select>
+      </div>
+      <div class="rw-field">
+        <label class="rw-label">Punti Necessari (totale)</label>
+        <input class="rw-input" id="rw-points" type="number" min="1" placeholder="es. 50">
+      </div>
+      <div class="rw-field rw-per-use-row" id="rw-per-use-row">
+        <label class="rw-label">Punti per ogni utilizzo</label>
+        <input class="rw-input" id="rw-per-use" type="number" min="1" placeholder="es. 10">
+      </div>
+    </div>
+    <div class="rw-form-footer">
+      <button class="rw-btn-cancel" onclick="closeRewardForm()">Annulla</button>
+      <button class="rw-btn-save" onclick="saveReward()">Salva</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -417,8 +773,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.2.0';
-const BUILD_TIME  = '2026-03-03T00:00:00Z';
+const APP_VERSION = 'v1.3.0';
+const BUILD_TIME  = '2026-03-04T09:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1016,6 +1372,152 @@ async function saveBadgeQuery(id) {
 // chiudi modale cliccando fuori
 document.getElementById('badge-modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeBadgeSettings();
+});
+
+// ── PREMI ──
+let _editingRewardId = null;
+let _rewardsList = [];
+
+function openRewards() {
+  document.getElementById('rewards-overlay').classList.add('open');
+  loadRewards();
+}
+
+function closeRewards() {
+  document.getElementById('rewards-overlay').classList.remove('open');
+}
+
+async function loadRewards() {
+  const token = sessionStorage.getItem('sb_token');
+  const listEl = document.getElementById('rw-list');
+  listEl.innerHTML = '<div style="padding:20px;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_rewards?order=created_at.asc`,
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+  );
+  if (!res.ok) {
+    listEl.innerHTML = '<div style="padding:20px;color:#EE334E;font-family:DM Mono,monospace;font-size:12px;">Errore caricamento premi.</div>';
+    return;
+  }
+  _rewardsList = await res.json();
+  renderRewards();
+}
+
+function renderRewards() {
+  const listEl = document.getElementById('rw-list');
+  if (!_rewardsList.length) {
+    listEl.innerHTML = `
+      <div class="rw-empty">
+        <div class="rw-empty-icon">🎁</div>
+        <div class="rw-empty-text">Nessun premio disponibile.<br>Aggiungine uno con il pulsante qui sopra!</div>
+      </div>`;
+    return;
+  }
+  listEl.innerHTML = _rewardsList.map(r => {
+    const isRepeat = r.type === 'ripetibile';
+    const emoji = isRepeat ? '🔄' : '⭐';
+    let meta = `${r.points_cost} punti richiesti`;
+    if (isRepeat && r.points_per_use) meta += ` · ${r.points_per_use} pts/uso`;
+    return `
+      <div class="rw-card">
+        <div class="rw-card-emoji">${emoji}</div>
+        <div class="rw-card-body">
+          <div class="rw-card-name">${r.name}</div>
+          <div class="rw-card-meta">${meta}</div>
+        </div>
+        <div class="rw-card-right">
+          <span class="rw-badge ${isRepeat ? 'repeat' : 'once'}">${isRepeat ? 'ripetibile' : 'una tantum'}</span>
+          <div class="rw-card-pts">${r.points_cost}</div>
+          <div class="rw-card-pts-lbl">punti</div>
+        </div>
+        <div class="rw-card-actions">
+          <button class="rw-icon-btn" onclick="openRewardForm('${r.id}')" title="Modifica">✏️</button>
+          <button class="rw-icon-btn del" onclick="deleteReward('${r.id}')" title="Elimina">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openRewardForm(id) {
+  _editingRewardId = id;
+  document.getElementById('rw-form-title').textContent = id ? 'Modifica Premio' : 'Nuovo Premio';
+  if (id) {
+    const r = _rewardsList.find(x => x.id === id);
+    document.getElementById('rw-name').value = r.name;
+    document.getElementById('rw-type').value = r.type;
+    document.getElementById('rw-points').value = r.points_cost;
+    document.getElementById('rw-per-use').value = r.points_per_use || '';
+  } else {
+    document.getElementById('rw-name').value = '';
+    document.getElementById('rw-type').value = 'una_tantum';
+    document.getElementById('rw-points').value = '';
+    document.getElementById('rw-per-use').value = '';
+  }
+  rwTypeChange();
+  document.getElementById('rw-form-overlay').classList.add('open');
+}
+
+function closeRewardForm() {
+  document.getElementById('rw-form-overlay').classList.remove('open');
+  _editingRewardId = null;
+}
+
+function rwTypeChange() {
+  const type = document.getElementById('rw-type').value;
+  document.getElementById('rw-per-use-row').classList.toggle('show', type === 'ripetibile');
+}
+
+async function saveReward() {
+  const token = sessionStorage.getItem('sb_token');
+  const name       = document.getElementById('rw-name').value.trim();
+  const type       = document.getElementById('rw-type').value;
+  const pointsCost = parseInt(document.getElementById('rw-points').value);
+  const perUse     = type === 'ripetibile' ? parseInt(document.getElementById('rw-per-use').value) || null : null;
+
+  if (!name)                                        { alert('Inserisci un nome per il premio.'); return; }
+  if (!pointsCost || pointsCost < 1)                { alert('Inserisci i punti necessari (minimo 1).'); return; }
+  if (type === 'ripetibile' && (!perUse || perUse < 1)) { alert('Inserisci i punti per ogni utilizzo (minimo 1).'); return; }
+
+  const payload = { name, type, points_cost: pointsCost, points_per_use: perUse };
+  const isNew   = !_editingRewardId;
+  const url     = `${SUPABASE_URL}/rest/v1/cm_rewards` + (isNew ? '' : `?id=eq.${_editingRewardId}`);
+
+  const res = await fetch(url, {
+    method: isNew ? 'POST' : 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(isNew ? [payload] : payload),
+  });
+
+  if (res.ok) {
+    closeRewardForm();
+    loadRewards();
+  } else {
+    alert('Errore nel salvataggio. Riprova.');
+  }
+}
+
+async function deleteReward(id) {
+  if (!confirm('Eliminare questo premio?')) return;
+  const token = sessionStorage.getItem('sb_token');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token },
+  });
+  if (res.ok) {
+    loadRewards();
+  } else {
+    alert('Errore nell\'eliminazione.');
+  }
+}
+
+document.getElementById('rw-form-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeRewardForm();
 });
 
 async function init() {
