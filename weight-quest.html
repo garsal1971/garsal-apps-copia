@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.4.5</title>
+    <title>Weight Quest v3.4.6</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -72,6 +72,7 @@
             cursor: pointer;
             padding: 0.15rem 0.1rem;
             transition: all 0.3s ease;
+            border-radius: 0;
         }
 
         .icon-nav-item:hover {
@@ -80,6 +81,7 @@
 
         .icon-nav-item.active {
             background: #FF3366;
+            border-radius: 0;
         }
 
         .icon-nav-item .icon {
@@ -824,8 +826,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.4.5';
-        var BUILD_TIME  = '2026-03-04T22:00:00Z';
+        var APP_VERSION = 'v3.4.6';
+        var BUILD_TIME  = '2026-03-04T22:10:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
