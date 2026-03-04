@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.3.3</title>
+    <title>Weight Quest v3.3.4</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -751,8 +751,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.3';
-        var BUILD_TIME  = '2026-03-03T12:00:00Z';
+        var APP_VERSION = 'v3.3.4';
+        var BUILD_TIME  = '2026-03-04T09:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3787,8 +3787,8 @@
                 });
             }
 
-            // Ordina per calo decrescente
-            return periods.sort(function(a, b) { return b.drop - a.drop; });
+            // Ordina dal più recente al più vecchio
+            return periods.sort(function(a, b) { return new Date(b.startDate) - new Date(a.startDate); });
         }
 
         function updateStatistiche(data) {
