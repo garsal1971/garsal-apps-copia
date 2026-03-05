@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.4.14</title>
+    <title>Weight Quest v3.5.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -524,12 +524,13 @@
     </style>
 </head>
 <body>
-    <!-- AUTH SECTION -->
+    <!-- AUTH SECTION — richiede AppSphere -->
     <div id="authSection">
         <div class="auth-card">
-            <h1>⚖️ WEIGHT QUEST</h1>
-            <p style="margin-bottom: 30px; color: #666;">Dashboard gestione peso e obiettivi</p>
-            <button id="btnLogin" style="font-size: 16px; padding: 15px 40px;">🔐 Accedi con Google</button>
+            <div style="font-size:3rem; margin-bottom:1rem;">🔐</div>
+            <h1 style="margin-bottom:0.5rem;">⚖️ WEIGHT QUEST</h1>
+            <p style="margin-bottom: 1.5rem; color: #666; line-height:1.6;">Apri <strong>Weight Quest</strong> da <strong style="color:#4caf50;">AppSphere</strong><br>per accedere con il tuo account Google.</p>
+            <a href="app-launcher.html" style="display:inline-block; font-size:1rem; padding:0.8rem 2rem; background:#4caf50; color:#fff; border-radius:10px; text-decoration:none; font-weight:700;">Vai ad AppSphere</a>
         </div>
     </div>
 
@@ -822,8 +823,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.4.14';
-        var BUILD_TIME  = '2026-03-04T23:30:00Z';
+        var APP_VERSION = 'v3.5.0';
+        var BUILD_TIME  = '2026-03-05T12:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -836,9 +837,14 @@
                 this.key = key;
                 this.headers = {
                     'apikey': key,
-                    'Authorization': 'Bearer ' + key,
+                    'Authorization': 'Bearer ' + key, // sostituito con JWT utente in setAuthToken()
                     'Content-Type': 'application/json'
                 };
+            }
+
+            // Aggiorna l'header Authorization con il JWT dell'utente autenticato
+            setAuthToken(token) {
+                this.headers['Authorization'] = 'Bearer ' + token;
             }
 
             from(table) {
@@ -1262,7 +1268,6 @@
                 log('Supabase client creato');
 
                 // Event listeners
-                document.getElementById('btnLogin').onclick = loginGoogle;
                 document.getElementById('btnAddMilestone').onclick = addMilestone;
                 document.getElementById('btnSaveObjective').onclick = doSaveMilestones;
                 document.getElementById('btnZoomIn').onclick = zoomIn;
@@ -1360,42 +1365,48 @@
             }
         }
 
+        var sbToken = null; // Supabase JWT — obbligatorio per accedere al DB
+
         function checkToken() {
             log('Controllo token...');
 
-            // From postMessage (quando lanciata da Apps)
+            // Riceve token dal launcher via postMessage (unico ingresso autorizzato)
             window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'GOOGLE_TOKEN' && event.data.token) {
-                    log('Token ricevuto da Apps via postMessage');
+                if (!event.data) return;
+
+                // Google token per Google Fit sync
+                if (event.data.type === 'GOOGLE_TOKEN' && event.data.token) {
+                    log('GOOGLE_TOKEN ricevuto da AppSphere');
                     googleToken = event.data.token;
                     localStorage.setItem('googleToken', googleToken);
+                }
+
+                // Supabase JWT — necessario per DB; se già autenticato, ignora
+                if (event.data.type === 'SB_TOKEN' && event.data.token && !sbToken) {
+                    log('SB_TOKEN ricevuto da AppSphere');
+                    sbToken = event.data.token;
+                    sessionStorage.setItem('sb_token', sbToken);
+                    supabase.setAuthToken(sbToken);
                     if (document.getElementById('authSection') && !document.getElementById('authSection').classList.contains('hidden')) {
                         showMain();
                     }
                 }
             });
 
-            // From URL
-            var hash = window.location.hash;
-            if (hash.indexOf('access_token') !== -1) {
-                var parts = hash.split('access_token=')[1];
-                googleToken = parts.split('&')[0];
-                localStorage.setItem('googleToken', googleToken);
-                window.history.replaceState({}, document.title, window.location.pathname);
-                log('Token ottenuto da URL');
+            // Fallback: sessione attiva in sessionStorage (tab riaperta nella stessa sessione)
+            var savedSb = sessionStorage.getItem('sb_token');
+            if (savedSb) {
+                sbToken = savedSb;
+                supabase.setAuthToken(sbToken);
+                log('SB_TOKEN recuperato da sessionStorage');
+                // Google Fit token da localStorage (opzionale, solo per sync)
+                var savedGoogle = localStorage.getItem('googleToken');
+                if (savedGoogle) googleToken = savedGoogle;
                 showMain();
                 return;
             }
 
-            // From storage
-            var saved = localStorage.getItem('googleToken');
-            if (saved) {
-                googleToken = saved;
-                log('Token recuperato da storage');
-                showMain();
-            } else {
-                log('Nessun token trovato - attendo postMessage da Apps');
-            }
+            log('Nessun SB_TOKEN — attendo postMessage da AppSphere');
         }
 
         function showMain() {
@@ -1412,17 +1423,7 @@
                 });
         }
 
-        function loginGoogle() {
-            log('Avvio login Google...');
-            var redirect = window.location.origin + window.location.pathname;
-            var scope = 'https://www.googleapis.com/auth/fitness.body.read';
-            var url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-                'client_id=' + CONFIG.googleClientId +
-                '&redirect_uri=' + encodeURIComponent(redirect) +
-                '&response_type=token' +
-                '&scope=' + encodeURIComponent(scope);
-            window.location.href = url;
-        }
+        // Login diretto rimosso: l'accesso avviene solo tramite AppSphere (Google OAuth via Supabase)
 
         function showMilestoneModal() {
             document.getElementById('milestoneModal').classList.remove('hidden');
