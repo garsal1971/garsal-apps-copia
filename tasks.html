@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.17.51</title>
+    <title>Tasks v19.17.52</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -1327,117 +1327,6 @@
             }
         }
 
-        /* ========== GOOGLE CALENDAR ========== */
-        .gcal-view-tabs {
-            display: flex;
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .gcal-view-btn {
-            background: transparent;
-            border: none;
-            padding: 0.3rem 0.8rem;
-            font-family: 'Darker Grotesque', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--muted);
-            transition: all 0.2s;
-        }
-        .gcal-view-btn:not(:last-child) {
-            border-right: 2px solid var(--border);
-        }
-        .gcal-view-btn-active {
-            background: var(--accent);
-            color: #fff;
-        }
-        .gcal-view-btn:not(.gcal-view-btn-active):hover {
-            background: var(--input-bg);
-            color: var(--dark);
-        }
-        .gcal-day-header {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--muted);
-            padding: 0.8rem 0 0.4rem;
-            border-bottom: 2px solid var(--border);
-            margin-bottom: 0.5rem;
-        }
-        .gcal-day-header.gcal-today {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
-        .gcal-event-card {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 0.7rem 0.9rem;
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            transition: border-color 0.2s;
-        }
-        .gcal-event-card:hover {
-            border-color: var(--accent);
-        }
-        .gcal-color-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            margin-top: 4px;
-        }
-        .gcal-event-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .gcal-event-title {
-            font-weight: 700;
-            color: var(--dark);
-            font-size: 1rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .gcal-event-meta {
-            font-size: 0.82rem;
-            color: var(--muted);
-            margin-top: 0.15rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .gcal-event-time {
-            font-weight: 600;
-            color: var(--accent);
-        }
-        .gcal-no-events {
-            color: var(--muted);
-            font-size: 0.9rem;
-            font-style: italic;
-            padding: 0.4rem 0 0.8rem;
-        }
-        .gcal-no-token {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--muted);
-        }
-        .gcal-no-token h3 {
-            font-size: 1.2rem;
-            color: var(--dark);
-            margin-bottom: 0.8rem;
-        }
-        .gcal-no-token p {
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-        }
-        .gcal-day-group {
-            margin-bottom: 1.2rem;
-        }
 
 </style>
 </head>
@@ -1459,7 +1348,6 @@
                 <div class="nav-item" onclick="showPage('promemoria', this)" id="remindersMenuItem" data-text="Promemoria">🔔</div>
                 <div class="nav-item" onclick="showPage('cronologia', this)" data-text="Cronologia">🕐</div>
                 <div class="nav-item" onclick="showPage('settings', this)" data-text="Impostazioni">🔧</div>
-                <div class="nav-item" onclick="showPage('calendario', this)" data-text="Calendario">🗓️</div>
             </nav>
 
             <div class="score-widget">
@@ -1723,21 +1611,6 @@
                 <div id="notesList"></div>
             </div>
 
-            <!-- Google Calendar -->
-            <div id="calendarioPage" class="hidden">
-                <div class="card" style="margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-                    <h2 style="margin:0;font-size:1.4rem;font-weight:700;color:var(--dark);">🗓️ Google Calendar</h2>
-                    <div style="display:flex;gap:0.5rem;margin-left:auto;flex-wrap:wrap;align-items:center;">
-                        <div class="gcal-view-tabs">
-                            <button id="gcalBtnOggi" class="gcal-view-btn" onclick="switchGcalView('oggi')">Oggi</button>
-                            <button id="gcalBtnSettimana" class="gcal-view-btn gcal-view-btn-active" onclick="switchGcalView('settimana')">Settimana</button>
-                            <button id="gcalBtnMese" class="gcal-view-btn" onclick="switchGcalView('mese')">Mese</button>
-                        </div>
-                        <button class="btn btn-secondary" style="font-size:0.85rem;padding:0.3rem 0.8rem;" onclick="renderCalendario()">↺ Aggiorna</button>
-                    </div>
-                </div>
-                <div id="calendarioContainer"></div>
-            </div>
         </main>
     </div>
 
@@ -2197,8 +2070,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.17.51';
-        const BUILD_TIME  = '2026-03-05T10:00:00Z';
+        const APP_VERSION = 'v19.17.52';
+        const BUILD_TIME  = '2026-03-05T15:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2276,8 +2149,6 @@
         let priorities = []; // Livelli di priorità
         let reminderPresets = []; // Preset promemoria da DB
         let sbAccessToken = sessionStorage.getItem('sb_token') || null; // Token Supabase: da sessionStorage o postMessage
-        let googleCalToken = sessionStorage.getItem('google_token') || localStorage.getItem('googleToken') || null; // Token Google per Calendar API
-        let gcalCurrentView = 'settimana'; // Vista attiva Google Calendar: oggi | settimana | mese
         let fpStart = null;
         let fpDeadline = null;
         let fpNoteDate = null;
@@ -3173,7 +3044,6 @@
             if (page === 'promemoria') loadQueueItems();
             if (page === 'cronologia') renderHistoryPage();
             if (page === 'settings') renderSettings();
-            if (page === 'calendario') renderCalendario();
         }
 
         function toggleMenu() {
@@ -9968,190 +9838,6 @@ Per attivarle:
             return fmtDate(date);
         }
 
-        // ========================================
-        // GOOGLE CALENDAR
-        // ========================================
-
-        function switchGcalView(view) {
-            gcalCurrentView = view;
-            ['oggi', 'settimana', 'mese'].forEach(v => {
-                const btn = document.getElementById('gcalBtn' + v.charAt(0).toUpperCase() + v.slice(1));
-                if (btn) btn.classList.toggle('gcal-view-btn-active', v === view);
-            });
-            renderCalendario();
-        }
-
-        async function renderCalendario() {
-            const container = document.getElementById('calendarioContainer');
-            if (!container) return;
-
-            if (!googleCalToken) {
-                container.innerHTML = `
-                    <div class="card gcal-no-token">
-                        <div style="font-size:3rem;margin-bottom:1rem;">🔐</div>
-                        <h3>Accesso a Google Calendar non disponibile</h3>
-                        <p>Per visualizzare il tuo Google Calendar, apri l'app <strong>Tasks</strong> dall'<strong>AppSphere</strong> (il launcher principale).</p>
-                        <p>Se hai già fatto login, fai <strong>logout e ri-login</strong> dall'AppSphere per autorizzare l'accesso al calendario.</p>
-                    </div>`;
-                return;
-            }
-
-            container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted);">⏳ Caricamento eventi...</div>`;
-
-            try {
-                const events = await fetchGcalEvents();
-                renderGcalEvents(events, container);
-            } catch (err) {
-                if (err.status === 401) {
-                    googleCalToken = null;
-                    sessionStorage.removeItem('google_token');
-                    localStorage.removeItem('googleToken');
-                    container.innerHTML = `
-                        <div class="card gcal-no-token">
-                            <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
-                            <h3>Sessione Google scaduta</h3>
-                            <p>Il token Google è scaduto. Fai logout e ri-login dall'AppSphere per rinnovarlo.</p>
-                        </div>`;
-                } else {
-                    container.innerHTML = `
-                        <div class="card" style="color:var(--danger);padding:1.5rem;">
-                            ❌ Errore nel caricamento del calendario: ${err.message || 'Errore sconosciuto'}
-                        </div>`;
-                }
-            }
-        }
-
-        async function fetchGcalEvents() {
-            const now = new Date();
-            let timeMin, timeMax;
-
-            if (gcalCurrentView === 'oggi') {
-                timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                timeMax = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            } else if (gcalCurrentView === 'settimana') {
-                const day = now.getDay();
-                const mondayOffset = day === 0 ? -6 : 1 - day;
-                timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset, 0, 0, 0);
-                timeMax = new Date(timeMin);
-                timeMax.setDate(timeMin.getDate() + 6);
-                timeMax.setHours(23, 59, 59);
-            } else { // mese
-                timeMin = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-                timeMax = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-            }
-
-            const timeMinISO = timeMin.toISOString();
-            const timeMaxISO = timeMax.toISOString();
-
-            // Recupera lista calendari
-            const calListRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
-                headers: { 'Authorization': 'Bearer ' + googleCalToken }
-            });
-            if (!calListRes.ok) {
-                const err = new Error('Errore nel recupero dei calendari');
-                err.status = calListRes.status;
-                throw err;
-            }
-            const calListData = await calListRes.json();
-            const calendars = (calListData.items || []).filter(c => c.selected !== false).slice(0, 8);
-
-            // Recupera eventi da ogni calendario
-            const allEvents = [];
-            await Promise.all(calendars.map(async cal => {
-                try {
-                    const params = new URLSearchParams({
-                        timeMin: timeMinISO,
-                        timeMax: timeMaxISO,
-                        singleEvents: 'true',
-                        orderBy: 'startTime',
-                        maxResults: '50'
-                    });
-                    const res = await fetch(
-                        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`,
-                        { headers: { 'Authorization': 'Bearer ' + googleCalToken } }
-                    );
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    (data.items || []).forEach(ev => {
-                        allEvents.push({
-                            id: ev.id,
-                            title: ev.summary || '(senza titolo)',
-                            start: ev.start?.dateTime || ev.start?.date,
-                            end: ev.end?.dateTime || ev.end?.date,
-                            allDay: !ev.start?.dateTime,
-                            location: ev.location || '',
-                            calendarName: cal.summary || cal.id,
-                            calendarColor: cal.backgroundColor || '#2563EB',
-                        });
-                    });
-                } catch (_) { /* ignora errori di singoli calendari */ }
-            }));
-
-            // Ordina per ora di inizio
-            allEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-            return allEvents;
-        }
-
-        function renderGcalEvents(events, container) {
-            if (!events.length) {
-                const viewLabel = { oggi: 'oggi', settimana: 'questa settimana', mese: 'questo mese' }[gcalCurrentView];
-                container.innerHTML = `<div class="card" style="color:var(--muted);text-align:center;padding:2rem;">📭 Nessun evento ${viewLabel}.</div>`;
-                return;
-            }
-
-            // Raggruppa per data
-            const groups = {};
-            events.forEach(ev => {
-                const dateKey = ev.allDay ? ev.start : ev.start.split('T')[0];
-                if (!groups[dateKey]) groups[dateKey] = [];
-                groups[dateKey].push(ev);
-            });
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-            const monthNames = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-
-            let html = '';
-            Object.keys(groups).sort().forEach(dateKey => {
-                const d = new Date(dateKey + 'T00:00:00');
-                const isToday = dateKey === todayStr;
-                const label = isToday
-                    ? `Oggi — ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`
-                    : `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-
-                html += `<div class="gcal-day-group">`;
-                html += `<div class="gcal-day-header${isToday ? ' gcal-today' : ''}">${label}</div>`;
-
-                groups[dateKey].forEach(ev => {
-                    let timeHtml = '';
-                    if (ev.allDay) {
-                        timeHtml = '<span class="gcal-event-time">Tutto il giorno</span>';
-                    } else {
-                        const start = new Date(ev.start);
-                        const end = new Date(ev.end);
-                        const fmt = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                        timeHtml = `<span class="gcal-event-time">${fmt(start)} – ${fmt(end)}</span>`;
-                    }
-                    const locationHtml = ev.location ? `<span>📍 ${ev.location}</span>` : '';
-                    html += `
-                        <div class="gcal-event-card">
-                            <div class="gcal-color-dot" style="background:${ev.calendarColor};"></div>
-                            <div class="gcal-event-info">
-                                <div class="gcal-event-title">${ev.title}</div>
-                                <div class="gcal-event-meta">
-                                    ${timeHtml}
-                                    <span>${ev.calendarName}</span>
-                                    ${locationHtml}
-                                </div>
-                            </div>
-                        </div>`;
-                });
-
-                html += `</div>`;
-            });
-
-            container.innerHTML = html;
-        }
 
         // Riceve token dal launcher (app-launcher.html) via postMessage
         window.addEventListener('message', (e) => {
@@ -10159,12 +9845,6 @@ Per attivarle:
                 sbAccessToken = e.data.token;
                 sessionStorage.setItem('sb_token', e.data.token);
                 console.log('✅ SB_TOKEN ricevuto dal launcher');
-            }
-            if (e.data?.type === 'GOOGLE_TOKEN' && e.data.token) {
-                googleCalToken = e.data.token;
-                sessionStorage.setItem('google_token', e.data.token);
-                localStorage.setItem('googleToken', e.data.token);
-                console.log('✅ GOOGLE_TOKEN ricevuto dal launcher');
             }
         });
 
