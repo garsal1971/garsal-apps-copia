@@ -160,7 +160,7 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-05T09:51:59Z</p>
+    <p>// aggiornato da Claude · ultima modifica: 2026-03-05T10:30:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
@@ -207,6 +207,45 @@ create policy "Auth users can read their log"
 create policy "Auth users can insert"
   on cm_rewards_log for insert
   with check (auth.role() = 'authenticated');</pre>
+    </div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 2 — PENDING
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-2">
+    <div class="task-header">
+      <div class="task-num">#002</div>
+      <div class="task-info">
+        <div class="task-title">Aggiungi colonne <code>is_redeemed</code> e <code>use_count</code> a <code>cm_rewards</code></div>
+        <div class="task-desc">
+          Necessarie per la logica post-riscatto: i premi <em>una tantum</em> vengono nascosti dalla lista
+          dopo il primo riscatto; i premi <em>ripetibili</em> tracciano il numero di utilizzi e il costo
+          si aggiorna ad ogni riscatto (<code>points_cost += points_per_use</code>).
+          Esegui nell'SQL Editor di Supabase.
+        </div>
+        <div class="task-meta">
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-2">
+      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
+      <pre>-- Colonna per marcare premi "una tantum" già riscattati
+alter table cm_rewards
+  add column if not exists is_redeemed boolean not null default false;
+
+-- Colonna contatore utilizzi per premi "ripetibili"
+alter table cm_rewards
+  add column if not exists use_count integer not null default 0;
+
+-- Verifica
+select id, name, type, points_cost, points_per_use, is_redeemed, use_count
+from cm_rewards
+order by created_at;</pre>
     </div>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
