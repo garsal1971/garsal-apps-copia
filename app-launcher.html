@@ -1280,6 +1280,7 @@ function loginWithGoogle() {
     'https://www.googleapis.com/auth/fitness.activity.read',
     'https://www.googleapis.com/auth/fitness.body.read',
     'https://www.googleapis.com/auth/fitness.nutrition.read',
+    'https://www.googleapis.com/auth/calendar.readonly',
   ].join(' ');
   window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google`
     + `&redirect_to=${encodeURIComponent(redirect)}`
