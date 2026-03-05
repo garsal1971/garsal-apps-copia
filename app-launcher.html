@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.3.1</title>
+<title>AppSphere v1.4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -369,94 +369,180 @@
     position: fixed;
     inset: 0;
     z-index: 9000;
-    background: #F3F4F6;
+    background: rgba(0,0,0,0.55);
     font-family: 'DM Sans', sans-serif;
-    overflow: hidden;
-    user-select: text;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
   }
   #rewards-overlay.open { display: flex; }
 
-  .rw-sidebar {
-    width: 280px;
-    background: #1F2937;
-    color: #fff;
+  .rw-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: min(420px, 100%);
+    max-height: 88vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.32);
+  }
+  .rw-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #1F2937;
     flex-shrink: 0;
-    overflow-y: auto;
   }
-  .rw-sidebar-header {
-    padding: 28px 20px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+  .rw-modal-back {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
   }
-  .rw-sidebar-brand {
-    font-size: 22px;
+  .rw-modal-back:hover { background: rgba(255,255,255,0.22); }
+  .rw-modal-title {
+    flex: 1;
+    font-size: 16px;
     font-weight: 600;
     color: #fff;
-    letter-spacing: -0.5px;
   }
-  .rw-sidebar-sub {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-    margin-top: 3px;
+  .rw-modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
   }
-  .rw-nav { padding: 12px 0; flex: 1; }
-  .rw-nav-item {
+  .rw-modal-close:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+  /* Views */
+  #rw-view-main        { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  #rw-view-gestisci    { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  #rw-view-cronologia  { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+
+  /* Prize scroll */
+  .rw-prize-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+  }
+  .rw-prize-card {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 11px 20px;
-    cursor: pointer;
-    color: rgba(255,255,255,0.6);
-    font-size: 14px;
-    font-weight: 500;
-    transition: background 0.13s, color 0.13s;
-    border-left: 3px solid transparent;
+    padding: 11px 13px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .rw-nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
-  .rw-nav-item.active {
+  .rw-prize-card:hover { border-color: #FF3366; box-shadow: 0 2px 10px rgba(255,51,102,0.1); }
+  .rw-prize-icon { font-size: 22px; flex-shrink: 0; }
+  .rw-prize-info { flex: 1; min-width: 0; }
+  .rw-prize-name { font-size: 14px; font-weight: 600; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw-prize-cost { font-size: 12px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-redeem-btn {
+    padding: 7px 13px;
     background: #FF3366;
     color: #fff;
-    border-left-color: #FF3366;
+    border: none;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
   }
-  .rw-nav-icon { font-size: 16px; width: 20px; text-align: center; }
-  .rw-sidebar-footer {
-    padding: 16px 20px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+  .rw-redeem-btn:hover { opacity: 0.85; }
+  .rw-redeem-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; opacity: 1; }
+
+  /* Action buttons row */
+  .rw-action-row {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #F3F4F6;
+    flex-shrink: 0;
   }
-  .rw-close-btn {
-    width: 100%;
-    padding: 10px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 8px;
-    color: rgba(255,255,255,0.65);
+  .rw-action-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: #F9FAFB;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 9px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.13s, color 0.13s;
-  }
-  .rw-close-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
-
-  .rw-main { flex: 1; overflow-y: auto; padding: 32px; }
-  .rw-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-  .rw-page-title {
-    font-size: 22px;
     font-weight: 600;
-    color: #1F2937;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .rw-action-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
+
+  /* Stats badges */
+  .rw-stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #F3F4F6;
+    flex-shrink: 0;
+  }
+  .rw-stat-badge {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .rw-stat-badge.available { background: #D1FAE5; }
+  .rw-stat-badge.spent     { background: #FEE2E2; }
+  .rw-stat-num {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.1;
+  }
+  .rw-stat-badge.available .rw-stat-num { color: #059669; }
+  .rw-stat-badge.spent     .rw-stat-num { color: #DC2626; }
+  .rw-stat-lbl {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-top: 3px;
+    color: #6B7280;
+  }
+
+  /* Gestisci view */
+  .rw-gestisci-top {
+    padding: 12px 14px;
+    border-bottom: 1px solid #F3F4F6;
+    flex-shrink: 0;
   }
   .rw-add-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 18px;
+    padding: 9px 16px;
     background: #FF3366;
     color: #fff;
     border: none;
@@ -466,151 +552,81 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s;
+    width: 100%;
+    justify-content: center;
   }
   .rw-add-btn:hover { opacity: 0.88; }
-
-  .rw-list { display: flex; flex-direction: column; gap: 12px; }
-
+  .rw-gestisci-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+  }
   .rw-card {
     background: #fff;
     border: 1.5px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 16px 20px;
+    border-radius: 10px;
+    padding: 11px 13px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     transition: box-shadow 0.15s;
   }
-  .rw-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
-  .rw-card-emoji { font-size: 28px; flex-shrink: 0; }
+  .rw-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .rw-card-emoji { font-size: 22px; flex-shrink: 0; }
   .rw-card-body { flex: 1; min-width: 0; }
-  .rw-card-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #1F2937;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .rw-card-meta {
-    font-size: 12px;
-    color: #6B7280;
-    font-family: 'DM Mono', monospace;
-    margin-top: 3px;
-  }
-  .rw-card-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-  .rw-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .rw-badge.once { background: #FEF3C7; color: #92400E; }
+  .rw-card-name { font-size: 14px; font-weight: 600; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw-card-meta { font-size: 12px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .rw-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rw-badge.once   { background: #FEF3C7; color: #92400E; }
   .rw-badge.repeat { background: #D1FAE5; color: #065F46; }
-  .rw-card-pts {
-    font-family: 'DM Mono', monospace;
-    font-size: 22px;
-    color: #FF3366;
-    line-height: 1;
-  }
-  .rw-card-pts-lbl {
-    font-size: 10px;
-    color: #6B7280;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-  }
+  .rw-card-pts { font-family: 'DM Mono', monospace; font-size: 20px; color: #FF3366; line-height: 1; }
   .rw-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .rw-icon-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
+    width: 32px; height: 32px;
+    border-radius: 7px;
     border: 1.5px solid #E5E7EB;
     background: #fff;
     cursor: pointer;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
     transition: background 0.13s, border-color 0.13s;
   }
   .rw-icon-btn:hover { background: #F9FAFB; }
   .rw-icon-btn.del:hover { background: #FEE2E2; border-color: #EF4444; }
 
-  .rw-empty {
-    text-align: center;
-    padding: 80px 20px;
-    color: #6B7280;
+  /* Cronologia view */
+  .rw-cron-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
   }
-  .rw-empty-icon { font-size: 52px; margin-bottom: 14px; }
-  .rw-empty-text { font-size: 14px; line-height: 1.6; }
-
-  /* ── Mobile nav ── */
-  #rw-topbar {
-    display: none;
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 56px;
-    background: #1F2937;
-    align-items: center;
-    gap: 12px;
-    padding: 0 16px;
-    z-index: 10;
-    flex-shrink: 0;
-  }
-  .rw-hamburger {
-    background: #FF3366;
-    border: none;
-    color: #fff;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    font-size: 20px;
-    cursor: pointer;
+  .rw-cron-item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background: #F9FAFB;
   }
-  #rw-topbar-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #fff;
-  }
-  #rw-sidebar-backdrop {
-    display: none;
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9;
-  }
-  #rw-sidebar-backdrop.open { display: block; }
+  .rw-cron-info { flex: 1; min-width: 0; }
+  .rw-cron-name { font-size: 14px; font-weight: 600; color: #1F2937; }
+  .rw-cron-date { font-size: 11px; color: #9CA3AF; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-cron-pts { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; color: #DC2626; flex-shrink: 0; }
 
-  @media (max-width: 768px) {
-    #rewards-overlay { flex-direction: column; position: relative; }
-    #rw-topbar { display: flex; }
-    .rw-sidebar {
-      position: absolute;
-      top: 0; left: -280px; bottom: 0;
-      z-index: 11;
-      transition: left 0.28s ease;
-    }
-    .rw-sidebar.open { left: 0; }
-    .rw-main { padding: 16px; padding-top: 72px; width: 100%; }
-    .rw-page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .rw-add-btn { width: 100%; justify-content: center; }
-    .rw-card { flex-wrap: wrap; }
-    .rw-card-right { flex-direction: row; align-items: center; gap: 10px; }
-    .rw-card-pts-lbl { display: none; }
-  }
+  /* Empty state */
+  .rw-empty { text-align: center; padding: 40px 20px; color: #6B7280; }
+  .rw-empty-icon { font-size: 44px; margin-bottom: 12px; }
+  .rw-empty-text { font-size: 13px; line-height: 1.6; }
 
   /* Form modal */
   #rw-form-overlay {
@@ -766,38 +782,46 @@
 
 <!-- PREMI OVERLAY -->
 <div id="rewards-overlay">
+  <div class="rw-modal">
 
-  <!-- topbar mobile -->
-  <div id="rw-topbar">
-    <button class="rw-hamburger" onclick="rwToggleSidebar()">☰</button>
-    <span id="rw-topbar-title">🎁 Premi</span>
-  </div>
-
-  <!-- backdrop mobile -->
-  <div id="rw-sidebar-backdrop" onclick="rwCloseSidebar()"></div>
-
-  <div class="rw-sidebar" id="rw-sidebar">
-    <div class="rw-sidebar-header">
-      <div class="rw-sidebar-brand">🎁 Premi</div>
-      <div class="rw-sidebar-sub">// catalogo ricompense</div>
+    <div class="rw-modal-header">
+      <button class="rw-modal-back" id="rw-back-btn" onclick="rwShowView('main')" style="display:none">← Indietro</button>
+      <span class="rw-modal-title" id="rw-modal-title">🎁 Premi</span>
+      <button class="rw-modal-close" onclick="closeRewards()">✕</button>
     </div>
-    <nav class="rw-nav">
-      <div class="rw-nav-item active">
-        <span class="rw-nav-icon">🏆</span>
-        <span>Catalogo Premi</span>
+
+    <!-- VIEW: principale — lista premi ritirati -->
+    <div id="rw-view-main">
+      <div class="rw-prize-scroll" id="rw-prize-scroll"></div>
+      <div class="rw-action-row">
+        <button class="rw-action-btn" onclick="rwShowView('gestisci')">🛠 Gestisci</button>
+        <button class="rw-action-btn" onclick="rwShowView('cronologia')">📋 Cronologia</button>
       </div>
-    </nav>
-    <div class="rw-sidebar-footer">
-      <button class="rw-close-btn" onclick="rwCloseSidebar(); closeRewards()">← Torna a AppSphere</button>
+      <div class="rw-stats-row">
+        <div class="rw-stat-badge available">
+          <span class="rw-stat-num" id="rw-pts-available">—</span>
+          <span class="rw-stat-lbl">Pun. disponibili</span>
+        </div>
+        <div class="rw-stat-badge spent">
+          <span class="rw-stat-num" id="rw-pts-spent">—</span>
+          <span class="rw-stat-lbl">Pun. spesi</span>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="rw-main">
-    <div class="rw-page-header">
-      <div class="rw-page-title">Catalogo Premi</div>
-      <button class="rw-add-btn" onclick="openRewardForm(null)">+ Aggiungi Premio</button>
+    <!-- VIEW: gestisci premi -->
+    <div id="rw-view-gestisci">
+      <div class="rw-gestisci-top">
+        <button class="rw-add-btn" onclick="openRewardForm(null)">+ Aggiungi Premio</button>
+      </div>
+      <div class="rw-gestisci-list" id="rw-list"></div>
     </div>
-    <div id="rw-list" class="rw-list"></div>
+
+    <!-- VIEW: cronologia riscatti -->
+    <div id="rw-view-cronologia">
+      <div class="rw-cron-list" id="rw-cron-list"></div>
+    </div>
+
   </div>
 </div>
 
@@ -842,8 +866,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.3.1';
-const BUILD_TIME  = '2026-03-04T10:00:00Z';
+const APP_VERSION = 'v1.4.0';
+const BUILD_TIME  = '2026-03-05T10:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1446,22 +1470,22 @@ document.getElementById('badge-modal-overlay').addEventListener('click', functio
 // ── PREMI ──
 let _editingRewardId = null;
 let _rewardsList = [];
+let _ptsAvailable = 0;
 
-function rwToggleSidebar() {
-  const sb = document.getElementById('rw-sidebar');
-  const bd = document.getElementById('rw-sidebar-backdrop');
-  const open = sb.classList.toggle('open');
-  bd.classList.toggle('open', open);
-}
-
-function rwCloseSidebar() {
-  document.getElementById('rw-sidebar').classList.remove('open');
-  document.getElementById('rw-sidebar-backdrop').classList.remove('open');
+function rwShowView(view) {
+  document.getElementById('rw-view-main').style.display       = view === 'main'       ? 'flex' : 'none';
+  document.getElementById('rw-view-gestisci').style.display   = view === 'gestisci'   ? 'flex' : 'none';
+  document.getElementById('rw-view-cronologia').style.display = view === 'cronologia' ? 'flex' : 'none';
+  const titles = { main: '🎁 Premi', gestisci: '🛠 Gestisci Premi', cronologia: '📋 Cronologia' };
+  document.getElementById('rw-modal-title').textContent = titles[view];
+  document.getElementById('rw-back-btn').style.display = view === 'main' ? 'none' : '';
+  if (view === 'gestisci')   renderRewards();
+  if (view === 'cronologia') loadCronologia();
 }
 
 function openRewards() {
   document.getElementById('rewards-overlay').classList.add('open');
-  rwCloseSidebar();
+  rwShowView('main');
   loadRewards();
 }
 
@@ -1471,36 +1495,119 @@ function closeRewards() {
 
 async function loadRewards() {
   const token = sessionStorage.getItem('sb_token');
-  const listEl = document.getElementById('rw-list');
-  listEl.innerHTML = '<div style="padding:20px;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
+  document.getElementById('rw-prize-scroll').innerHTML =
+    '<div style="padding:30px;text-align:center;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
 
+  const hdr = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token };
+  const [resR, resL] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?order=points_cost.asc`, { headers: hdr }),
+    fetch(`${SUPABASE_URL}/rest/v1/cm_rewards_log?select=points_spent`,  { headers: hdr }),
+  ]);
+
+  _rewardsList = resR.ok ? await resR.json() : [];
+
+  let ptsSpent = 0;
+  if (resL.ok) {
+    const logs = await resL.json();
+    ptsSpent = logs.reduce((s, l) => s + (l.points_spent || 0), 0);
+  }
+
+  const totalScore = parseInt((document.getElementById('sp-value').textContent || '0').replace(/\D/g, '')) || 0;
+  _ptsAvailable = Math.max(0, totalScore - ptsSpent);
+
+  document.getElementById('rw-pts-available').textContent = _ptsAvailable;
+  document.getElementById('rw-pts-spent').textContent     = ptsSpent;
+  renderMainPrizes();
+}
+
+function renderMainPrizes() {
+  const el = document.getElementById('rw-prize-scroll');
+  if (!_rewardsList.length) {
+    el.innerHTML = `<div class="rw-empty"><div class="rw-empty-icon">🎁</div><div class="rw-empty-text">Nessun premio disponibile.<br>Aggiungine uno con Gestisci!</div></div>`;
+    return;
+  }
+  el.innerHTML = _rewardsList.map(r => {
+    const canAfford = _ptsAvailable >= r.points_cost;
+    const emoji = r.type === 'ripetibile' ? '🔄' : '⭐';
+    return `
+      <div class="rw-prize-card">
+        <div class="rw-prize-icon">${emoji}</div>
+        <div class="rw-prize-info">
+          <div class="rw-prize-name">${r.name}</div>
+          <div class="rw-prize-cost">${r.points_cost} punti</div>
+        </div>
+        <button class="rw-redeem-btn" onclick="redeemReward('${r.id}')" ${canAfford ? '' : 'disabled'}>
+          ${canAfford ? 'Ritira' : '—'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+async function redeemReward(id) {
+  const reward = _rewardsList.find(r => r.id === id);
+  if (!reward) return;
+  if (!confirm(`Riscattare "${reward.name}" per ${reward.points_cost} punti?`)) return;
+  const token = sessionStorage.getItem('sb_token');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards_log`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify([{ reward_id: id, reward_name: reward.name, points_spent: reward.points_cost }]),
+  });
+  if (res.ok) {
+    await loadRewards();
+  } else {
+    const err = await res.text();
+    alert('Errore nel riscatto: ' + err);
+  }
+}
+
+async function loadCronologia() {
+  const token = sessionStorage.getItem('sb_token');
+  const el = document.getElementById('rw-cron-list');
+  el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/cm_rewards?order=created_at.asc`,
+    `${SUPABASE_URL}/rest/v1/cm_rewards_log?order=redeemed_at.desc`,
     { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
   );
   if (!res.ok) {
-    listEl.innerHTML = '<div style="padding:20px;color:#EE334E;font-family:DM Mono,monospace;font-size:12px;">Errore caricamento premi.</div>';
+    el.innerHTML = '<div class="rw-empty"><div class="rw-empty-icon">⚠️</div><div class="rw-empty-text">Impossibile caricare la cronologia.</div></div>';
     return;
   }
-  _rewardsList = await res.json();
-  renderRewards();
+  const logs = await res.json();
+  if (!logs.length) {
+    el.innerHTML = '<div class="rw-empty"><div class="rw-empty-icon">📋</div><div class="rw-empty-text">Nessun premio riscattato ancora.</div></div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => {
+    const d = new Date(l.redeemed_at);
+    const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `
+      <div class="rw-cron-item">
+        <div class="rw-cron-info">
+          <div class="rw-cron-name">${l.reward_name}</div>
+          <div class="rw-cron-date">${ds}</div>
+        </div>
+        <div class="rw-cron-pts">−${l.points_spent}</div>
+      </div>`;
+  }).join('');
 }
 
 function renderRewards() {
   const listEl = document.getElementById('rw-list');
   if (!_rewardsList.length) {
-    listEl.innerHTML = `
-      <div class="rw-empty">
-        <div class="rw-empty-icon">🎁</div>
-        <div class="rw-empty-text">Nessun premio disponibile.<br>Aggiungine uno con il pulsante qui sopra!</div>
-      </div>`;
+    listEl.innerHTML = `<div class="rw-empty"><div class="rw-empty-icon">🎁</div><div class="rw-empty-text">Nessun premio. Aggiungine uno!</div></div>`;
     return;
   }
   listEl.innerHTML = _rewardsList.map(r => {
     const isRepeat = r.type === 'ripetibile';
     const emoji = isRepeat ? '🔄' : '⭐';
-    let meta = `${r.points_cost} punti richiesti`;
-    if (isRepeat && r.points_per_use) meta += ` · ${r.points_per_use} pts/uso`;
+    let meta = `${r.points_cost} punti`;
+    if (isRepeat && r.points_per_use) meta += ` · ${r.points_per_use}/uso`;
     return `
       <div class="rw-card">
         <div class="rw-card-emoji">${emoji}</div>
@@ -1511,7 +1618,6 @@ function renderRewards() {
         <div class="rw-card-right">
           <span class="rw-badge ${isRepeat ? 'repeat' : 'once'}">${isRepeat ? 'ripetibile' : 'una tantum'}</span>
           <div class="rw-card-pts">${r.points_cost}</div>
-          <div class="rw-card-pts-lbl">punti</div>
         </div>
         <div class="rw-card-actions">
           <button class="rw-icon-btn" onclick="openRewardForm('${r.id}')" title="Modifica">✏️</button>
@@ -1526,14 +1632,14 @@ function openRewardForm(id) {
   document.getElementById('rw-form-title').textContent = id ? 'Modifica Premio' : 'Nuovo Premio';
   if (id) {
     const r = _rewardsList.find(x => x.id === id);
-    document.getElementById('rw-name').value = r.name;
-    document.getElementById('rw-type').value = r.type;
-    document.getElementById('rw-points').value = r.points_cost;
+    document.getElementById('rw-name').value    = r.name;
+    document.getElementById('rw-type').value    = r.type;
+    document.getElementById('rw-points').value  = r.points_cost;
     document.getElementById('rw-per-use').value = r.points_per_use || '';
   } else {
-    document.getElementById('rw-name').value = '';
-    document.getElementById('rw-type').value = 'una_tantum';
-    document.getElementById('rw-points').value = '';
+    document.getElementById('rw-name').value    = '';
+    document.getElementById('rw-type').value    = 'una_tantum';
+    document.getElementById('rw-points').value  = '';
     document.getElementById('rw-per-use').value = '';
   }
   rwTypeChange();
@@ -1546,19 +1652,18 @@ function closeRewardForm() {
 }
 
 function rwTypeChange() {
-  const type = document.getElementById('rw-type').value;
-  document.getElementById('rw-per-use-row').classList.toggle('show', type === 'ripetibile');
+  document.getElementById('rw-per-use-row').classList.toggle('show', document.getElementById('rw-type').value === 'ripetibile');
 }
 
 async function saveReward() {
-  const token = sessionStorage.getItem('sb_token');
+  const token      = sessionStorage.getItem('sb_token');
   const name       = document.getElementById('rw-name').value.trim();
   const type       = document.getElementById('rw-type').value;
   const pointsCost = parseInt(document.getElementById('rw-points').value);
   const perUse     = type === 'ripetibile' ? parseInt(document.getElementById('rw-per-use').value) || null : null;
 
-  if (!name)                                        { alert('Inserisci un nome per il premio.'); return; }
-  if (!pointsCost || pointsCost < 1)                { alert('Inserisci i punti necessari (minimo 1).'); return; }
+  if (!name)                                            { alert('Inserisci un nome per il premio.'); return; }
+  if (!pointsCost || pointsCost < 1)                   { alert('Inserisci i punti necessari (minimo 1).'); return; }
   if (type === 'ripetibile' && (!perUse || perUse < 1)) { alert('Inserisci i punti per ogni utilizzo (minimo 1).'); return; }
 
   const payload = { name, type, points_cost: pointsCost, points_per_use: perUse };
@@ -1568,17 +1673,16 @@ async function saveReward() {
   const res = await fetch(url, {
     method: isNew ? 'POST' : 'PATCH',
     headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
+      'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json', 'Prefer': 'return=minimal',
     },
     body: JSON.stringify(isNew ? [payload] : payload),
   });
 
   if (res.ok) {
     closeRewardForm();
-    loadRewards();
+    await loadRewards();
+    renderRewards();
   } else {
     alert('Errore nel salvataggio. Riprova.');
   }
@@ -1592,7 +1696,8 @@ async function deleteReward(id) {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token },
   });
   if (res.ok) {
-    loadRewards();
+    await loadRewards();
+    renderRewards();
   } else {
     alert('Errore nell\'eliminazione.');
   }
