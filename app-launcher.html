@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.4.0</title>
+<title>AppSphere v1.4.1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -456,6 +456,7 @@
   .rw-prize-info { flex: 1; min-width: 0; }
   .rw-prize-name { font-size: 14px; font-weight: 600; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rw-prize-cost { font-size: 12px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-prize-uses { font-size: 11px; color: #A78BFA; font-family: 'DM Mono', monospace; margin-top: 2px; font-weight: 600; }
   .rw-redeem-btn {
     padding: 7px 13px;
     background: #FF3366;
@@ -866,8 +867,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.4.0';
-const BUILD_TIME  = '2026-03-05T10:00:00Z';
+const APP_VERSION = 'v1.4.1';
+const BUILD_TIME  = '2026-03-05T10:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1522,19 +1523,24 @@ async function loadRewards() {
 
 function renderMainPrizes() {
   const el = document.getElementById('rw-prize-scroll');
-  if (!_rewardsList.length) {
+  const visible = _rewardsList.filter(r => !r.is_redeemed);
+  if (!visible.length) {
     el.innerHTML = `<div class="rw-empty"><div class="rw-empty-icon">🎁</div><div class="rw-empty-text">Nessun premio disponibile.<br>Aggiungine uno con Gestisci!</div></div>`;
     return;
   }
-  el.innerHTML = _rewardsList.map(r => {
+  el.innerHTML = visible.map(r => {
+    const isRepeat  = r.type === 'ripetibile';
     const canAfford = _ptsAvailable >= r.points_cost;
-    const emoji = r.type === 'ripetibile' ? '🔄' : '⭐';
+    const emoji     = isRepeat ? '🔄' : '⭐';
+    const counter   = isRepeat && r.use_count > 0
+      ? `<div class="rw-prize-uses">usato ${r.use_count}×</div>` : '';
     return `
       <div class="rw-prize-card">
         <div class="rw-prize-icon">${emoji}</div>
         <div class="rw-prize-info">
           <div class="rw-prize-name">${r.name}</div>
           <div class="rw-prize-cost">${r.points_cost} punti</div>
+          ${counter}
         </div>
         <button class="rw-redeem-btn" onclick="redeemReward('${r.id}')" ${canAfford ? '' : 'disabled'}>
           ${canAfford ? 'Ritira' : '—'}
@@ -1547,23 +1553,33 @@ async function redeemReward(id) {
   const reward = _rewardsList.find(r => r.id === id);
   if (!reward) return;
   if (!confirm(`Riscattare "${reward.name}" per ${reward.points_cost} punti?`)) return;
+
   const token = sessionStorage.getItem('sb_token');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards_log`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
-    },
+  const hdr = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal',
+  };
+
+  // 1. Registra il riscatto nel log
+  const resLog = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards_log`, {
+    method: 'POST', headers: hdr,
     body: JSON.stringify([{ reward_id: id, reward_name: reward.name, points_spent: reward.points_cost }]),
   });
-  if (res.ok) {
-    await loadRewards();
-  } else {
-    const err = await res.text();
-    alert('Errore nel riscatto: ' + err);
-  }
+  if (!resLog.ok) { alert('Errore nel riscatto: ' + await resLog.text()); return; }
+
+  // 2. Aggiorna il premio in base al tipo
+  const patch = reward.type === 'una_tantum'
+    ? { is_redeemed: true }
+    : { points_cost: reward.points_cost + (reward.points_per_use || 0),
+        use_count: (reward.use_count || 0) + 1 };
+
+  await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?id=eq.${id}`, {
+    method: 'PATCH', headers: hdr, body: JSON.stringify(patch),
+  });
+
+  await loadRewards();
 }
 
 async function loadCronologia() {
