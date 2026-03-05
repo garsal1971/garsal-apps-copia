@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.0</title>
+    <title>Events Log v2.2.1</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -938,8 +938,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.0';
-    var BUILD_TIME  = '2026-03-05T12:00:00Z';
+    var APP_VERSION = 'v2.2.1';
+    var BUILD_TIME  = '2026-03-05T13:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2010,6 +2010,18 @@ window.addEventListener('message', (e) => {
         initWithToken(e.data.token);
     }
 });
+
+// Logout broadcast da AppSphere: invalida sessione e mostra overlay
+const _authChannel = new BroadcastChannel('appsphere_auth');
+_authChannel.onmessage = (e) => {
+    if (e.data && e.data.type === 'LOGOUT') {
+        sb = null;
+        sbAccessToken = null;
+        sessionStorage.removeItem('sb_token');
+        document.getElementById('authOverlay').style.display = 'flex';
+        console.log('🔒 Sessione invalidata da AppSphere (logout)');
+    }
+};
 
 window.addEventListener('load', () => {
     const stored = sessionStorage.getItem('sb_token');

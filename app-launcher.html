@@ -867,8 +867,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.4.2';
-const BUILD_TIME  = '2026-03-05T11:00:00Z';
+const APP_VERSION = 'v1.4.3';
+const BUILD_TIME  = '2026-03-05T13:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1288,6 +1288,8 @@ function loginWithGoogle() {
     + `&access_type=offline`;
 }
 
+const _authChannel = new BroadcastChannel('appsphere_auth');
+
 async function logout() {
   const token = sessionStorage.getItem('sb_token');
   if (token) {
@@ -1297,6 +1299,11 @@ async function logout() {
     }).catch(() => {});
   }
   sessionStorage.removeItem('sb_token');
+  sessionStorage.removeItem('google_token');
+
+  // Notifica tutte le app figlie aperte: devono invalidare il token
+  _authChannel.postMessage({ type: 'LOGOUT' });
+
   document.getElementById('user-bar').classList.remove('visible');
   document.getElementById('score-panel').classList.remove('visible');
   document.getElementById('sp-value').textContent = '—';
