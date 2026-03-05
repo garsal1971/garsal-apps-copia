@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.1</title>
+    <title>Weight Quest v3.5.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -330,26 +330,55 @@
 
         /* AUTH */
         #authSection {
-            min-height: 100vh;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(10, 10, 20, 0.93);
+            backdrop-filter: blur(4px);
         }
 
         .auth-card {
-            background: white;
-            padding: 40px;
-            border-radius: 0;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            background: #16161e;
+            border: 1px solid #2a2a3a;
+            padding: 48px 40px;
+            border-radius: 16px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
             text-align: center;
-            max-width: 400px;
+            max-width: 420px;
+            width: 90%;
         }
 
-        .auth-card h1 {
-            color: #FF3366;
-            margin-bottom: 20px;
-            font-size: 32px;
+        .auth-card h2 {
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .auth-card p {
+            color: #9ca3af;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .auth-card .auth-btn {
+            display: inline-block;
+            font-size: 1rem;
+            padding: 0.85rem 2.2rem;
+            background: #FF3366;
+            color: #fff;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: background 0.2s;
+        }
+
+        .auth-card .auth-btn:hover {
+            background: #e0274f;
         }
 
         /* RESPONSIVE */
@@ -527,10 +556,10 @@
     <!-- AUTH SECTION — richiede AppSphere -->
     <div id="authSection">
         <div class="auth-card">
-            <div style="font-size:3rem; margin-bottom:1rem;">🔐</div>
-            <h1 style="margin-bottom:0.5rem;">⚖️ WEIGHT QUEST</h1>
-            <p style="margin-bottom: 1.5rem; color: #666; line-height:1.6;">Apri <strong>Weight Quest</strong> da <strong style="color:#4caf50;">AppSphere</strong><br>per accedere con il tuo account Google.</p>
-            <a href="app-launcher.html" style="display:inline-block; font-size:1rem; padding:0.8rem 2rem; background:#4caf50; color:#fff; border-radius:10px; text-decoration:none; font-weight:700;">Vai ad AppSphere</a>
+            <div style="font-size:3rem; margin-bottom:1.2rem;">🔐</div>
+            <h2>Accesso richiesto</h2>
+            <p>Apri <strong style="color:#FF3366;">Weight Quest</strong> da AppSphere per accedere con il tuo account Google.</p>
+            <a href="app-launcher.html" class="auth-btn">Vai ad AppSphere</a>
         </div>
     </div>
 
@@ -823,8 +852,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.1';
-        var BUILD_TIME  = '2026-03-05T13:00:00Z';
+        var APP_VERSION = 'v3.5.2';
+        var BUILD_TIME  = '2026-03-05T13:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
