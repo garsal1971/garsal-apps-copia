@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.8</title>
+    <title>Weight Quest v3.5.9</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -550,6 +550,83 @@
         .stat-filter-bar label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
         .stat-filter-bar input[type="date"] { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 0; font-size: 14px; font-family: inherit; }
         .stat-filter-btn { padding: 8px 16px; border: none; border-radius: 0; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px; }
+
+        /* ── Milestone Celebration Overlay ─────────────────────────── */
+        #milestoneOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        #milestoneCard {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 2px solid #00B894;
+            border-radius: 24px;
+            padding: 40px 56px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,184,148,0.4);
+            animation: cardSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+            min-width: 280px;
+            overflow: visible;
+        }
+        #milestoneStars {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .ms-star {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0;
+            animation: starPop 1.8s ease-out infinite;
+        }
+        #milestoneArrow {
+            font-size: 64px;
+            color: #00B894;
+            line-height: 1;
+            animation: arrowBounce 0.8s ease-in-out infinite alternate;
+            text-shadow: 0 0 20px rgba(0,184,148,0.8);
+        }
+        #milestoneKg {
+            font-size: 42px;
+            font-weight: 900;
+            color: #fff;
+            margin: 8px 0 4px;
+            letter-spacing: -1px;
+        }
+        #milestoneLabel {
+            font-size: 13px;
+            font-weight: 700;
+            color: #00B894;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+        #milestoneSub {
+            font-size: 12px;
+            color: #666;
+            margin-top: 12px;
+        }
+        @keyframes cardSlideIn {
+            from { transform: scale(0.5) translateY(-60px); opacity: 0; }
+            to   { transform: scale(1) translateY(0);       opacity: 1; }
+        }
+        @keyframes arrowBounce {
+            from { transform: translateY(0);    }
+            to   { transform: translateY(10px); }
+        }
+        @keyframes starPop {
+            0%   { transform: scale(0)   rotate(0deg);   opacity: 0; }
+            20%  { transform: scale(1.4) rotate(30deg);  opacity: 1; }
+            70%  { transform: scale(1)   rotate(-10deg); opacity: 0.9; }
+            100% { transform: scale(0)   rotate(45deg);  opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -852,8 +929,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.8';
-        var BUILD_TIME  = '2026-03-06T12:40:00Z';
+        var APP_VERSION = 'v3.5.9';
+        var BUILD_TIME  = '2026-03-06T13:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -999,6 +1076,9 @@
         var userData = { targetWeight: null, score: 0, weights: [], milestones: [] };
         var isLoadingData = false; // Flag per evitare caricamenti simultanei
         var tempMilestones = []; // Milestone temporanee prima del salvataggio
+        var preSmileWeight = null; // Minimo globale pre-salvataggio (per rilevare soglie intere)
+        var milestoneQueue = [];   // Coda celebrazioni da mostrare in sequenza
+        var milestoneTimer = null; // Timer auto-chiusura overlay
 
         // Recupera i record da ps_weight_tracking con paginazione automatica
         // (Supabase PostgREST ha un limite di 1000 record per request)
@@ -1232,6 +1312,13 @@
 
             log('Salvataggio peso manuale: ' + weight + ' kg per ' + date);
 
+            // Cattura minimo globale prima del salvataggio (per rilevare soglie intere)
+            preSmileWeight = (userData.weights && userData.weights.length > 0)
+                ? Math.min.apply(null, userData.weights
+                    .filter(function(r) { return r.weight != null && isFinite(r.weight); })
+                    .map(function(r) { return r.weight; }))
+                : weight + 1; // Se nessun dato, tratta come primo inserimento
+
             var btn = document.getElementById('insertWeightSaveBtn');
             btn.disabled = true;
             btn.textContent = '⏳ Salvataggio...';
@@ -1287,6 +1374,91 @@
                 alert('Errore nell\'eliminazione: ' + err.message);
             }
         }
+
+        // ── Milestone Weight Celebration ────────────────────────────────
+        function checkMilestoneCelebration(data) {
+            var obj = userData.currentObjective;
+            if (!obj || preSmileWeight === null) return;
+
+            var startW  = parseFloat(obj.start_weight);
+            var endW    = parseFloat(obj.end_weight);
+            if (!isFinite(startW) || !isFinite(endW)) return;
+
+            // Minimo peso attuale su tutti i dati caricati
+            var validWeights = data.filter(function(r) { return r.weight != null && isFinite(r.weight); });
+            if (!validWeights.length) return;
+            var newMin = Math.min.apply(null, validWeights.map(function(r) { return r.weight; }));
+
+            // Soglie intere rilevanti: da floor(startW) scendendo fino a ceil(endW)+1
+            var topThreshold  = Math.floor(startW);   // es. 79
+            var botThreshold  = Math.ceil(endW);       // es. 71
+
+            // Raccogli tutte le soglie T tali che preSmileWeight >= T > newMin
+            var crossed = [];
+            for (var t = topThreshold; t >= botThreshold; t--) {
+                if (preSmileWeight >= t && newMin < t) {
+                    crossed.push(t);
+                }
+            }
+
+            if (crossed.length === 0) return;
+
+            // Mostra le celebrazioni in ordine (prima soglia più alta)
+            crossed.sort(function(a, b) { return b - a; });
+            milestoneQueue = crossed;
+            showNextMilestoneCelebration();
+        }
+
+        function showNextMilestoneCelebration() {
+            if (milestoneQueue.length === 0) return;
+            var threshold = milestoneQueue.shift();
+            showMilestoneCelebration(threshold);
+        }
+
+        function showMilestoneCelebration(threshold) {
+            var overlay = document.getElementById('milestoneOverlay');
+            var kgEl    = document.getElementById('milestoneKg');
+            var starsEl = document.getElementById('milestoneStars');
+            if (!overlay || !kgEl) return;
+
+            // Pulisci stelle precedenti e timer
+            if (milestoneTimer) { clearTimeout(milestoneTimer); milestoneTimer = null; }
+            starsEl.innerHTML = '';
+
+            kgEl.textContent = '< ' + threshold + ' kg ✓';
+
+            // Genera 18 stelle con posizioni e delay casuali
+            var starChars = ['★', '✦', '✧', '⭐', '✨', '💫'];
+            for (var i = 0; i < 18; i++) {
+                var s = document.createElement('span');
+                s.className = 'ms-star';
+                s.textContent = starChars[Math.floor(Math.random() * starChars.length)];
+                s.style.left = (Math.random() * 110 - 5) + '%';
+                s.style.top  = (Math.random() * 110 - 5) + '%';
+                s.style.animationDelay = (Math.random() * 1.2) + 's';
+                s.style.animationDuration = (1.2 + Math.random() * 1.0) + 's';
+                s.style.fontSize = (14 + Math.floor(Math.random() * 16)) + 'px';
+                s.style.color = ['#FFD700','#00B894','#74b9ff','#fd79a8','#fdcb6e'][Math.floor(Math.random() * 5)];
+                starsEl.appendChild(s);
+            }
+
+            overlay.style.display = 'flex';
+
+            // Auto-chiusura dopo 3.5s; se ci sono altre soglie, passa alla prossima
+            milestoneTimer = setTimeout(function() {
+                closeMilestoneOverlay();
+                if (milestoneQueue.length > 0) {
+                    setTimeout(showNextMilestoneCelebration, 400);
+                }
+            }, 3500);
+        }
+
+        function closeMilestoneOverlay() {
+            var overlay = document.getElementById('milestoneOverlay');
+            if (overlay) overlay.style.display = 'none';
+            if (milestoneTimer) { clearTimeout(milestoneTimer); milestoneTimer = null; }
+        }
+        // ────────────────────────────────────────────────────────────────
 
         function init() {
             log('=== INIT START ' + APP_VERSION + ' ===');
@@ -2227,7 +2399,13 @@
                     if (response.data && response.data.length > 0) {
                         // Salva dati in userData per uso successivo
                         userData.weights = response.data;
-                        
+
+                        // Controlla se sono state superate soglie intere di peso (celebrazione)
+                        if (preSmileWeight !== null) {
+                            checkMilestoneCelebration(response.data);
+                            preSmileWeight = null;
+                        }
+
                         var todayMin = getTodayMinWeight(response.data);
                         document.getElementById('weightValue').textContent = (todayMin != null && isFinite(todayMin)) ? todayMin.toFixed(1) : '--';
 
@@ -4274,5 +4452,16 @@
             init();
         }
     </script>
+
+    <!-- Milestone Celebration Overlay -->
+    <div id="milestoneOverlay" onclick="closeMilestoneOverlay()">
+        <div id="milestoneCard" onclick="event.stopPropagation()">
+            <div id="milestoneStars"></div>
+            <div id="milestoneArrow">↓</div>
+            <div id="milestoneKg">-- kg</div>
+            <div id="milestoneLabel">🏆 Soglia Superata!</div>
+            <div id="milestoneSub">Tocca per chiudere</div>
+        </div>
+    </div>
 </body>
 </html>
