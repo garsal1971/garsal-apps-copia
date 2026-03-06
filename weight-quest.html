@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.14</title>
+    <title>Weight Quest v3.5.15</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -584,6 +584,27 @@
         .ms-th.reached .ms-th-label { color: #b8860b; }
         .ms-th.reached .ms-th-pts   { color: #c9960c; }
 
+        /* ── Milestone Stamp (timbro data raggiungimento) ───────────── */
+        .ms-th { position: relative; }
+        .ms-stamp {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-12deg);
+            background: #c0392b;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+            z-index: 2;
+        }
+
         /* ── Milestone Points Distribution ──────────────────────────── */
         #milestonePtsDistrib {
             font-size: 11px;
@@ -983,7 +1004,7 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.14';
+        var APP_VERSION = 'v3.5.15';
         var BUILD_TIME  = '2026-03-06T23:50:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -1488,18 +1509,25 @@
             }
             var ptsArr = getMilestonePtsDistribution(totalPts, thresholds.length);
 
-            // Calcola il minimo peso DURANTE l'obiettivo (solo da start_date in poi)
-            // I dati caricati includono 2 settimane prima dell'inizio: vanno esclusi
-            var globalMin = Infinity;
+            // Pesi durante l'obiettivo (solo da start_date), ordinati per data asc
             var objStart = obj ? obj.start_date : null;
+            var objWeights = [];
             if (userData.weights && userData.weights.length > 0) {
-                userData.weights.forEach(function(r) {
-                    if (r.weight != null && isFinite(r.weight)
-                            && (!objStart || r.date >= objStart)
-                            && r.weight < globalMin) {
-                        globalMin = r.weight;
-                    }
-                });
+                objWeights = userData.weights.filter(function(r) {
+                    return r.weight != null && isFinite(r.weight) && (!objStart || r.date >= objStart);
+                }).slice().sort(function(a, b) { return a.date < b.date ? -1 : 1; });
+            }
+
+            var globalMin = objWeights.length
+                ? Math.min.apply(null, objWeights.map(function(r) { return r.weight; }))
+                : Infinity;
+
+            // Per ogni soglia, trova la prima data in cui weight < t
+            function firstDateBelow(t) {
+                for (var i = 0; i < objWeights.length; i++) {
+                    if (objWeights[i].weight < t) return objWeights[i].date;
+                }
+                return null;
             }
 
             // Costruisce le stelle
@@ -1507,9 +1535,22 @@
             bar.style.display = 'flex';
             thresholds.forEach(function(t, i) {
                 var reached = isFinite(globalMin) && globalMin < t;
+                var firstDate = reached ? firstDateBelow(t) : null;
+
                 var div = document.createElement('div');
                 div.className = 'ms-th' + (reached ? ' reached' : '');
-                div.title = (reached ? '✓ Superata! ' : '') + 'Prima volta < ' + t + ' kg';
+                div.title = reached
+                    ? '✓ Prima volta < ' + t + ' kg: ' + (firstDate || '?')
+                    : 'Prima volta < ' + t + ' kg — non ancora raggiunta';
+
+                // Timbro data raggiungimento
+                if (firstDate) {
+                    var stamp = document.createElement('div');
+                    stamp.className = 'ms-stamp';
+                    var p = firstDate.split('-');
+                    stamp.textContent = p[2] + '/' + p[1];
+                    div.appendChild(stamp);
+                }
 
                 var icon = document.createElement('div');
                 icon.className = 'ms-th-icon';
