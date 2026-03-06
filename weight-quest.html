@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.6</title>
+    <title>Weight Quest v3.5.7</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -852,8 +852,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.6';
-        var BUILD_TIME  = '2026-03-06T12:10:00Z';
+        var APP_VERSION = 'v3.5.7';
+        var BUILD_TIME  = '2026-03-06T12:20:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3627,7 +3627,7 @@
                     tdMin.style.fontStyle = 'italic';
                 } else {
                     tdMin.style.color = (target && minWeight <= target) ? '#00B894' : '#E74C3C';
-                    tdMin.textContent = minWeight.toFixed(1) + ' kg';
+                    tdMin.textContent = minWeight != null ? minWeight.toFixed(1) + ' kg' : '--';
                 }
                 tr.appendChild(tdMin);
 
@@ -3643,7 +3643,7 @@
                     tdMax.style.fontStyle = 'italic';
                 } else {
                     tdMax.style.color = (target && maxWeight <= target) ? '#00B894' : '#E74C3C';
-                    tdMax.textContent = maxWeight.toFixed(1) + ' kg';
+                    tdMax.textContent = maxWeight != null ? maxWeight.toFixed(1) + ' kg' : '--';
                 }
                 tr.appendChild(tdMax);
 
