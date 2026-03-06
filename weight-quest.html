@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.9</title>
+    <title>Weight Quest v3.5.10</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -551,6 +551,48 @@
         .stat-filter-bar input[type="date"] { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 0; font-size: 14px; font-family: inherit; }
         .stat-filter-btn { padding: 8px 16px; border: none; border-radius: 0; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px; }
 
+
+        /* ── Milestone Progress Bar ─────────────────────────────────── */
+        #milestoneProgressBar {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding: 8px 2px 10px;
+            margin: 8px 0 14px;
+            scrollbar-width: thin;
+        }
+        .ms-th {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+            padding: 7px 5px 5px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            background: #fafafa;
+            transition: all 0.4s;
+        }
+        .ms-th.reached {
+            border-color: #FFD700;
+            background: linear-gradient(135deg, #fff8dc, #ffeaa7);
+            box-shadow: 0 2px 8px rgba(255,215,0,0.35);
+        }
+        .ms-th-icon  { font-size: 20px; line-height: 1.2; }
+        .ms-th-label { font-size: 9px; color: #aaa; margin-top: 3px; font-weight: 600; }
+        .ms-th-pts   { font-size: 10px; color: #bbb; font-weight: 700; }
+        .ms-th.reached .ms-th-label { color: #b8860b; }
+        .ms-th.reached .ms-th-pts   { color: #c9960c; }
+
+        /* ── Milestone Points Distribution ──────────────────────────── */
+        #milestonePtsDistrib {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
         /* ── Milestone Celebration Overlay ─────────────────────────── */
         #milestoneOverlay {
             display: none;
@@ -737,10 +779,13 @@
 
                         <div id="objectiveStatusBar" class="hidden" style="padding: 10px; margin: 10px 0; border-radius: 0; text-align: center; font-weight: bold;"></div>
 
-                        <div style="margin-bottom: 15px;">
+                        <div style="margin-bottom: 8px;">
                             <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Nome Obiettivo</label>
                             <input type="text" id="objectiveName" placeholder="Es: Dieta Primavera 2026">
                         </div>
+
+                        <!-- Barra traguardi intermedi con stelle -->
+                        <div id="milestoneProgressBar" style="display:none;"></div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
                             <div>
@@ -759,6 +804,15 @@
                                 <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Finale</label>
                                 <input type="number" id="objectiveFinalMalus" value="50">
                             </div>
+                        </div>
+
+                        <!-- Punti totali per traguardi intermedi di peso -->
+                        <div style="margin: 10px 0 16px;">
+                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">⭐ Punti Totali Traguardi Intermedi</label>
+                            <input type="number" id="objectiveMilestonePts" value="0" min="0"
+                                   style="width:100%; box-sizing:border-box;"
+                                   oninput="updateMilestoneProgressBar()">
+                            <div id="milestonePtsDistrib"></div>
                         </div>
 
                         <div id="multiplierDisplay" style="background: #f5f5f5; padding: 15px; border-radius: 0; margin: 15px 0; font-size: 13px;"></div>
@@ -929,8 +983,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.9';
-        var BUILD_TIME  = '2026-03-06T13:00:00Z';
+        var APP_VERSION = 'v3.5.10';
+        var BUILD_TIME  = '2026-03-06T14:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1374,6 +1428,114 @@
                 alert('Errore nell\'eliminazione: ' + err.message);
             }
         }
+
+        // ── Milestone Progress Bar ──────────────────────────────────────
+        function getMilestonePtsKey(obj) {
+            return 'wq_mpts_' + (obj ? obj.id : 'new');
+        }
+
+        // Restituisce array di soglie intere [topT, topT-1, ..., botT] per l'obiettivo corrente
+        function getMilestoneThresholds(obj) {
+            if (!obj) return [];
+            var startW = parseFloat(obj.start_weight);
+            var endW   = parseFloat(obj.end_weight);
+            if (!isFinite(startW) || !isFinite(endW) || startW <= endW) return [];
+            var top = Math.floor(startW);   // es. 79
+            var bot = Math.ceil(endW);      // es. 71
+            var thresholds = [];
+            for (var t = top; t >= bot; t--) thresholds.push(t);
+            return thresholds; // es. [79, 78, 77, 76, 75, 74, 73, 72, 71]
+        }
+
+        // Distribuzione punti crescente: milestone più lontana (indice alto) = più punti
+        // thresholds[0] = facile (es. 79), thresholds[last] = difficile (es. 71)
+        function getMilestonePtsDistribution(totalPts, n) {
+            if (n <= 0 || totalPts <= 0) return [];
+            // pts[i] proporzionale a (i+1): i=0 → 1x, i=n-1 → nx
+            var sumFactors = n * (n + 1) / 2;
+            var pts = [];
+            var assigned = 0;
+            for (var i = 0; i < n; i++) {
+                var p = (i < n - 1)
+                    ? Math.round(totalPts * (i + 1) / sumFactors)
+                    : (totalPts - assigned); // ultimo prende il residuo per evitare arrotondamenti
+                pts.push(p);
+                assigned += p;
+            }
+            return pts;
+        }
+
+        // Aggiorna la barra di progresso stelle nell'obiettivo corrente
+        function updateMilestoneProgressBar() {
+            var bar     = document.getElementById('milestoneProgressBar');
+            var distrib = document.getElementById('milestonePtsDistrib');
+            if (!bar) return;
+
+            var obj = userData.currentObjective;
+            var thresholds = getMilestoneThresholds(obj);
+
+            if (thresholds.length === 0) {
+                bar.style.display = 'none';
+                if (distrib) distrib.textContent = '';
+                return;
+            }
+
+            // Punti totali traguardi
+            var totalPts = parseInt((document.getElementById('objectiveMilestonePts') || {}).value) || 0;
+            if (obj) {
+                // Salva in localStorage per persistenza
+                localStorage.setItem(getMilestonePtsKey(obj), totalPts);
+            }
+            var ptsArr = getMilestonePtsDistribution(totalPts, thresholds.length);
+
+            // Calcola il minimo peso registrato per decidere quali stelle accendere
+            var globalMin = Infinity;
+            if (userData.weights && userData.weights.length > 0) {
+                userData.weights.forEach(function(r) {
+                    if (r.weight != null && isFinite(r.weight) && r.weight < globalMin) globalMin = r.weight;
+                });
+            }
+
+            // Costruisce le stelle
+            bar.innerHTML = '';
+            bar.style.display = 'flex';
+            thresholds.forEach(function(t, i) {
+                var reached = isFinite(globalMin) && globalMin < t;
+                var div = document.createElement('div');
+                div.className = 'ms-th' + (reached ? ' reached' : '');
+                div.title = (reached ? '✓ Superata! ' : '') + 'Prima volta < ' + t + ' kg';
+
+                var icon = document.createElement('div');
+                icon.className = 'ms-th-icon';
+                icon.textContent = reached ? '⭐' : '☆';
+
+                var label = document.createElement('div');
+                label.className = 'ms-th-label';
+                label.textContent = '< ' + t + ' kg';
+
+                var pts = document.createElement('div');
+                pts.className = 'ms-th-pts';
+                pts.textContent = ptsArr[i] ? '+' + ptsArr[i] : '';
+
+                div.appendChild(icon);
+                div.appendChild(label);
+                div.appendChild(pts);
+                bar.appendChild(div);
+            });
+
+            // Mostra distribuzione punti sotto il campo input
+            if (distrib && totalPts > 0) {
+                var reached = thresholds.filter(function(t, i) {
+                    return isFinite(globalMin) && globalMin < t;
+                }).length;
+                distrib.textContent = ptsArr.map(function(p, i) {
+                    return '< ' + thresholds[i] + ' kg: +' + p + ' pt';
+                }).join('  ·  ');
+            } else if (distrib) {
+                distrib.textContent = '';
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
 
         // ── Milestone Weight Celebration ────────────────────────────────
         function checkMilestoneCelebration(data) {
@@ -1875,10 +2037,12 @@
             document.getElementById('objectiveDailyMalus').value = '5';
             document.getElementById('objectiveFinalBonus').value = '100';
             document.getElementById('objectiveFinalMalus').value = '50';
+            document.getElementById('objectiveMilestonePts').value = '0';
             updateMilestoneList();
             updateObjectiveStatusBar(null);
             updateUILockState('active'); // Abilita tutto per nuovo obiettivo
             updateMultiplierDisplay();
+            updateMilestoneProgressBar();
         }
 
         function loadObjectiveById(id) {
@@ -1898,10 +2062,15 @@
             document.getElementById('objectiveFinalBonus').value = obj.final_bonus || 100;
             document.getElementById('objectiveFinalMalus').value = obj.final_malus || 50;
 
+            // Carica punti traguardi da localStorage
+            var savedPts = localStorage.getItem(getMilestonePtsKey(obj));
+            document.getElementById('objectiveMilestonePts').value = savedPts !== null ? savedPts : 0;
+
             updateMilestoneList();
             updateObjectiveStatusBar(obj.status);
             updateUILockState(obj.status);
             updateMultiplierDisplay();
+            updateMilestoneProgressBar();
 
             log('Obiettivo caricato: "' + obj.objective_name + '" stato=' + obj.status);
             
@@ -2414,7 +2583,10 @@
                         
                         // Aggiorna visualizzazione moltiplicatori
                         updateMultiplierDisplay();
-                        
+
+                        // Aggiorna barra progresso traguardi stelle
+                        updateMilestoneProgressBar();
+
                         // Aggiorna tabella e grafico
                         updateWeightTable(response.data);
                         updateWeightChart(response.data);
