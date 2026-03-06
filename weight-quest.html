@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.11</title>
+    <title>Weight Quest v3.5.12</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -983,8 +983,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.11';
-        var BUILD_TIME  = '2026-03-06T14:30:00Z';
+        var APP_VERSION = 'v3.5.12';
+        var BUILD_TIME  = '2026-03-06T23:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1440,11 +1440,11 @@
             var startW = parseFloat(obj.start_weight);
             var endW   = parseFloat(obj.end_weight);
             if (!isFinite(startW) || !isFinite(endW) || startW <= endW) return [];
-            var top = Math.floor(startW);   // es. 79
-            var bot = Math.ceil(endW);      // es. 71
+            var top = Math.floor(startW) - 1;  // es. startW=79 → top=78 (primo premio = prima volta < 78)
+            var bot = Math.ceil(endW);           // es. 71
             var thresholds = [];
             for (var t = top; t >= bot; t--) thresholds.push(t);
-            return thresholds; // es. [79, 78, 77, 76, 75, 74, 73, 72, 71]
+            return thresholds; // es. [78, 77, 76, 75, 74, 73, 72, 71]
         }
 
         // Distribuzione punti crescente: milestone più lontana (indice alto) = più punti
@@ -1551,9 +1551,9 @@
             if (!validWeights.length) return;
             var newMin = Math.min.apply(null, validWeights.map(function(r) { return r.weight; }));
 
-            // Soglie intere rilevanti: da floor(startW) scendendo fino a ceil(endW)+1
-            var topThreshold  = Math.floor(startW);   // es. 79
-            var botThreshold  = Math.ceil(endW);       // es. 71
+            // Soglie intere rilevanti: stessa logica di getMilestoneThresholds
+            var topThreshold  = Math.floor(startW) - 1;  // es. startW=79 → 78
+            var botThreshold  = Math.ceil(endW);          // es. 71
 
             // Raccogli tutte le soglie T tali che preSmileWeight >= T > newMin
             var crossed = [];
