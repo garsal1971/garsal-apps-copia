@@ -42,3 +42,29 @@ jobs:
           fi
 
           git push origin master
+
+      - name: Check functions changed
+        id: check_fn
+        run: |
+          CHANGED=$(git diff HEAD~1 HEAD --name-only | grep '^supabase/functions/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Supabase CLI
+        if: steps.check_fn.outputs.deploy == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Supabase Edge Functions
+        if: steps.check_fn.outputs.deploy == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for FN in $(git diff HEAD~1 HEAD --name-only | grep '^supabase/functions/' | awk -F/ '{print $3}' | sort -u); do
+            echo "▶ Deploy edge function: $FN"
+            supabase functions deploy "$FN" --project-ref jajlmmdsjlvzgcxiiypk
+          done
