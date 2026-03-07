@@ -1,6 +1,7 @@
 // ============================================================
 // Job 1 — fill-notification-queue
 // Frequenza: ogni 6 ore (cron: "0 */6 * * *")
+// Aggiornato: 2026-03-07 — supporto struttura habit (times[] + from-to)
 //
 // Gestisce due tipi di struttura in reminder_presets:
 //
