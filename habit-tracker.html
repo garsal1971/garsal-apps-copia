@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.1.5';
-        const BUILD_TIME  = '2026-03-07T16:30:00Z';
+        const APP_VERSION = 'v9.1.6';
+        const BUILD_TIME  = '2026-03-07T17:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4812,7 +4812,11 @@
                 if (!sbAccessToken) return;
                 const resp = await fetch(`${SUPABASE_URL}/functions/v1/fill-notification-queue`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${sbAccessToken}` }
+                    headers: {
+                        'Authorization': `Bearer ${sbAccessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: '{}'
                 });
                 if (!resp.ok) console.warn('⚠️ triggerFillQueue: status', resp.status);
                 else console.log('✅ triggerFillQueue:', await resp.json());
