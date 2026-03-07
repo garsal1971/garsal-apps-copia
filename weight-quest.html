@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.21</title>
+    <title>Weight Quest v3.5.22</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1004,8 +1004,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.21';
-        var BUILD_TIME  = '2026-03-07T23:30:00Z';
+        var APP_VERSION = 'v3.5.22';
+        var BUILD_TIME  = '2026-03-08T00:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2410,7 +2410,6 @@
             })
             .then(function(sources) {
                 log('DataSources ricevute: ' + (sources.dataSource ? sources.dataSource.length : 0));
-                log('DEBUG datasources raw: ' + JSON.stringify(sources).substring(0, 500));
 
                 // Trova tutte le fonti di peso
                 var weightSources = sources.dataSource.filter(function(ds) {
@@ -2418,9 +2417,6 @@
                 });
 
                 log('Fonti di peso trovate: ' + weightSources.length);
-                sources.dataSource.forEach(function(ds) {
-                    log('  fonte: ' + ds.dataType.name + ' | id: ' + ds.dataStreamId);
-                });
 
                 // Recupera dati da TUTTE le fonti
                 var promises = weightSources.map(function(source) {
@@ -2428,24 +2424,18 @@
                     var url = 'https://www.googleapis.com/fitness/v1/users/me/dataSources/' +
                               source.dataStreamId + '/datasets/' + datasetId;
 
-                    log('Recupero dati da: ' + source.dataStreamName + ' | url: ' + url.substring(0, 120));
-
                     return fetch(url, {
                         method: 'GET',
                         headers: {
                             'Authorization': 'Bearer ' + googleToken
                         }
                     }).then(function(r) {
-                        log('  risposta HTTP: ' + r.status + ' per ' + source.dataStreamName);
                         if (!r.ok) {
-                            log('Errore da fonte: ' + source.dataStreamName);
+                            log('Errore da fonte: ' + source.dataStreamName + ' (HTTP ' + r.status + ')');
                             return { point: [] };
                         }
                         return r.json().then(function(d) {
-                            log('  punti in questa fonte: ' + (d.point ? d.point.length : 0));
-                            if (d.point && d.point.length > 0) {
-                                log('  primo punto raw: ' + JSON.stringify(d.point[0]));
-                            }
+                            log('Fonte ' + source.dataStreamName + ': ' + (d.point ? d.point.length : 0) + ' punti');
                             return d;
                         });
                     });
@@ -2493,7 +2483,6 @@
             }
 
             log('processWeights: ' + data.point.length + ' punti da elaborare');
-            log('DEBUG primo punto: ' + JSON.stringify(data.point[0]));
 
             var weights = [];
             var skipped = 0;
@@ -2513,7 +2502,6 @@
                     });
                 } else {
                     skipped++;
-                    log('SKIP punto senza fpVal: ' + JSON.stringify(point).substring(0, 200));
                 }
             });
 
@@ -2571,8 +2559,6 @@
 
             // Inserisci tutto in una volta con upsert
             log('Salvataggio ' + records.length + ' pesate...');
-            if (records.length > 0) log('DEBUG primo record da salvare: ' + JSON.stringify(records[0]));
-            log('DEBUG Authorization header: ' + (headers['Authorization'] || headers.Authorization || 'NON TROVATO').substring(0, 40) + '...');
 
             return Promise.all(deletePromises).then(function() {
             return fetch(url + '?on_conflict=timestamp', {
@@ -2641,17 +2627,6 @@
                     }
                     log('Dati caricati: ' + (response.data ? response.data.length : 0) + ' record');
                     if (response.data && response.data.length > 0) {
-                        var dates = response.data.map(function(r){return r.date;}).filter(Boolean).sort();
-                        log('DEBUG date caricate: ' + dates[0] + ' → ' + dates[dates.length-1]);
-                        // Log ultimi 5 giorni di record (con weight reale)
-                        var cutoff = dates[dates.length-1];
-                        var cutoffD = new Date(cutoff + 'T12:00:00');
-                        cutoffD.setDate(cutoffD.getDate() - 5);
-                        var cutoffStr = cutoffD.toISOString().split('T')[0];
-                        var recentReal = response.data.filter(function(r){ return r.date >= cutoffStr && r.weight != null; });
-                        recentReal.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : a.timestamp - b.timestamp; });
-                        log('DEBUG ultimi 5 giorni (' + cutoffStr + ' →):');
-                        recentReal.forEach(function(r){ log('  ' + r.date + ' ' + r.time + ' → ' + r.weight + 'kg (ts:' + r.timestamp + ')'); });
                         // Salva dati in userData per uso successivo
                         userData.weights = response.data;
 
@@ -2775,15 +2750,10 @@
             if (!data || data.length === 0) return null;
             var today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
             var todayRecords = data.filter(function(r) { return r.date === today && r.weight != null; });
-            log('DEBUG oggi UTC: ' + today + ' | record trovati per oggi: ' + todayRecords.length + ' su ' + data.length + ' totali');
             if (todayRecords.length > 0) {
-                log('DEBUG pesate di oggi: ' + todayRecords.map(function(r) { return r.weight + 'kg time=' + r.time + ' ts=' + r.timestamp; }).join(' | '));
                 var minVal = Math.min.apply(null, todayRecords.map(function(r) { return r.weight; }));
                 return isFinite(minVal) ? minVal : null;
             }
-            // Log ultime 3 date disponibili per debug
-            var sortedDates = data.map(function(r) { return r.date; }).filter(Boolean).sort().slice(-3);
-            log('DEBUG ultime date disponibili: ' + sortedDates.join(', '));
             // fallback: prima pesata disponibile con weight valido
             for (var i = 0; i < data.length; i++) {
                 if (data[i].weight != null && isFinite(data[i].weight)) return data[i].weight;
