@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.20</title>
+    <title>Weight Quest v3.5.21</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1004,8 +1004,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.20';
-        var BUILD_TIME  = '2026-03-07T19:30:00Z';
+        var APP_VERSION = 'v3.5.21';
+        var BUILD_TIME  = '2026-03-07T23:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2643,6 +2643,15 @@
                     if (response.data && response.data.length > 0) {
                         var dates = response.data.map(function(r){return r.date;}).filter(Boolean).sort();
                         log('DEBUG date caricate: ' + dates[0] + ' → ' + dates[dates.length-1]);
+                        // Log ultimi 5 giorni di record (con weight reale)
+                        var cutoff = dates[dates.length-1];
+                        var cutoffD = new Date(cutoff + 'T12:00:00');
+                        cutoffD.setDate(cutoffD.getDate() - 5);
+                        var cutoffStr = cutoffD.toISOString().split('T')[0];
+                        var recentReal = response.data.filter(function(r){ return r.date >= cutoffStr && r.weight != null; });
+                        recentReal.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : a.timestamp - b.timestamp; });
+                        log('DEBUG ultimi 5 giorni (' + cutoffStr + ' →):');
+                        recentReal.forEach(function(r){ log('  ' + r.date + ' ' + r.time + ' → ' + r.weight + 'kg (ts:' + r.timestamp + ')'); });
                         // Salva dati in userData per uso successivo
                         userData.weights = response.data;
 
@@ -2768,7 +2777,7 @@
             var todayRecords = data.filter(function(r) { return r.date === today && r.weight != null; });
             log('DEBUG oggi UTC: ' + today + ' | record trovati per oggi: ' + todayRecords.length + ' su ' + data.length + ' totali');
             if (todayRecords.length > 0) {
-                log('DEBUG pesate di oggi: ' + todayRecords.map(function(r) { return r.weight + 'kg (ts:' + r.timestamp + ')'; }).join(', '));
+                log('DEBUG pesate di oggi: ' + todayRecords.map(function(r) { return r.weight + 'kg time=' + r.time + ' ts=' + r.timestamp; }).join(' | '));
                 var minVal = Math.min.apply(null, todayRecords.map(function(r) { return r.weight; }));
                 return isFinite(minVal) ? minVal : null;
             }
