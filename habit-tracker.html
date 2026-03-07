@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.1.4';
-        const BUILD_TIME  = '2026-03-07T15:00:00Z';
+        const APP_VERSION = 'v9.1.5';
+        const BUILD_TIME  = '2026-03-07T16:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1912,7 +1912,7 @@
 
                 // Salva regola promemoria
                 const reminderTime = document.getElementById('habitReminderTime').value;
-                await syncHabitNotificationRule(data[0].id, frequency, daily_times || [], reminderTime, name, addHabitReminderIds);
+                await syncHabitNotificationRule(data[0].id, frequency, daily_times || [], reminderTime, name, addHabitReminderIds, weekdays, startedAt, goal);
 
                 closeModal('addHabitModal');
                 showToast('Abitudine creata con successo! 🎉');
@@ -4428,7 +4428,7 @@
 
                 // Aggiorna regola promemoria
                 const editReminderTime = document.getElementById('editHabitReminderTime').value;
-                await syncHabitNotificationRule(habitId, frequency, daily_times || [], editReminderTime, name, editHabitReminderIds);
+                await syncHabitNotificationRule(habitId, frequency, daily_times || [], editReminderTime, name, editHabitReminderIds, weekdays, startedAt, goal);
 
                 closeModal('editHabitModal');
                 showToast('Abitudine aggiornata! 🎉');
@@ -4889,7 +4889,7 @@
             }
         }
 
-        async function syncHabitNotificationRule(habitId, frequency, dailyTimesArr, reminderTime, habitName, reminderIds) {
+        async function syncHabitNotificationRule(habitId, frequency, dailyTimesArr, reminderTime, habitName, reminderIds, weekdays, startedAt, goal) {
             if (!supabaseClient || !sbAccessToken) return;
             const payload = decodeJWT(sbAccessToken);
             const userId = payload?.sub;
@@ -4908,11 +4908,35 @@
                 return;
             }
 
-            const reminderPresetsJson = {
-                reminders: ids,
-                use_habit_times: frequency === 'daily_multiple',
-                time: frequency !== 'daily_multiple' ? (reminderTime || null) : null
-            };
+            // Calcola end_date = started_at + goal giorni
+            let endDate = null;
+            if (startedAt && goal) {
+                const d = new Date(startedAt);
+                d.setDate(d.getDate() + Number(goal));
+                endDate = d.toISOString().split('T')[0];
+            }
+
+            let reminderPresetsJson;
+            if (frequency === 'daily_multiple') {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    times: dailyTimesArr,
+                    'from-to': [startedAt || null, endDate]
+                };
+            } else if (frequency === 'weekly') {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    days: weekdays || [],
+                    times: reminderTime ? [reminderTime] : [],
+                    'from-to': [startedAt || null, endDate]
+                };
+            } else {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    times: reminderTime ? [reminderTime] : [],
+                    'from-to': [startedAt || null, endDate]
+                };
+            }
 
             const { data: existing } = await supabaseClient
                 .from('cm_notification_rules')
@@ -4990,15 +5014,14 @@
                 const presetIds = rule.reminders || [];
                 if (presetIds.length === 0) return;
 
-                // Determina gli orari base
-                let baseTimes = [];
-                if (habit.frequency === 'daily_multiple' && rule.use_habit_times) {
-                    baseTimes = habit.daily_times || [];
-                } else if (rule.time) {
-                    if (habit.frequency === 'weekly' && !(habit.weekdays || []).includes(now.getDay())) return;
-                    baseTimes = [rule.time];
-                }
+                // Determina gli orari base dalla nuova struttura
+                let baseTimes = rule.times || [];
                 if (baseTimes.length === 0) return;
+
+                if (habit.frequency === 'weekly') {
+                    const days = rule.days || [];
+                    if (!days.includes(now.getDay())) return;
+                }
 
                 baseTimes.forEach(baseTime => {
                     const [bh, bm] = baseTime.split(':').map(Number);
