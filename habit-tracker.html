@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.1.7';
-        const BUILD_TIME  = '2026-03-07T17:30:00Z';
+        const APP_VERSION = 'v9.1.8';
+        const BUILD_TIME  = '2026-03-07T18:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4827,25 +4827,34 @@
             }
         }
 
-        // Cancella le notifiche pendenti/snoozed in coda per un habit completato.
+        // Elimina fisicamente le notifiche pending/snoozed dalla coda per un habit completato.
+        // Richiede due step perché la RLS DELETE ammette solo righe con status='cancelled'.
         // dateStr = 'YYYY-MM-DD'. Se time è specificato, filtra solo il time slot (daily_multiple).
         async function cancelHabitQueueEntries(habitId, dateStr, time = null) {
             if (!supabaseClient) return;
             try {
-                let q = supabaseClient
-                    .from('cm_notification_queue')
-                    .update({ status: 'cancelled' })
-                    .eq('app', 'habits')
-                    .eq('entity_id', String(habitId))
-                    .in('status', ['pending', 'snoozed'])
-                    .gte('fire_at', `${dateStr}T00:00:00Z`)
-                    .lte('fire_at', `${dateStr}T23:59:59Z`);
-                if (time) {
-                    q = q.like('body', `%ore ${time}%`);
-                }
-                const { error } = await q;
-                if (error) console.warn('⚠️ cancelHabitQueueEntries:', error.message);
-                else console.log(`✅ cancelHabitQueueEntries: habit=${habitId} date=${dateStr} time=${time ?? 'all'}`);
+                const entityId = String(habitId);
+                const applyFilters = (q) => {
+                    q = q.eq('app', 'habits')
+                         .eq('entity_id', entityId)
+                         .gte('fire_at', `${dateStr}T00:00:00Z`)
+                         .lte('fire_at', `${dateStr}T23:59:59Z`);
+                    if (time) q = q.like('body', `%ore ${time}%`);
+                    return q;
+                };
+
+                // Step 1: porta a 'cancelled' le entry pending/snoozed
+                const { error: updErr } = await applyFilters(
+                    supabaseClient.from('cm_notification_queue').update({ status: 'cancelled' }).in('status', ['pending', 'snoozed'])
+                );
+                if (updErr) { console.warn('⚠️ cancelHabitQueueEntries update:', updErr.message); return; }
+
+                // Step 2: elimina fisicamente le entry ora cancelled
+                const { error: delErr } = await applyFilters(
+                    supabaseClient.from('cm_notification_queue').delete().eq('status', 'cancelled')
+                );
+                if (delErr) console.warn('⚠️ cancelHabitQueueEntries delete:', delErr.message);
+                else console.log(`✅ cancelHabitQueueEntries: habit=${entityId} date=${dateStr} time=${time ?? 'all'}`);
             } catch (e) {
                 console.warn('⚠️ cancelHabitQueueEntries:', e.message);
             }
