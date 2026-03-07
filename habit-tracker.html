@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.1.6';
-        const BUILD_TIME  = '2026-03-07T17:00:00Z';
+        const APP_VERSION = 'v9.1.7';
+        const BUILD_TIME  = '2026-03-07T17:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2136,7 +2136,7 @@
                 if (!existing) {
                     // Stato 0 → Stato 1: NON FATTO → FATTO
                     const completionDateTime = `${targetDate}T${timeStr}`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
@@ -2150,6 +2150,7 @@
                     if (error) throw error;
 
                     completions.push(data[0]);
+                    cancelHabitQueueEntries(habitId, targetDate, time);
                     // showToast removed
                 } else if (existing.status === 'completed') {
                     // Stato 1 → Stato 2: FATTO → DIMENTICATO
@@ -2223,6 +2224,7 @@
                     if (error) throw error;
 
                     completions.push(data[0]);
+                    cancelHabitQueueEntries(habitId, today);
                     showToast('Ottimo lavoro! 🎉');
                 }
 
@@ -4822,6 +4824,30 @@
                 else console.log('✅ triggerFillQueue:', await resp.json());
             } catch (e) {
                 console.warn('⚠️ triggerFillQueue:', e.message);
+            }
+        }
+
+        // Cancella le notifiche pendenti/snoozed in coda per un habit completato.
+        // dateStr = 'YYYY-MM-DD'. Se time è specificato, filtra solo il time slot (daily_multiple).
+        async function cancelHabitQueueEntries(habitId, dateStr, time = null) {
+            if (!supabaseClient) return;
+            try {
+                let q = supabaseClient
+                    .from('cm_notification_queue')
+                    .update({ status: 'cancelled' })
+                    .eq('app', 'habits')
+                    .eq('entity_id', String(habitId))
+                    .in('status', ['pending', 'snoozed'])
+                    .gte('fire_at', `${dateStr}T00:00:00Z`)
+                    .lte('fire_at', `${dateStr}T23:59:59Z`);
+                if (time) {
+                    q = q.like('body', `%ore ${time}%`);
+                }
+                const { error } = await q;
+                if (error) console.warn('⚠️ cancelHabitQueueEntries:', error.message);
+                else console.log(`✅ cancelHabitQueueEntries: habit=${habitId} date=${dateStr} time=${time ?? 'all'}`);
+            } catch (e) {
+                console.warn('⚠️ cancelHabitQueueEntries:', e.message);
             }
         }
 
