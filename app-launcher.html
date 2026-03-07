@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.4.5</title>
+<title>AppSphere v1.4.6</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -72,33 +72,6 @@
     margin-top: 4px;
     pointer-events: none;
   }
-  .cw:not(.dragging):hover .tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .tip {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%) translateY(5px);
-    background: #111;
-    color: #fff;
-    border-radius: 8px;
-    padding: 8px 14px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s, transform 0.15s;
-    z-index: 9999;
-    font-size: 12px;
-  }
-  .tip::after {
-    content: '';
-    position: absolute;
-    top: 100%; left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #111;
-  }
-  .tip-name { font-weight: 600; margin-bottom: 2px; }
-  .tip-meta { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; }
 
   /* ── SCORE PANEL ── */
   #score-panel {
@@ -874,8 +847,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.4.5';
-const BUILD_TIME  = '2026-03-07T00:00:00Z';
+const APP_VERSION = 'v1.4.6';
+const BUILD_TIME  = '2026-03-07T10:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1164,10 +1137,6 @@ function render(apps) {
       <div class="circle" style="width:${size}px;height:${size}px;background:${color};border:4px solid #111;">
         <span class="c-name" style="font-size:${nameFz}px">${app.name}</span>
         <span class="c-score" style="font-size:${scoreFz}px">${app.score}</span>
-      </div>
-      <div class="tip">
-        <div class="tip-name">${app.name}</div>
-        <div class="tip-meta">${app.description} · ${app.score} pts</div>
       </div>
     `;
 
