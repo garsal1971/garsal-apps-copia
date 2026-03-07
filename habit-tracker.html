@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.1.5';
-        const BUILD_TIME  = '2026-03-07T16:00:00Z';
+        const APP_VERSION = 'v9.1.4';
+        const BUILD_TIME  = '2026-03-07T15:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4303,16 +4303,9 @@
             handleEditFrequencyChange();
 
             // Carica orario promemoria e chip selezionati
-            let existingReminders = [];
-            if (habit.frequency === 'daily_multiple') {
-                const firstKey = Object.keys(habitNotificationRules).find(k => k.startsWith(habit.id + '::'));
-                existingReminders = firstKey ? (habitNotificationRules[firstKey]?.reminders || []) : [];
-            } else {
-                existingReminders = habitNotificationRules[habit.id]?.reminders || [];
-            }
-            editHabitReminderIds = [...existingReminders];
-            document.getElementById('editHabitReminderTime').value =
-                (habit.frequency !== 'daily_multiple') ? (habitNotificationRules[habit.id]?.time || '') : '';
+            const existingRule = habitNotificationRules[habit.id];
+            document.getElementById('editHabitReminderTime').value = existingRule?.time || '';
+            editHabitReminderIds = existingRule?.reminders ? [...existingRule.reminders] : [];
             renderHabitReminderChips('editHabitReminderChips', editHabitReminderIds, 'toggleEditHabitChip');
 
             // Aggiorna select categorie
@@ -4903,69 +4896,56 @@
             if (!userId) { console.warn('⚠️ syncHabitNotificationRule: userId non trovato'); return; }
 
             const ids = reminderIds || [];
-
-            // Elimina tutte le righe esistenti per questo habit (entity_id esatto o entity_id::time)
-            await supabaseClient.from('cm_notification_rules')
-                .delete()
-                .eq('app', 'habits')
-                .eq('user_id', userId)
-                .ilike('entity_id', habitId + '%');
-
-            const hasReminder = (frequency === 'daily_multiple' && dailyTimesArr.length > 0) || !!reminderTime || ids.length > 0;
+            const hasReminder = (frequency === 'daily_multiple') || !!reminderTime || ids.length > 0;
             if (!hasReminder) {
-                Object.keys(habitNotificationRules)
-                    .filter(k => k === habitId || k.startsWith(habitId + '::'))
-                    .forEach(k => delete habitNotificationRules[k]);
+                await supabaseClient.from('cm_notification_rules')
+                    .delete()
+                    .eq('app', 'habits')
+                    .eq('entity_id', habitId)
+                    .eq('user_id', userId);
+                delete habitNotificationRules[habitId];
                 triggerFillQueue();
                 return;
             }
 
-            let error;
+            const reminderPresetsJson = {
+                reminders: ids,
+                use_habit_times: frequency === 'daily_multiple',
+                time: frequency !== 'daily_multiple' ? (reminderTime || null) : null
+            };
 
-            if (frequency === 'daily_multiple' && dailyTimesArr.length > 0) {
-                // Una riga per ciascun orario: entity_id = habitId::time
-                const rows = dailyTimesArr.map(t => ({
-                    user_id: userId,
-                    app: 'habits',
-                    entity_id: habitId + '::' + t,
-                    entity_type: 'daily_multiple',
-                    entity_title: habitName + ' (' + t + ')',
-                    reminder_presets: { reminders: ids, time: t, use_habit_times: false },
-                    channel: 'telegram',
-                    enabled: true
-                }));
-                ({ error } = await supabaseClient.from('cm_notification_rules').insert(rows));
-                if (!error) {
-                    Object.keys(habitNotificationRules)
-                        .filter(k => k === habitId || k.startsWith(habitId + '::'))
-                        .forEach(k => delete habitNotificationRules[k]);
-                    dailyTimesArr.forEach(t => {
-                        habitNotificationRules[habitId + '::' + t] = { reminders: ids, time: t, use_habit_times: false };
-                    });
-                }
+            const { data: existing } = await supabaseClient
+                .from('cm_notification_rules')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('app', 'habits')
+                .eq('entity_id', habitId)
+                .maybeSingle();
+
+            const rule = {
+                user_id: userId,
+                app: 'habits',
+                entity_id: habitId,
+                entity_type: frequency,
+                entity_title: habitName,
+                reminder_presets: reminderPresetsJson,
+                channel: 'telegram',
+                enabled: true
+            };
+
+            let error;
+            if (existing?.id) {
+                ({ error } = await supabaseClient.from('cm_notification_rules').update(rule).eq('id', existing.id));
             } else {
-                // Frequenze non-multiple: singola riga con entity_id = habitId
-                const rule = {
-                    user_id: userId,
-                    app: 'habits',
-                    entity_id: habitId,
-                    entity_type: frequency,
-                    entity_title: habitName,
-                    reminder_presets: { reminders: ids, time: reminderTime || null, use_habit_times: false },
-                    channel: 'telegram',
-                    enabled: true
-                };
                 ({ error } = await supabaseClient.from('cm_notification_rules').insert(rule));
-                if (!error) {
-                    habitNotificationRules[habitId] = rule.reminder_presets;
-                }
             }
 
             if (error) {
                 console.error('❌ syncHabitNotificationRule:', error);
                 showToast('Errore salvataggio promemoria: ' + (error.message || ''));
             } else {
-                console.log('✅ syncHabitNotificationRule:', habitId, frequency, dailyTimesArr);
+                habitNotificationRules[habitId] = reminderPresetsJson;
+                console.log('✅ syncHabitNotificationRule:', habitId, reminderPresetsJson);
                 triggerFillQueue();
             }
         }
@@ -4976,11 +4956,9 @@
                 await supabaseClient.from('cm_notification_rules')
                     .delete()
                     .eq('app', 'habits')
-                    .ilike('entity_id', habitId + '%');
-                Object.keys(habitNotificationRules)
-                    .filter(k => k === habitId || k.startsWith(habitId + '::'))
-                    .forEach(k => delete habitNotificationRules[k]);
-                console.log('🗑️ Regole promemoria eliminate per:', habitId);
+                    .eq('entity_id', habitId);
+                delete habitNotificationRules[habitId];
+                console.log('🗑️ Regola promemoria eliminata per:', habitId);
             } catch (e) {
                 console.warn('⚠️ deleteHabitNotificationRule:', e.message);
             }
@@ -5006,26 +4984,24 @@
             const todayStr = now.toISOString().split('T')[0];
 
             habits.filter(h => h.status === 'active').forEach(habit => {
-                // Per daily_multiple cerca le chiavi habitId::time, altrimenti usa habitId
-                let applicableRules = [];
-                if (habit.frequency === 'daily_multiple') {
-                    applicableRules = Object.keys(habitNotificationRules)
-                        .filter(k => k.startsWith(habit.id + '::'))
-                        .map(k => habitNotificationRules[k]);
-                } else {
-                    const rule = habitNotificationRules[habit.id];
-                    if (rule) applicableRules = [rule];
-                }
-                if (applicableRules.length === 0) return;
+                const rule = habitNotificationRules[habit.id];
+                if (!rule) return;
 
-                applicableRules.forEach(rule => {
-                    const presetIds = rule.reminders || [];
-                    if (presetIds.length === 0) return;
-                    if (!rule.time) return;
+                const presetIds = rule.reminders || [];
+                if (presetIds.length === 0) return;
 
+                // Determina gli orari base
+                let baseTimes = [];
+                if (habit.frequency === 'daily_multiple' && rule.use_habit_times) {
+                    baseTimes = habit.daily_times || [];
+                } else if (rule.time) {
                     if (habit.frequency === 'weekly' && !(habit.weekdays || []).includes(now.getDay())) return;
+                    baseTimes = [rule.time];
+                }
+                if (baseTimes.length === 0) return;
 
-                    const [bh, bm] = rule.time.split(':').map(Number);
+                baseTimes.forEach(baseTime => {
+                    const [bh, bm] = baseTime.split(':').map(Number);
                     const baseDate = new Date(now); baseDate.setHours(bh, bm, 0, 0);
 
                     presetIds.forEach(presetId => {
@@ -5036,13 +5012,13 @@
                         const diff = now - fireTime;
                         if (diff < 0 || diff > 120000) return;
 
-                        const flagKey = `habit_notified_${habit.id}_${rule.time}_${presetId}_${todayStr}`;
+                        const flagKey = `habit_notified_${habit.id}_${baseTime}_${presetId}_${todayStr}`;
                         if (localStorage.getItem(flagKey)) return;
 
                         let done;
                         if (habit.frequency === 'daily_multiple') {
                             done = completions.some(c =>
-                                c.habit_id === habit.id && c.completed_at.startsWith(`${todayStr}T${rule.time}`));
+                                c.habit_id === habit.id && c.completed_at.startsWith(`${todayStr}T${baseTime}`));
                         } else {
                             done = completions.some(c =>
                                 c.habit_id === habit.id && c.completed_at.startsWith(todayStr));
@@ -5050,8 +5026,8 @@
                         if (!done) {
                             const isMultiple = habit.frequency === 'daily_multiple';
                             const msg = preset.offset_minutes === 0
-                                ? `È ora di: ${habit.name}${isMultiple ? ' (' + rule.time + ')' : ''}`
-                                : `${preset.label} — ${habit.name}${isMultiple ? ' (' + rule.time + ')' : ''}`;
+                                ? `È ora di: ${habit.name}${isMultiple ? ' (' + baseTime + ')' : ''}`
+                                : `${preset.label} — ${habit.name}${isMultiple ? ' (' + baseTime + ')' : ''}`;
                             new Notification(`⏰ ${habit.name}`, { body: msg, icon: '🔥' });
                             localStorage.setItem(flagKey, 'true');
                         }
