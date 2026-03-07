@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.17</title>
+    <title>Weight Quest v3.5.18</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1004,8 +1004,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.17';
-        var BUILD_TIME  = '2026-03-07T18:00:00Z';
+        var APP_VERSION = 'v3.5.18';
+        var BUILD_TIME  = '2026-03-07T18:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2409,34 +2409,45 @@
                 return response.json();
             })
             .then(function(sources) {
-                log('DataSources ricevute: ' + sources.dataSource.length);
-                
+                log('DataSources ricevute: ' + (sources.dataSource ? sources.dataSource.length : 0));
+                log('DEBUG datasources raw: ' + JSON.stringify(sources).substring(0, 500));
+
                 // Trova tutte le fonti di peso
                 var weightSources = sources.dataSource.filter(function(ds) {
                     return ds.dataType && ds.dataType.name === 'com.google.weight';
                 });
-                
+
                 log('Fonti di peso trovate: ' + weightSources.length);
-                
+                sources.dataSource.forEach(function(ds) {
+                    log('  fonte: ' + ds.dataType.name + ' | id: ' + ds.dataStreamId);
+                });
+
                 // Recupera dati da TUTTE le fonti
                 var promises = weightSources.map(function(source) {
                     var datasetId = startTime + '-' + endTime;
-                    var url = 'https://www.googleapis.com/fitness/v1/users/me/dataSources/' + 
+                    var url = 'https://www.googleapis.com/fitness/v1/users/me/dataSources/' +
                               source.dataStreamId + '/datasets/' + datasetId;
-                    
-                    log('Recupero dati da: ' + source.dataStreamName);
-                    
+
+                    log('Recupero dati da: ' + source.dataStreamName + ' | url: ' + url.substring(0, 120));
+
                     return fetch(url, {
                         method: 'GET',
                         headers: {
                             'Authorization': 'Bearer ' + googleToken
                         }
                     }).then(function(r) {
+                        log('  risposta HTTP: ' + r.status + ' per ' + source.dataStreamName);
                         if (!r.ok) {
                             log('Errore da fonte: ' + source.dataStreamName);
                             return { point: [] };
                         }
-                        return r.json();
+                        return r.json().then(function(d) {
+                            log('  punti in questa fonte: ' + (d.point ? d.point.length : 0));
+                            if (d.point && d.point.length > 0) {
+                                log('  primo punto raw: ' + JSON.stringify(d.point[0]));
+                            }
+                            return d;
+                        });
                     });
                 });
                 
@@ -2475,23 +2486,32 @@
                 return Promise.resolve();
             }
 
+            log('processWeights: ' + data.point.length + ' punti da elaborare');
+            log('DEBUG primo punto: ' + JSON.stringify(data.point[0]));
+
             var weights = [];
-            
+            var skipped = 0;
+
             // Estrai tutte le singole pesate
             data.point.forEach(function(point) {
-                if (point.value && point.value[0].fpVal) {
+                if (point.value && point.value[0] && point.value[0].fpVal) {
                     var weight = point.value[0].fpVal;
-                    var timestamp = parseInt(point.startTimeNanos) / 1000000; // Converti in millisecondi
+                    var timestamp = parseInt(point.startTimeNanos) / 1000000;
                     var date = new Date(timestamp);
-                    
+
                     weights.push({
                         date: date.toISOString().split('T')[0],
                         time: date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                         timestamp: Math.floor(timestamp),
                         weight: parseFloat(weight.toFixed(2))
                     });
+                } else {
+                    skipped++;
+                    log('SKIP punto senza fpVal: ' + JSON.stringify(point).substring(0, 200));
                 }
             });
+
+            if (skipped > 0) log('Punti saltati (no fpVal): ' + skipped);
 
             // Rimuovi duplicati basati su timestamp
             var uniqueWeights = [];
@@ -2542,6 +2562,8 @@
 
             // Inserisci tutto in una volta con upsert
             log('Salvataggio ' + records.length + ' pesate...');
+            if (records.length > 0) log('DEBUG primo record da salvare: ' + JSON.stringify(records[0]));
+            log('DEBUG Authorization header: ' + (headers['Authorization'] || headers.Authorization || 'NON TROVATO').substring(0, 40) + '...');
 
             return Promise.all(deletePromises).then(function() {
             return fetch(url + '?on_conflict=timestamp', {
@@ -2550,10 +2572,11 @@
                 body: JSON.stringify(records)
             })
             .then(function(response) {
+                log('Risposta upsert Supabase: HTTP ' + response.status);
                 if (!response.ok) {
                     return response.text().then(function(text) {
                         log('Errore inserimento: ' + text);
-                        throw new Error('Errore salvataggio: ' + response.status);
+                        throw new Error('Errore salvataggio: ' + response.status + ' — ' + text);
                     });
                 }
                 log('Tutte le pesate salvate! Status: ' + response.status);
