@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.3';
-        const BUILD_TIME  = '2026-03-08T16:10:00Z';
+        const APP_VERSION = 'v9.3.4';
+        const BUILD_TIME  = '2026-03-08T16:20:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5029,8 +5029,9 @@
                 });
             }
 
-            // Close modals on outside click
+            // Close modals on outside click (escludi editHabitModal per evitare chiusure accidentali)
             document.querySelectorAll('.modal').forEach(modal => {
+                if (modal.id === 'editHabitModal') return;
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
                         modal.classList.remove('active');
