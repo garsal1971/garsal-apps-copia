@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.1</title>
+    <title>Habit Stack Tracker v9.3.12</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -528,6 +528,39 @@
 
             .page-title {
                 font-size: 2rem;
+            }
+
+            /* Habit stack header — layout a due righe su mobile */
+            .habit-stack-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.4rem;
+            }
+
+            .habit-stack-title {
+                font-size: 1.1rem;
+            }
+
+            .habit-stack-meta {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: space-between;
+            }
+
+            .habit-freq-label {
+                font-size: 0.78rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 45%;
+            }
+
+            .habit-stack-meta .btn {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.78rem !important;
             }
         }
 
@@ -1556,8 +1589,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.10';
-        const BUILD_TIME  = '2026-03-08T19:00:00Z';
+        const APP_VERSION = 'v9.3.12';
+        const BUILD_TIME  = '2026-03-08T21:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2759,8 +2792,8 @@
                                 ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
+                        <div class="habit-stack-meta" style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="habit-freq-label" style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
                                 ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
@@ -2842,8 +2875,8 @@
                                 ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
+                        <div class="habit-stack-meta" style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="habit-freq-label" style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
                                 ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
@@ -4264,7 +4297,6 @@
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                             <div>
                                 <h3 style="margin-bottom: 0.5rem;">${habit.name}</h3>
-                                ${habit.description ? `<p style="opacity: 0.7;">${habit.description}</p>` : ''}
                                 ${category ? `<span class="category-pill" style="background: ${category.color}">${category.icon} ${category.name}</span>` : ''}
                                 ${habit.frequency === 'daily_multiple' && habit.daily_times ? `
                                     <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--input-bg); border-left: 3px solid var(--accent);">
@@ -4648,7 +4680,6 @@
                             <div style="display: flex; justify-content: space-between; align-items: start;">
                                 <div style="flex: 1;">
                                     <h3 style="margin-bottom: 0.5rem;">${habit.name}</h3>
-                                    ${habit.description ? `<p style="opacity: 0.7; margin-bottom: 0.5rem;">${habit.description}</p>` : ''}
                                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                                         <span style="font-size: 0.85rem; opacity: 0.7;">
                                             📅 ${habit.frequency === 'daily' ? 'Giornaliera' : 'Settimanale'}
