@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.9</title>
+    <title>Habit Stack Tracker v9.3.0</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.9';
-        const BUILD_TIME  = '2026-03-08T14:00:00Z';
+        const APP_VERSION = 'v9.3.0';
+        const BUILD_TIME  = '2026-03-08T14:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2730,7 +2730,7 @@
                     <div class="habit-stack-header" style="border-left-color: ${categoryColor};">
                         <div>
                             <h3 class="habit-stack-title">
-                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : ''; })()}
+                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
@@ -2813,7 +2813,7 @@
                     <div class="habit-stack-header" style="border-left-color: ${categoryColor};">
                         <div>
                             <h3 class="habit-stack-title">
-                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : ''; })()}
+                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
@@ -4119,6 +4119,20 @@
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                 `;
             }
+
+            // Aggiorna badge punti guadagnati
+            const badgeEl = stack.querySelector(`[data-points-badge="${habitId}"]`);
+            if (badgeEl) {
+                const pts = calculateCurrentPoints(habit);
+                if (pts > 0) {
+                    badgeEl.textContent = `🏆 ${pts}`;
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+
+            recalculateTotalScore();
         }
 
         async function toggleDayCompletion(habitId, dateStr) {
