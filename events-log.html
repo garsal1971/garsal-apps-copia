@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.1</title>
+    <title>Events Log v2.2.2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -243,6 +243,11 @@
         .group-tab:hover { color: var(--dark); }
         .group-tab.active { border-bottom-color: var(--primary); color: var(--primary); }
         .group-tab .tab-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .group-tab[draggable="true"] { cursor: grab; user-select: none; }
+        .group-tab[draggable="true"]:active { cursor: grabbing; }
+        .group-tab.tab-dragging { opacity: 0.4; border-bottom-color: transparent; }
+        .group-tab.tab-drag-over { border-bottom-color: var(--accent); background: rgba(37,99,235,0.08); color: var(--accent); }
+        .group-tab .tab-drag-handle { font-size: 0.7rem; opacity: 0.35; margin-right: 0.1rem; pointer-events: none; }
 
         /* ===== EVENT BUTTONS GRID ===== */
         .events-grid {
@@ -829,6 +834,10 @@
                 <label class="form-label">Colore</label>
                 <input type="color" class="form-input" id="groupColor" value="#2563EB">
             </div>
+            <div class="form-group">
+                <label class="form-label">Descrizione</label>
+                <textarea class="form-textarea" id="groupDescription" placeholder="Descrizione del gruppo (opzionale)..." style="min-height:60px;"></textarea>
+            </div>
             <button type="submit" class="btn btn-primary" style="width:100%;">Salva Gruppo</button>
         </form>
     </div>
@@ -938,8 +947,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.1';
-    var BUILD_TIME  = '2026-03-05T13:00:00Z';
+    var APP_VERSION = 'v2.2.2';
+    var BUILD_TIME  = '2026-03-08T10:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1017,8 +1026,16 @@ function renderGroupTabs() {
         activeGroupTab = groups[0].id;
     }
 
-    container.innerHTML = groups.map(g => `
-        <div class="group-tab ${g.id === activeGroupTab ? 'active' : ''}" onclick="selectGroupTab('${g.id}')">
+    container.innerHTML = groups.map((g, idx) => `
+        <div class="group-tab ${g.id === activeGroupTab ? 'active' : ''}"
+             draggable="true"
+             data-group-idx="${idx}"
+             onclick="selectGroupTab('${g.id}')"
+             ondragstart="onTabDragStart(event, ${idx})"
+             ondragover="onTabDragOver(event)"
+             ondrop="onTabDrop(event, ${idx})"
+             ondragend="onTabDragEnd(event)">
+            <span class="tab-drag-handle">⠿</span>
             <span class="tab-dot" style="background:${g.color};"></span>
             ${g.icon || ''} ${g.name}
         </div>
@@ -1029,6 +1046,56 @@ function selectGroupTab(groupId) {
     activeGroupTab = groupId;
     renderGroupTabs();
     renderEventsGrid();
+}
+
+// ==========================================
+// DRAG & DROP TABS
+// ==========================================
+let _dragSrcTabIdx = null;
+
+function onTabDragStart(e, idx) {
+    _dragSrcTabIdx = idx;
+    e.dataTransfer.effectAllowed = 'move';
+    // delay class add so browser can snapshot the element first
+    setTimeout(() => {
+        const tabs = document.querySelectorAll('#logGroupTabs .group-tab');
+        if (tabs[idx]) tabs[idx].classList.add('tab-dragging');
+    }, 0);
+}
+
+function onTabDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('#logGroupTabs .group-tab').forEach(t => t.classList.remove('tab-drag-over'));
+    e.currentTarget.classList.add('tab-drag-over');
+    return false;
+}
+
+function onTabDrop(e, idx) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (_dragSrcTabIdx === null || _dragSrcTabIdx === idx) return;
+    const moved = groups.splice(_dragSrcTabIdx, 1)[0];
+    groups.splice(idx, 0, moved);
+    renderGroupTabs();
+    saveGroupsOrder();
+    return false;
+}
+
+function onTabDragEnd(e) {
+    _dragSrcTabIdx = null;
+    document.querySelectorAll('#logGroupTabs .group-tab').forEach(t => {
+        t.classList.remove('tab-dragging');
+        t.classList.remove('tab-drag-over');
+    });
+}
+
+async function saveGroupsOrder() {
+    for (let i = 0; i < groups.length; i++) {
+        groups[i].sort_order = i;
+        await sb.from('el_groups').update({ sort_order: i }).eq('id', groups[i].id);
+    }
+    showToast('↕️ Ordine gruppi salvato');
 }
 
 function renderEventsGrid() {
@@ -1334,7 +1401,10 @@ function renderMgmt() {
                     <div class="mgmt-group-title">
                         <div class="mgmt-group-dot" style="background:${g.color};"></div>
                         <span>${g.icon || ''}</span>
-                        <span>${g.name}</span>
+                        <div>
+                            <span>${g.name}</span>
+                            ${g.description ? `<div style="font-size:0.78rem; color:var(--muted); font-weight:400; margin-top:0.1rem;">${g.description}</div>` : ''}
+                        </div>
                         <span style="font-size:0.8rem; color:var(--muted); font-weight:400;">(${groupEvents.length} eventi)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -1397,13 +1467,15 @@ function openGroupModal(groupId = null) {
     if (groupId) {
         const g = groups.find(x => x.id === groupId);
         if (!g) return;
-        document.getElementById('groupName').value = g.name;
-        document.getElementById('groupIcon').value = g.icon || '';
-        document.getElementById('groupColor').value = g.color || '#2563EB';
+        document.getElementById('groupName').value        = g.name;
+        document.getElementById('groupIcon').value        = g.icon || '';
+        document.getElementById('groupColor').value       = g.color || '#2563EB';
+        document.getElementById('groupDescription').value = g.description || '';
     } else {
-        document.getElementById('groupName').value = '';
-        document.getElementById('groupIcon').value = '';
-        document.getElementById('groupColor').value = '#2563EB';
+        document.getElementById('groupName').value        = '';
+        document.getElementById('groupIcon').value        = '';
+        document.getElementById('groupColor').value       = '#2563EB';
+        document.getElementById('groupDescription').value = '';
     }
 
     document.getElementById('groupModal').classList.add('active');
@@ -1690,10 +1762,11 @@ async function saveGroup(e) {
     e.preventDefault();
     const editId = document.getElementById('editGroupId').value;
     const data = {
-        name:       document.getElementById('groupName').value.trim(),
-        icon:       document.getElementById('groupIcon').value.trim() || null,
-        color:      document.getElementById('groupColor').value,
-        sort_order: editId ? (groups.find(g => g.id === editId)?.sort_order ?? 0) : groups.length,
+        name:        document.getElementById('groupName').value.trim(),
+        icon:        document.getElementById('groupIcon').value.trim() || null,
+        color:       document.getElementById('groupColor').value,
+        description: document.getElementById('groupDescription').value.trim() || null,
+        sort_order:  editId ? (groups.find(g => g.id === editId)?.sort_order ?? 0) : groups.length,
     };
 
     setLoading(true);
