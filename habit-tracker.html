@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.3</title>
+    <title>Habit Stack Tracker v9.2.4</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.3';
-        const BUILD_TIME  = '2026-03-08T11:00:00Z';
+        const APP_VERSION = 'v9.2.4';
+        const BUILD_TIME  = '2026-03-08T11:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3249,47 +3249,55 @@
         }
 
         async function checkMissedDays() {
-            console.log('🔍 Controllo giorni mancati...');
-            
+            console.log('🔍 Controllo giorni mancati e stack falliti...');
+
             const today = new Date();
             today.setHours(12, 0, 0, 0);
             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            
+
+            let anyAutoClosed = false;
+
             for (const habit of habits.filter(h => h.status === 'active')) {
                 try {
                     const startDate = parseDateLocal(habit.started_at);
                     if (!startDate || startDate > today) continue;
-                    
+
                     const maxFailures = habit.max_failures || 3;
+
+                    // Se già al limite (es. modal ignorato in sessione precedente) → chiudi automaticamente
+                    if ((habit.current_failures || 0) >= maxFailures) {
+                        console.log(`💀 Stack già a limite jolly (auto-chiusura): ${habit.name}`);
+                        await autoCloseFailedStack(habit.id);
+                        anyAutoClosed = true;
+                        continue;
+                    }
+
                     let missedCount = 0;
                     let autoFailedDates = [];
-                    
+
                     // Controlla ogni giorno tra started_at e ieri
                     const currentDate = new Date(startDate);
-                    
+
                     while (currentDate < today) {
                         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-                        
-                        // Verifica se questo giorno era previsto
+
                         let shouldHaveCompleted = false;
-                        
+
                         if (habit.frequency === 'daily' || habit.frequency === 'daily_multiple') {
                             shouldHaveCompleted = true;
                         } else if (habit.frequency === 'weekly' && habit.weekdays) {
                             const dayOfWeek = currentDate.getDay();
                             shouldHaveCompleted = habit.weekdays.includes(dayOfWeek);
                         }
-                        
+
                         if (shouldHaveCompleted) {
                             if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
-                                // Per daily_multiple: ogni orario mancato = 1 jolly perso
                                 const requiredTimes = habit.daily_times.length;
                                 const doneCount = completions.filter(c =>
                                     c.habit_id === habit.id &&
                                     c.completed_at.startsWith(dateStr) &&
                                     c.status !== 'failed'
                                 ).length;
-                                // Failed già registrati (idempotenza: evita duplicati)
                                 const existingFailed = completions.filter(c =>
                                     c.habit_id === habit.id &&
                                     c.completed_at.startsWith(dateStr) &&
@@ -3298,13 +3306,10 @@
                                 const newMissed = Math.max(0, requiredTimes - doneCount - existingFailed);
                                 if (newMissed > 0) {
                                     missedCount += newMissed;
-                                    for (let i = 0; i < newMissed; i++) {
-                                        autoFailedDates.push(dateStr);
-                                    }
+                                    for (let i = 0; i < newMissed; i++) autoFailedDates.push(dateStr);
                                     console.log(`❌ ${dateStr} per ${habit.name}: ${newMissed} orari mancanti`);
                                 }
                             } else {
-                                // Controlla se ha completion per questo giorno
                                 const hasCompletion = completions.some(c =>
                                     c.habit_id === habit.id &&
                                     c.completed_at.startsWith(dateStr)
@@ -3316,27 +3321,16 @@
                                 }
                             }
                         }
-                        
-                        // Avanza di un giorno
+
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
-                    
-                    // Se ci sono giorni mancati, aggiorna current_failures
+
                     if (missedCount > 0) {
                         const newFailures = (habit.current_failures || 0) + missedCount;
-                        
-                        console.log(`⚠️ ${habit.name}: ${missedCount} giorni mancati, totale fallimenti: ${newFailures}/${maxFailures}`);
-                        
-                        // Aggiorna nel database
-                        await supabaseClient
-                            .from('hb_habits')
-                            .update({ current_failures: newFailures })
-                            .eq('id', habit.id);
-                        
-                        // Aggiorna locale
-                        habit.current_failures = newFailures;
-                        
-                        // Crea record "failed" per ogni giorno mancato (opzionale, per storico)
+
+                        console.log(`⚠️ ${habit.name}: ${missedCount} giorni mancati, totale: ${newFailures}/${maxFailures}`);
+
+                        // Registra i giorni mancati come failed
                         for (const missedDate of autoFailedDates) {
                             await supabaseClient
                                 .from('hb_completions')
@@ -3346,23 +3340,36 @@
                                     status: 'failed'
                                 }]);
                         }
-                        
-                        // Se supera il limite → GAME OVER
+
                         if (newFailures >= maxFailures) {
-                            console.log(`💀 GAME OVER automatico per ${habit.name}`);
-                            await resetStack(habit.id);
-                            return; // Esci subito per mostrare il popup
+                            // Jolly esauriti → chiudi automaticamente e riapri
+                            console.log(`💀 Jolly esauriti per ${habit.name} → auto-chiusura`);
+                            await autoCloseFailedStack(habit.id);
+                            anyAutoClosed = true;
+                        } else {
+                            // Aggiorna failures in DB
+                            await supabaseClient
+                                .from('hb_habits')
+                                .update({ current_failures: newFailures })
+                                .eq('id', habit.id);
+                            habit.current_failures = newFailures;
                         }
                     }
-                    
+
                 } catch (error) {
-                    console.error(`❌ Errore controllo giorni mancati per ${habit.name}:`, error);
+                    console.error(`❌ Errore controllo per ${habit.name}:`, error);
                 }
             }
-            
-            // Ricarica habits aggiornati
-            await loadHabits();
-            await loadCompletions();
+
+            // Ricarica se ci sono stati auto-close
+            if (anyAutoClosed) {
+                await loadHabits();
+                await loadCompletions();
+                showToast('📦 Stack falliti chiusi automaticamente. Nuovi stack attivi da domani.');
+            } else {
+                await loadHabits();
+                await loadCompletions();
+            }
             habits.forEach(h => { h._streak = computeHabitStreak(h); });
             recalculateTotalScore();
 
@@ -3453,6 +3460,102 @@
             } catch (error) {
                 console.error('❌ Errore in handleFailure:', error);
                 showToast('Errore gestione fallimento');
+            }
+        }
+
+        // Chiude automaticamente uno stack fallito (senza modal) e crea un nuovo record dal giorno dopo
+        async function autoCloseFailedStack(habitId) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return false;
+
+            try {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const currentStreak = computeHabitStreak(habit);
+                const startDate = new Date(habit.started_at);
+                const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+
+                const stackCompletions = completions.filter(c =>
+                    c.habit_id === habitId && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                );
+                const stackFailures = completions.filter(c =>
+                    c.habit_id === habitId && c.status === 'failed' && new Date(c.completed_at) >= startDate
+                );
+
+                console.log(`💀 Auto-chiusura stack fallito: ${habit.name} (streak: ${currentStreak})`);
+
+                // Archivia stack fallito
+                const { data: archivedData } = await supabaseClient
+                    .from('hb_archived_stacks')
+                    .insert([{
+                        habit_id: habitId,
+                        habit_name: habit.name,
+                        category_id: habit.category_id,
+                        started_at: habit.started_at,
+                        ended_at: todayStr,
+                        final_streak: currentStreak,
+                        total_days: totalDays,
+                        total_completions: stackCompletions.length,
+                        total_failures: stackFailures.length,
+                        reason: 'jolly_esauriti'
+                    }])
+                    .select();
+
+                // Penalità punti
+                const penalty = -(habit.points_penalty || 0);
+                if (archivedData && archivedData[0]) {
+                    await supabaseClient
+                        .from('hb_archived_stacks')
+                        .update({ points_earned: penalty })
+                        .eq('id', archivedData[0].id);
+                }
+
+                const { data: userPointsData } = await supabaseClient
+                    .from('hb_user_points').select('*').limit(1).single();
+
+                if (userPointsData && penalty !== 0) {
+                    const newTotal = Math.max(0, (userPointsData.total_points || 0) + penalty);
+                    await supabaseClient
+                        .from('hb_user_points')
+                        .update({ total_points: newTotal })
+                        .eq('id', userPointsData.id);
+                    await supabaseClient
+                        .from('hb_points_transactions')
+                        .insert([{ habit_id: habitId, habit_name: habit.name, points_change: penalty, reason: 'stack_failed_auto' }]);
+                }
+
+                // Marca vecchio stack come fallito
+                await supabaseClient
+                    .from('hb_habits')
+                    .update({ status: 'failed' })
+                    .eq('id', habitId);
+
+                // Crea nuovo stack attivo dal giorno dopo
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                await supabaseClient
+                    .from('hb_habits')
+                    .insert([{
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        started_at: tomorrowStr,
+                        status: 'active',
+                        current_failures: 0
+                    }]);
+
+                console.log(`✅ Stack "${habit.name}" → failed. Nuovo stack attivo dal ${tomorrowStr}`);
+                return true;
+            } catch (err) {
+                console.error(`❌ Errore autoCloseFailedStack per ${habit.name}:`, err);
+                return false;
             }
         }
 
