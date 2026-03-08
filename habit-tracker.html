@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.7';
-        const BUILD_TIME  = '2026-03-08T18:00:00Z';
+        const APP_VERSION = 'v9.3.8';
+        const BUILD_TIME  = '2026-03-08T18:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4287,10 +4287,6 @@
                                 </div>
                                 <p style="opacity: 0.7; font-size: 0.9rem;">Obiettivo: ${habit.goal} giorni | Completamenti: ${completionCount}</p>
                             </div>
-                        </div>
-                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                            <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')">MODIFICA</button>
-                            <button class="btn btn-danger" onclick="stopHabit('${habit.id}')">INTERROMPI</button>
                         </div>
                     </div>
                 `;
