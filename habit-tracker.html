@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.4</title>
+    <title>Habit Stack Tracker v9.2.5</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1438,16 +1438,34 @@
         </div>
     </div>
 
+    <!-- Stack Success Modal -->
+    <div class="modal" id="stackSuccessModal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 500px; text-align: center; background: linear-gradient(135deg, #00B894 0%, #00CEC9 100%); color: white; border: none; animation: pop 0.4s;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
+            <h1 style="font-size: 2.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); animation: pulse 1s infinite;">STACK COMPLETATO!</h1>
+            <div id="successStackList" style="margin: 1.5rem 0;"></div>
+            <button class="btn btn-primary" onclick="closeSuccessModal()" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #00B894; border: none;">
+                🚀 Avanti!
+            </button>
+        </div>
+    </div>
+
     <style>
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
             20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
-        
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
+        }
+
+        @keyframes pop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            80%  { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 
@@ -1535,8 +1553,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.4';
-        const BUILD_TIME  = '2026-03-08T11:30:00Z';
+        const APP_VERSION = 'v9.2.5';
+        const BUILD_TIME  = '2026-03-08T12:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2371,13 +2389,13 @@
                     current_failures: 0
                 }]);
 
-            showToast(`🎉 Stack completato! +${pointsReward} punti! Nuovo stack attivo da domani.`);
-
             await loadHabits();
             await loadCompletions();
             habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
-            renderDashboard();
+            recalculateTotalScore();
+            renderHabitsTimeline();
+            showStackSuccessModal([{ name: habit.name, streak: currentStreak, points: pointsReward }]);
         }
 
         function calculateWeeklyStreak(habit, completions, startDate) {
@@ -2523,7 +2541,113 @@
         }
 
         // Rendering Functions
+        function showStackSuccessModal(results) {
+            const list = document.getElementById('successStackList');
+            list.innerHTML = results.map(r => `
+                <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
+                    <div style="font-size: 1.2rem; font-weight: bold;">${r.name}</div>
+                    <div style="display: flex; gap: 1.5rem; justify-content: center; margin-top: 0.5rem;">
+                        <span>🔥 ${r.streak} streak</span>
+                        <span>+${r.points} punti</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('stackSuccessModal').classList.add('active');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('stackSuccessModal').classList.remove('active');
+        }
+
+        async function checkCompletedStacks() {
+            const toComplete = [];
+            for (const habit of habits.filter(h => h.status === 'active')) {
+                const streak = computeHabitStreak(habit);
+                if (habit.goal > 0 && streak >= habit.goal) {
+                    toComplete.push({ habit, streak });
+                }
+            }
+            if (toComplete.length === 0) return;
+
+            const results = [];
+            for (const { habit, streak } of toComplete) {
+                try {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const pointsReward = habit.points_reward || 0;
+                    const startDate = new Date(habit.started_at);
+                    const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+                    const stackCompletions = completions.filter(c =>
+                        c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                    );
+
+                    // Archivia stack completato
+                    await supabaseClient.from('hb_archived_stacks').insert([{
+                        habit_id: habit.id,
+                        habit_name: habit.name,
+                        category_id: habit.category_id,
+                        started_at: habit.started_at,
+                        ended_at: todayStr,
+                        final_streak: streak,
+                        total_days: totalDays,
+                        total_completions: stackCompletions.length,
+                        total_failures: 0,
+                        points_earned: pointsReward,
+                        reason: 'completato'
+                    }]);
+
+                    // Aggiorna punti
+                    const { data: userPointsData } = await supabaseClient.from('hb_user_points').select('*').limit(1).single();
+                    if (userPointsData) {
+                        await supabaseClient.from('hb_user_points')
+                            .update({ total_points: (userPointsData.total_points || 0) + pointsReward })
+                            .eq('id', userPointsData.id);
+                        await supabaseClient.from('hb_points_transactions').insert([{
+                            habit_id: habit.id, habit_name: habit.name,
+                            points_change: pointsReward, reason: 'stack_completed'
+                        }]);
+                    }
+
+                    // Marca vecchio stack come completato
+                    await supabaseClient.from('hb_habits').update({ status: 'completed' }).eq('id', habit.id);
+
+                    // Crea nuovo stack attivo dal giorno dopo
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    await supabaseClient.from('hb_habits').insert([{
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        started_at: tomorrow.toISOString().split('T')[0],
+                        status: 'active',
+                        current_failures: 0
+                    }]);
+
+                    results.push({ name: habit.name, streak, points: pointsReward });
+                    console.log(`🏆 Stack completato (auto): ${habit.name} streak=${streak} punti=+${pointsReward}`);
+                } catch (err) {
+                    console.error(`❌ Errore completamento stack ${habit.name}:`, err);
+                }
+            }
+
+            if (results.length > 0) {
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                await loadArchivedStacks();
+                recalculateTotalScore();
+                showStackSuccessModal(results);
+            }
+        }
+
         async function renderDashboard() {
+            await checkCompletedStacks();
             await checkMissedDays();
             renderHabitsTimeline();
         }
