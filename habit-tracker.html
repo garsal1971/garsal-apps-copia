@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.9';
-        const BUILD_TIME  = '2026-03-08T18:45:00Z';
+        const APP_VERSION = 'v9.3.10';
+        const BUILD_TIME  = '2026-03-08T19:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1566,7 +1566,7 @@
         // SUPABASE — client inizializzato dopo auth
         // ==========================================
         const SUPABASE_URL      = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
 
         let supabaseClient = null; // inizializzato in initWithToken()
         let sbAccessToken  = null;
@@ -1575,7 +1575,7 @@
             if (supabaseClient) return; // già inizializzato
             sbAccessToken  = token;
             sessionStorage.setItem('sb_token', token);
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                 auth:   { persistSession: false, autoRefreshToken: false },
                 global: { headers: { Authorization: 'Bearer ' + token } }
             });
