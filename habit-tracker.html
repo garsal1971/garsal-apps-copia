@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.4';
-        const BUILD_TIME  = '2026-03-08T16:20:00Z';
+        const APP_VERSION = 'v9.3.5';
+        const BUILD_TIME  = '2026-03-08T17:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4275,7 +4275,7 @@
                         </div>
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')">MODIFICA</button>
-                            <button class="btn btn-danger" onclick="deleteHabit('${habit.id}')">ELIMINA</button>
+                            <button class="btn btn-danger" onclick="stopHabit('${habit.id}')">INTERROMPI</button>
                         </div>
                     </div>
                 `;
@@ -4948,6 +4948,21 @@
 
         function filterHabits() {
             renderHabits();
+        }
+
+        async function stopHabit(habitId) {
+            if (!confirm('Vuoi interrompere questa abitudine? Non verrà eliminata e il punteggio non cambierà.')) return;
+
+            try {
+                const { error } = await supabaseClient.from('hb_habits').update({ status: 'paused' }).eq('id', habitId);
+                if (error) throw error;
+
+                habits = habits.filter(h => h.id !== habitId);
+                renderHabits();
+                showToast('Abitudine interrotta');
+            } catch (e) {
+                showToast('Errore nell\'interruzione');
+            }
         }
 
         async function deleteHabit(habitId) {
