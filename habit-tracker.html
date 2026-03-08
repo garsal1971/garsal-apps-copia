@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.6</title>
+    <title>Habit Stack Tracker v9.2.7</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.6';
-        const BUILD_TIME  = '2026-03-08T12:30:00Z';
+        const APP_VERSION = 'v9.2.7';
+        const BUILD_TIME  = '2026-03-08T13:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3500,6 +3500,9 @@
             habits.forEach(h => { h._streak = computeHabitStreak(h); });
             recalculateTotalScore();
 
+            // Mostra i game over accodati da autoCloseFailedStack
+            showNextGameOver();
+
             console.log('✅ Controllo giorni mancati completato');
         }
 
@@ -3681,6 +3684,18 @@
                     }]);
 
                 console.log(`✅ Stack "${habit.name}" → failed. Nuovo stack attivo dal ${tomorrowStr}`);
+
+                // Accoda al game over (senza undo, già processato)
+                window.gameOverQueue = window.gameOverQueue || [];
+                window.gameOverQueue.push({
+                    habitId,
+                    habitName: habit.name,
+                    streak: currentStreak,
+                    days: totalDays,
+                    alreadyProcessed: true,
+                    canUndo: false
+                });
+
                 return true;
             } catch (err) {
                 console.error(`❌ Errore autoCloseFailedStack per ${habit.name}:`, err);
@@ -3697,38 +3712,63 @@
                 const startDate = new Date(habit.started_at);
                 const today = new Date();
                 const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                
-                console.log(`🔄 Reset stack per habit ${habitId}`);
-                
-                // Mostra popup GAME OVER con dati
-                document.getElementById('gameOverHabitName').textContent = habit.name;
-                document.getElementById('gameOverStreak').textContent = computeHabitStreak(habit);
-                document.getElementById('gameOverDays').textContent = daysPassed;
-                
-                // Suona la musica!
-                playGameOverSound();
-                
-                // Mostra modal
-                document.getElementById('gameOverModal').classList.add('active');
-                
-                // Salva habitId per il bottone "Ricomincia"
-                window.currentResetHabitId = habitId;
 
-                // Mostra/nascondi undo in base al contesto
-                const undoBtn = document.getElementById('undoGameOverBtn');
-                if (undoBtn) undoBtn.style.display = window.currentResetCanUndo ? 'block' : 'none';
-                window.currentResetCanUndo = false; // reset flag
-                
+                console.log(`🔄 Reset stack per habit ${habitId}`);
+
+                // Accoda e mostra (con undo, non già processato)
+                window.gameOverQueue = window.gameOverQueue || [];
+                window.gameOverQueue.push({
+                    habitId,
+                    habitName: habit.name,
+                    streak: computeHabitStreak(habit),
+                    days: daysPassed,
+                    alreadyProcessed: false,
+                    canUndo: !!window.currentResetCanUndo
+                });
+                window.currentResetCanUndo = false;
+
+                if (!document.getElementById('gameOverModal').classList.contains('active')) {
+                    showNextGameOver();
+                }
+
             } catch (error) {
                 console.error('❌ Errore in resetStack:', error);
                 showToast('Errore reset stack');
             }
         }
         
+        function showNextGameOver() {
+            window.gameOverQueue = window.gameOverQueue || [];
+            if (window.gameOverQueue.length === 0) return;
+            const next = window.gameOverQueue.shift();
+
+            document.getElementById('gameOverHabitName').textContent = next.habitName;
+            document.getElementById('gameOverStreak').textContent = next.streak;
+            document.getElementById('gameOverDays').textContent = next.days;
+            window.currentResetHabitId = next.habitId;
+            window.currentResetAlreadyProcessed = next.alreadyProcessed;
+            window.currentResetPrevFailures = next.prevFailures ?? window.currentResetPrevFailures;
+
+            const undoBtn = document.getElementById('undoGameOverBtn');
+            if (undoBtn) undoBtn.style.display = next.canUndo ? 'block' : 'none';
+
+            document.getElementById('gameOverModal').classList.add('active');
+            if (!next.alreadyProcessed) playGameOverSound();
+        }
+
         async function closeGameOver() {
             const habitId = window.currentResetHabitId;
             if (!habitId) return;
-            
+
+            // Se già processato (es. autoCloseFailedStack), chiudi solo il modal
+            if (window.currentResetAlreadyProcessed) {
+                document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
+                window.currentResetAlreadyProcessed = false;
+                showNextGameOver();
+                return;
+            }
+
             try {
                 const habit = habits.find(h => h.id === habitId);
                 if (!habit) return;
@@ -3875,6 +3915,7 @@
                 
                 // Chiudi modal
                 document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
 
                 // Ricarica tutto
                 await loadHabits();
@@ -3886,6 +3927,7 @@
                 renderHabits();
 
                 showToast('📦 Stack archiviato! Nuovo stack attivo da domani.');
+                showNextGameOver();
                 
             } catch (error) {
                 console.error('❌ Errore closeGameOver:', error);
