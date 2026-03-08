@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.2</title>
+    <title>Habit Stack Tracker v9.2.3</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1535,8 +1535,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.2';
-        const BUILD_TIME  = '2026-03-08T10:00:00Z';
+        const APP_VERSION = 'v9.2.3';
+        const BUILD_TIME  = '2026-03-08T11:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1722,6 +1722,7 @@
             await loadCategories();
             await loadHabits();
             await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
             await loadUserPoints(); // Carica punteggio totale
             await loadHabitReminderPresets();    // Carica preset anticipi da cm_reminder_presets
@@ -1742,6 +1743,7 @@
                 const { data, error } = await supabaseClient
                     .from('hb_habits')
                     .select('*')
+                    .eq('status', 'active')
                     .order('created_at', { ascending: false });
                 
                 if (error) throw error;
@@ -1883,9 +1885,7 @@
                         goal: goal,
                         max_failures: maxFailures,
                         current_failures: 0,
-                        status: 'active',
-                        current_streak: 0,
-                        best_streak: 0
+                        status: 'active'
                     }])
                     .select();
 
@@ -2267,50 +2267,37 @@
                 currentStreak = calculateDailyStreak(habit, habitCompletions, startDate);
             }
 
-            const bestStreak = Math.max(currentStreak, habit.best_streak || 0);
+            // Aggiorna streak locale (non persiste in DB)
+            habit._streak = currentStreak;
+            console.log(`✅ Streak calcolato: current=${currentStreak}`);
 
-            try {
-                const { error } = await supabaseClient
-                    .from('hb_habits')
-                    .update({
-                        current_streak: currentStreak,
-                        best_streak: bestStreak
-                    })
-                    .eq('id', habitId);
-
-                if (error) throw error;
-                console.log(`✅ Streak aggiornato: current=${currentStreak}, best=${bestStreak}`);
-                
-                // CONTROLLA SE STACK COMPLETATO
-                if (currentStreak >= habit.goal && currentStreak > 0) {
-                    console.log('🎉 STACK COMPLETATO! Assegnazione punti...');
-                    await completeStack(habitId);
-                }
-            } catch (error) {
-                console.error('Error updating streak:', error);
+            // CONTROLLA SE STACK COMPLETATO
+            if (currentStreak >= habit.goal && currentStreak > 0) {
+                console.log('🎉 STACK COMPLETATO! Assegnazione punti...');
+                await completeStack(habitId, currentStreak);
             }
         }
         
-        async function completeStack(habitId) {
+        async function completeStack(habitId, currentStreak) {
             const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
-            
+
             const todayStr = new Date().toISOString().split('T')[0];
             const pointsReward = habit.points_reward || 0;
-            
+
             console.log(`🏆 Stack completato! Punti: +${pointsReward}`);
-            
+
             // Calcola statistiche stack
             const startDate = new Date(habit.started_at);
             const endDate = new Date();
             const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-            
-            const stackCompletions = completions.filter(c => 
-                c.habit_id === habitId && 
+
+            const stackCompletions = completions.filter(c =>
+                c.habit_id === habitId &&
                 c.status === 'completed' &&
                 new Date(c.completed_at) >= startDate
             );
-            
+
             // Archivia stack completato
             await supabaseClient
                 .from('hb_archived_stacks')
@@ -2320,28 +2307,28 @@
                     category_id: habit.category_id,
                     started_at: habit.started_at,
                     ended_at: todayStr,
-                    final_streak: habit.current_streak,
+                    final_streak: currentStreak,
                     total_days: totalDays,
                     total_completions: stackCompletions.length,
                     total_failures: 0,
                     points_earned: pointsReward,
                     reason: 'completato'
                 }]);
-            
+
             // Aggiorna punteggio totale
             const { data: userPointsData } = await supabaseClient
                 .from('hb_user_points')
                 .select('*')
                 .limit(1)
                 .single();
-            
+
             if (userPointsData) {
                 const newTotal = (userPointsData.total_points || 0) + pointsReward;
                 await supabaseClient
                     .from('hb_user_points')
                     .update({ total_points: newTotal })
                     .eq('id', userPointsData.id);
-                
+
                 // Log transazione
                 await supabaseClient
                     .from('hb_points_transactions')
@@ -2351,32 +2338,44 @@
                         points_change: pointsReward,
                         reason: 'stack_completed'
                     }]);
-                
+
                 // Aggiorna sidebar
                 recalculateTotalScore();
             }
 
-            // Reset stack per ricominciare
+            // Marca vecchio stack come completato
             await supabaseClient
                 .from('hb_habits')
-                .update({
-                    current_streak: 0,
-                    current_failures: 0,
-                    started_at: todayStr
-                })
+                .update({ status: 'completed' })
                 .eq('id', habitId);
-            
-            // Cancella completions vecchio stack
+
+            // Crea nuovo stack attivo dal giorno dopo
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
             await supabaseClient
-                .from('hb_completions')
-                .delete()
-                .eq('habit_id', habitId)
-                .gte('completed_at', `${habit.started_at}T00:00:00`)
-                .lte('completed_at', `${todayStr}T23:59:59`);
-            
-            showToast(`🎉 Stack completato! +${pointsReward} punti!`);
-            
+                .from('hb_habits')
+                .insert([{
+                    name: habit.name,
+                    description: habit.description,
+                    category_id: habit.category_id,
+                    frequency: habit.frequency,
+                    weekdays: habit.weekdays,
+                    daily_times: habit.daily_times,
+                    goal: habit.goal,
+                    max_failures: habit.max_failures,
+                    points_reward: habit.points_reward,
+                    points_penalty: habit.points_penalty,
+                    started_at: tomorrowStr,
+                    status: 'active',
+                    current_failures: 0
+                }]);
+
+            showToast(`🎉 Stack completato! +${pointsReward} punti! Nuovo stack attivo da domani.`);
+
             await loadHabits();
+            await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
             renderDashboard();
         }
@@ -2489,6 +2488,19 @@
             return streak;
         }
 
+        function computeHabitStreak(habit) {
+            const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+            const startDate = parseDateLocal(habit.started_at);
+            startDate.setHours(12, 0, 0, 0);
+            if (habit.frequency === 'weekly' && habit.weekdays && habit.weekdays.length > 0) {
+                return calculateWeeklyStreak(habit, habitCompletions, startDate);
+            } else if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                return calculateDailyMultipleStreak(habit, habitCompletions, startDate);
+            } else {
+                return calculateDailyStreak(habit, habitCompletions, startDate);
+            }
+        }
+
         function calculateDailyStreak(habit, completions, startDate) {
             let streak = 0;
             let checkDate = new Date();
@@ -2584,7 +2596,7 @@
                             <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
-                                ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                                ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                             </div>
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">
@@ -2667,7 +2679,7 @@
                             <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
-                                ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                                ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                             </div>
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">
@@ -2972,7 +2984,7 @@
         }
 
         function getCompletedDaysCount(habit) {
-            return habit.current_streak || 0;
+            return (habit._streak ?? computeHabitStreak(habit)) || 0;
         }
 
         function calculateCurrentPoints(habit) {
@@ -3351,6 +3363,7 @@
             // Ricarica habits aggiornati
             await loadHabits();
             await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
             recalculateTotalScore();
 
             console.log('✅ Controllo giorni mancati completato');
@@ -3457,7 +3470,7 @@
                 
                 // Mostra popup GAME OVER con dati
                 document.getElementById('gameOverHabitName').textContent = habit.name;
-                document.getElementById('gameOverStreak').textContent = habit.current_streak || 0;
+                document.getElementById('gameOverStreak').textContent = computeHabitStreak(habit);
                 document.getElementById('gameOverDays').textContent = daysPassed;
                 
                 // Suona la musica!
@@ -3502,16 +3515,19 @@
                     new Date(c.completed_at) >= startDate
                 );
                 
+                // Calcola streak dinamicamente prima di chiudere lo stack
+                const currentStreak = computeHabitStreak(habit);
+
                 console.log('📦 Archiving stack:', {
                     habit_name: habit.name,
                     started_at: habit.started_at,
                     ended_at: todayStr,
-                    final_streak: habit.current_streak,
+                    final_streak: currentStreak,
                     total_days: totalDays,
                     completions: stackCompletions.length,
                     failures: stackFailures.length
                 });
-                
+
                 // STEP 1: Archivia lo stack vecchio
                 const { data: archivedData, error: archiveError } = await supabaseClient
                     .from('hb_archived_stacks')
@@ -3521,7 +3537,7 @@
                         category_id: habit.category_id,
                         started_at: habit.started_at,
                         ended_at: todayStr,
-                        final_streak: habit.current_streak || 0,
+                        final_streak: currentStreak,
                         total_days: totalDays,
                         total_completions: stackCompletions.length,
                         total_failures: stackFailures.length,
@@ -3578,55 +3594,61 @@
                     recalculateTotalScore();
                 }
                 
-                // STEP 2: Cancella TUTTI i completions del vecchio stack
-                // (da started_at fino a oggi, così il nuovo stack parte completamente pulito)
-                console.log('🧹 Cancellazione TUTTI i completions del vecchio stack...');
-                const oldStartedAt = habit.started_at;
-                const { error: deleteError } = await supabaseClient
-                    .from('hb_completions')
-                    .delete()
-                    .eq('habit_id', habitId)
-                    .gte('completed_at', `${oldStartedAt}T00:00:00`)
-                    .lte('completed_at', `${todayStr}T23:59:59`);
-                
-                if (deleteError) {
-                    console.error('❌ Errore cancellazione completions vecchio stack:', deleteError);
-                    // Non bloccare il reset per questo
-                } else {
-                    console.log(`✅ Tutti i completions dal ${oldStartedAt} al ${todayStr} cancellati`);
-                }
-                
-                // STEP 3: Reset current_failures e current_streak, aggiorna started_at a oggi
-                const { data, error } = await supabaseClient
+                // STEP 2: Marca vecchio stack come fallito
+                const { error: failError } = await supabaseClient
                     .from('hb_habits')
-                    .update({
-                        current_failures: 0,
-                        current_streak: 0,
-                        started_at: todayStr
-                    })
-                    .eq('id', habitId)
-                    .select();
-                
-                if (error) {
-                    console.error('❌ Errore reset stack:', error);
-                    showToast('Errore reset stack');
+                    .update({ status: 'failed' })
+                    .eq('id', habitId);
+
+                if (failError) {
+                    console.error('❌ Errore aggiornamento status failed:', failError);
+                    showToast('Errore aggiornamento stack');
                     return;
                 }
-                
-                console.log('✅ Stack resettato:', data);
+                console.log('✅ Stack marcato come failed');
+
+                // STEP 3: Crea nuovo stack attivo dal giorno dopo
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                const { error } = await supabaseClient
+                    .from('hb_habits')
+                    .insert([{
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        started_at: tomorrowStr,
+                        status: 'active',
+                        current_failures: 0
+                    }]);
+
+                if (error) {
+                    console.error('❌ Errore creazione nuovo stack:', error);
+                    showToast('Errore creazione nuovo stack');
+                    return;
+                }
+                console.log(`✅ Nuovo stack attivo dal ${tomorrowStr}`);
                 
                 // Chiudi modal
                 document.getElementById('gameOverModal').classList.remove('active');
-                
+
                 // Ricarica tutto
                 await loadHabits();
+                await loadCompletions();
                 await loadArchivedStacks();
-                await loadCompletions(); // IMPORTANTE: ricarica completions aggiornati
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
                 recalculateTotalScore();
                 renderDashboard();
                 renderHabits();
-                
-                showToast('📦 Stack archiviato e ripartito da zero!');
+
+                showToast('📦 Stack archiviato! Nuovo stack attivo da domani.');
                 
             } catch (error) {
                 console.error('❌ Errore closeGameOver:', error);
@@ -3749,10 +3771,10 @@
 
             const progressEl = stack.querySelector('.habit-stack-progress');
             if (progressEl) {
-                const completedDays = habit.current_streak || 0;
+                const completedDays = (habit._streak ?? computeHabitStreak(habit)) || 0;
                 progressEl.innerHTML = `
                     ${completedDays}/${habit.goal}
-                    ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                    ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                 `;
             }
@@ -3872,14 +3894,14 @@
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.9rem; opacity: 0.7;">${frequencyLabel}</div>
-                                ${habit.current_streak > 0 ? `<span class="habit-streak">🔥 ${habit.current_streak}</span>` : ''}
+                                ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span class="habit-streak">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
                             <div style="flex: 1;">
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(habit.current_streak / habit.goal) * 100}%">
-                                        ${Math.round((habit.current_streak / habit.goal) * 100)}%
+                                    <div class="progress-fill" style="width: ${((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100}%">
+                                        ${Math.round(((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100)}%
                                     </div>
                                 </div>
                                 <p style="opacity: 0.7; font-size: 0.9rem;">Obiettivo: ${habit.goal} giorni | Completamenti: ${completionCount}</p>
@@ -3900,7 +3922,7 @@
             // Detailed Stats
             const totalCompletions = completions.length;
             const activeHabits = habits.filter(h => h.status === 'active').length;
-            const totalStreak = habits.reduce((sum, h) => sum + (h.current_streak || 0), 0);
+            const totalStreak = habits.reduce((sum, h) => sum + ((h._streak ?? computeHabitStreak(h)) || 0), 0);
             const avgStreak = activeHabits > 0 ? Math.round(totalStreak / activeHabits) : 0;
 
             const statsHtml = `
@@ -3945,7 +3967,7 @@
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">${habit.current_streak || 0}</div>
+                            <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">${(habit._streak ?? computeHabitStreak(habit)) || 0}</div>
                             <div style="opacity: 0.7; font-size: 0.9rem;">giorni</div>
                         </div>
                     </div>
@@ -4249,9 +4271,9 @@
                                         <span style="font-size: 0.85rem; opacity: 0.7;">
                                             📅 ${habit.frequency === 'daily' ? 'Giornaliera' : 'Settimanale'}
                                         </span>
-                                        ${habit.current_streak > 0 ? `
+                                        ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `
                                             <span style="background: var(--warning); color: white; padding: 0.2rem 0.6rem; font-size: 0.85rem; font-weight: 700;">
-                                                🔥 ${habit.current_streak} giorni
+                                                🔥 ${(habit._streak ?? computeHabitStreak(habit))} giorni
                                             </span>
                                         ` : ''}
                                         <span style="font-size: 0.85rem; opacity: 0.7;">
@@ -4262,8 +4284,8 @@
                             </div>
                             <div style="margin-top: 1rem;">
                                 <div class="progress-bar" style="height: 20px;">
-                                    <div class="progress-fill" style="width: ${(habit.current_streak / habit.goal) * 100}%; font-size: 0.8rem;">
-                                        ${Math.round((habit.current_streak / habit.goal) * 100)}%
+                                    <div class="progress-fill" style="width: ${((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100}%; font-size: 0.8rem;">
+                                        ${Math.round(((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100)}%
                                     </div>
                                 </div>
                                 <p style="opacity: 0.6; font-size: 0.85rem; margin-top: 0.5rem;">Obiettivo: ${habit.goal} giorni</p>
@@ -5195,6 +5217,7 @@
                             await loadCategories();
                             await loadHabits();
                             await loadCompletions();
+                            habits.forEach(h => { h._streak = computeHabitStreak(h); });
                             recalculateTotalScore();
 
                             renderDashboard();
