@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.2.7</title>
+    <title>Habit Stack Tracker v9.2.8</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1556,8 +1556,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.2.7';
-        const BUILD_TIME  = '2026-03-08T13:00:00Z';
+        const APP_VERSION = 'v9.2.8';
+        const BUILD_TIME  = '2026-03-08T13:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1808,16 +1808,33 @@
             }
         }
 
-        function recalculateTotalScore() {
-            let total = 0;
-            for (const habit of habits) {
-                const reward = habit.points_reward || 0;
-                const penalty = habit.points_penalty || 0;
-                const completed = completions.filter(c => c.habit_id === habit.id && c.status === 'completed').length;
-                const failed = completions.filter(c => c.habit_id === habit.id && c.status === 'failed').length;
-                total += completed * reward - failed * penalty;
+        async function recalculateTotalScore() {
+            try {
+                // Carica tutti gli habit (attivi, completati, falliti)
+                const { data: allHabits, error } = await supabaseClient
+                    .from('hb_habits')
+                    .select('id, status, points_reward, points_penalty');
+                if (error) throw error;
+
+                let total = 0;
+                for (const h of (allHabits || [])) {
+                    if (h.status === 'completed') {
+                        // Stack concluso con successo → bonus una tantum
+                        total += h.points_reward || 0;
+                    } else if (h.status === 'failed') {
+                        // Stack fallito → penalità una tantum
+                        total -= h.points_penalty || 0;
+                    } else if (h.status === 'active') {
+                        // Stack attivo → punti accumulati dai completamenti
+                        const done = completions.filter(c => c.habit_id === h.id && c.status === 'completed').length;
+                        const fails = completions.filter(c => c.habit_id === h.id && c.status === 'failed').length;
+                        total += done * (h.points_reward || 0) - fails * (h.points_penalty || 0);
+                    }
+                }
+                document.getElementById('totalScore').textContent = Math.max(0, Math.round(total));
+            } catch (err) {
+                console.error('❌ Errore recalculateTotalScore:', err);
             }
-            document.getElementById('totalScore').textContent = Math.max(0, total);
         }
 
         async function loadUserPoints() {
