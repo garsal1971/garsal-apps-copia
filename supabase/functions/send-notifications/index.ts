@@ -178,6 +178,7 @@ Deno.serve(async (_req) => {
       let responseText  = ''
       let errorMsg      = ''
       let telegramOk    = false
+      let telegramMsgId: number | undefined
 
       if (
         item.channel === 'telegram' &&
@@ -190,15 +191,18 @@ Deno.serve(async (_req) => {
         const result       = await sendTelegram(settings.telegram_chat_id, message, replyMarkup)
         telegramOk         = result.ok
         responseText       = result.response
+        telegramMsgId      = result.message_id
         if (!result.ok) errorMsg = `Telegram API error: ${result.response}`
       } else {
         errorMsg = 'Canale non configurato o disabilitato'
       }
 
-      // Aggiorna status e contatore nella queue
+      // Aggiorna status, contatore e (se disponibile) il message_id Telegram nella queue
+      const updatePayload: Record<string, unknown> = { status: newStatus, send_count: newCount }
+      if (telegramMsgId) updatePayload.telegram_message_id = telegramMsgId
       await sb
         .from('cm_notification_queue')
-        .update({ status: newStatus, send_count: newCount })
+        .update(updatePayload)
         .eq('id', item.id)
 
       // Scrivi nel log storico
