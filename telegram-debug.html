@@ -137,6 +137,7 @@
   <div class="row">
     <button class="warn" onclick="simulateSnooze()">⏸ Simula Snooze 30min</button>
     <button class="warn" onclick="simulateCancel()">❌ Simula Cancel</button>
+    <button class="success" onclick="simulateComplete()">✅ Simula Complete</button>
   </div>
   <div class="row">
     <label style="white-space:nowrap">Queue ID (UUID)</label>
@@ -336,6 +337,11 @@
   async function simulateCancel() {
     const queueId = document.getElementById('queueId').value.trim() || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
     await simulateCallback(`cancel:${queueId}`)
+  }
+
+  async function simulateComplete() {
+    const queueId = document.getElementById('queueId').value.trim() || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    await simulateCallback(`complete:${queueId}`)
   }
 
   // ── getUpdates (polling) ─────────────────────────────────────────────────
