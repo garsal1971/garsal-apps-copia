@@ -37,24 +37,36 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 // Tipi
 // ---------------------------------------------------------------------------
 interface QueueItem {
-  id:         string
-  rule_id:    string
-  user_id:    string
-  app:        string
-  entity_id:  string
-  title:      string
-  body:       string
-  channel:    string
-  fire_at:    string
-  status:     string
-  send_count: number
-  created_at: string
-  metadata?:  { completion_update?: Record<string, unknown> } | null
+  id:                   string
+  rule_id:              string
+  user_id:              string
+  app:                  string
+  entity_id:            string
+  title:                string
+  body:                 string
+  channel:              string
+  fire_at:              string
+  status:               string
+  send_count:           number
+  created_at:           string
+  telegram_message_id?: number | null
+  metadata?:            { completion_update?: Record<string, unknown> } | null
 }
 
 // ---------------------------------------------------------------------------
 // Telegram
 // ---------------------------------------------------------------------------
+
+// Elimina un messaggio Telegram precedente (usato prima di rinviare la stessa entry)
+async function deleteTelegramMessage(chatId: string, messageId: number): Promise<void> {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`
+  await fetch(url, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ chat_id: chatId, message_id: messageId }),
+  })
+}
+
 async function sendTelegram(
   chatId: string,
   text: string,
@@ -185,6 +197,11 @@ Deno.serve(async (_req) => {
         settings?.telegram_enabled &&
         settings?.telegram_chat_id
       ) {
+        // Se è un reinvio (sending → sending/sent), elimina il vecchio messaggio prima di inviarne uno nuovo.
+        // Evita l'accumulo di messaggi duplicati in chat per la stessa entry.
+        if (item.status === 'sending' && item.telegram_message_id) {
+          await deleteTelegramMessage(settings.telegram_chat_id, item.telegram_message_id)
+        }
         const message      = `${item.title}\n${item.body}`
         const hasComplete  = !!(item.metadata?.completion_update)
         const replyMarkup  = buildInlineKeyboard(item.id, hasComplete)
