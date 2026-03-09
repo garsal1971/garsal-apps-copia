@@ -15,8 +15,7 @@
 //   2. Parsa il body JSON di Telegram (callback_query)
 //   3. Aggiorna cm_notification_queue (status + fire_at)
 //   4. Risponde a Telegram con answerCallbackQuery (obbligatorio)
-//   5. Modifica il messaggio originale via editMessageText
-//      (rimuove i bottoni + aggiunge riga di stato)
+//   5. Elimina il messaggio cliccato e tutti i messaggi sibling (stesso rule_id)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -47,23 +46,29 @@ async function answerCallbackQuery(callbackQueryId: string, text: string): Promi
   })
 }
 
-async function editMessageText(
-  chatId: number,
-  messageId: number,
-  text: string
-): Promise<void> {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`
+async function deleteMessage(chatId: number, messageId: number): Promise<void> {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`
   await fetch(url, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      chat_id:      chatId,
-      message_id:   messageId,
-      text,
-      parse_mode:   'HTML',
-      reply_markup: { inline_keyboard: [] },  // rimuove i bottoni
-    }),
+    body:    JSON.stringify({ chat_id: chatId, message_id: messageId }),
   })
+}
+
+// Elimina i messaggi Telegram di tutti gli item sibling (stesso rule_id)
+async function deleteSiblingMessages(ruleId: string, excludeQueueId: string, chatId: number): Promise<void> {
+  const { data } = await sb
+    .from('cm_notification_queue')
+    .select('telegram_message_id')
+    .eq('rule_id', ruleId)
+    .neq('id', excludeQueueId)
+    .not('telegram_message_id', 'is', null)
+  if (!data) return
+  for (const row of data) {
+    if (row.telegram_message_id) {
+      await deleteMessage(chatId, row.telegram_message_id as number)
+    }
+  }
 }
 
 // Formatta un'ora in formato HH:MM italiano
@@ -182,21 +187,20 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: String(error) })
     }
 
-    // Cancella tutti gli altri promemoria pendenti della stessa regola
-    // (l'item snoozato viene escluso tramite neq('id', queueId))
-    if (snoozeRow?.rule_id) {
-      await cancelSiblingItems(snoozeRow.rule_id as string, queueId)
-    }
-
     // Etichetta leggibile per la durata
     let label: string
     if (minutes < 60)        label = `${minutes} min`
     else if (minutes < 1440) label = `${minutes / 60} h`
     else                     label = 'domani'
 
-    const newText = `${originalText ?? ''}\n\n⏸ <i>Sospeso — nuovo invio alle ${formatDateTime(newFireAt)}</i>`
     await answerCallbackQuery(callbackQueryId, `⏸ Sospeso per ${label}`)
-    await editMessageText(chatId, messageId, newText)
+
+    // Elimina i messaggi sibling + cancella dalla coda, poi elimina il messaggio cliccato
+    if (snoozeRow?.rule_id) {
+      await deleteSiblingMessages(snoozeRow.rule_id as string, queueId, chatId)
+      await cancelSiblingItems(snoozeRow.rule_id as string, queueId)
+    }
+    await deleteMessage(chatId, messageId)
 
   } else if (action === 'cancel' && parts.length === 2) {
     const queueId = parts[1]
@@ -219,14 +223,14 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: String(error) })
     }
 
-    // Cancella tutti gli altri promemoria pendenti della stessa regola
+    await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
+
+    // Elimina i messaggi sibling + cancella dalla coda, poi elimina il messaggio cliccato
     if (cancelRow?.rule_id) {
+      await deleteSiblingMessages(cancelRow.rule_id as string, queueId, chatId)
       await cancelSiblingItems(cancelRow.rule_id as string, queueId)
     }
-
-    const newText = `${originalText ?? ''}\n\n❌ <i>Promemoria annullato</i>`
-    await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
-    await editMessageText(chatId, messageId, newText)
+    await deleteMessage(chatId, messageId)
 
   } else if (action === 'complete' && parts.length === 2) {
     const queueId = parts[1]
@@ -308,13 +312,12 @@ Deno.serve(async (req) => {
       ? cancelBase.filter('metadata->>slot_time', 'eq', slotTime)
       : cancelBase)
 
-    // Cancella anche gli altri promemoria pendenti della stessa regola (es. più offset per lo stesso task)
-    await cancelSiblingItems(queueRow.rule_id as string, queueId)
-
-    const nowStr = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
-    const newText = `${originalText ?? ''}\n\n✅ <i>Completato alle ${nowStr}</i>`
     await answerCallbackQuery(callbackQueryId, '✅ Completato!')
-    await editMessageText(chatId, messageId, newText)
+
+    // Elimina i messaggi sibling + cancella dalla coda, poi elimina il messaggio cliccato
+    await deleteSiblingMessages(queueRow.rule_id as string, queueId, chatId)
+    await cancelSiblingItems(queueRow.rule_id as string, queueId)
+    await deleteMessage(chatId, messageId)
 
   } else {
     console.warn('[telegram-webhook] callback_data non riconosciuto:', callbackData)
