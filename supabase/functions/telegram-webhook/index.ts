@@ -207,38 +207,47 @@ Deno.serve(async (req) => {
     }
 
     const cu = (queueRow.metadata as Record<string, unknown> | null)?.completion_update as {
-      table: string; fields: Record<string, unknown>
+      app?:        string
+      operations?: Array<{
+        op:      string
+        table:   string
+        fields?: Record<string, unknown>
+      }>
     } | undefined
 
-    if (!cu?.table || !cu?.fields) {
+    if (!cu?.operations?.length) {
       await answerCallbackQuery(callbackQueryId, '❌ Dati completamento non disponibili')
       return json({ ok: false, error: 'no completion_update in metadata' })
     }
 
-    // Risolvi i template variables in fields
+    // Risolvi i template variables
     // {{fire_date_local}}: data locale (Europe/Rome) del fire_at
-    // {{slot_time}}: HH:MM estratto da completed_at template o fire_at
-    const fireAt  = new Date(queueRow.fire_at as string)
+    // {{slot_time}}: HH:MM dal fire_at locale
+    const fireAt       = new Date(queueRow.fire_at as string)
     const localDateStr = fireAt.toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' }) // YYYY-MM-DD
     const localTimeStr = fireAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) // HH:MM
 
-    const resolvedFields: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(cu.fields)) {
-      if (typeof v === 'string') {
-        resolvedFields[k] = v
-          .replace('{{fire_date_local}}', localDateStr)
-          .replace('{{slot_time}}', localTimeStr)
-      } else {
-        resolvedFields[k] = v
-      }
+    function resolveTemplates(val: unknown): unknown {
+      if (typeof val !== 'string') return val
+      return val
+        .replace('{{fire_date_local}}', localDateStr)
+        .replace('{{slot_time}}', localTimeStr)
     }
 
-    // Inserisci il record di completamento
-    const { error: insertErr } = await sb.from(cu.table).insert(resolvedFields)
-    if (insertErr) {
-      console.error('[telegram-webhook] errore insert completamento:', insertErr)
-      await answerCallbackQuery(callbackQueryId, '❌ Errore durante il completamento')
-      return json({ ok: false, error: String(insertErr) })
+    // Esegui ogni operazione nell'array
+    for (const operation of cu.operations) {
+      if (operation.op === 'insert' && operation.fields) {
+        const resolved: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(operation.fields)) {
+          resolved[k] = resolveTemplates(v)
+        }
+        const { error: insertErr } = await sb.from(operation.table).insert(resolved)
+        if (insertErr) {
+          console.error('[telegram-webhook] errore insert completamento:', insertErr)
+          await answerCallbackQuery(callbackQueryId, '❌ Errore durante il completamento')
+          return json({ ok: false, error: String(insertErr) })
+        }
+      }
     }
 
     // Annulla le notifiche pending della stessa queue entry
