@@ -2006,7 +2006,8 @@
 
                 // Salva regola promemoria
                 const reminderTime = document.getElementById('habitReminderTime').value;
-                await syncHabitNotificationRule(data[0].id, frequency, daily_times || [], reminderTime, name, addHabitReminderIds, weekdays, startedAt, goal, addHabitCompleteButton);
+                const addHabitCompleteButtonChecked = document.getElementById('addHabitCompleteButton')?.checked || false;
+                await syncHabitNotificationRule(data[0].id, frequency, daily_times || [], reminderTime, name, addHabitReminderIds, weekdays, startedAt, goal, addHabitCompleteButtonChecked);
 
                 closeModal('addHabitModal');
                 showToast('Abitudine creata con successo! 🎉');
@@ -4895,7 +4896,8 @@
 
                 // Aggiorna regola promemoria
                 const editReminderTime = document.getElementById('editHabitReminderTime').value;
-                await syncHabitNotificationRule(habitId, frequency, daily_times || [], editReminderTime, name, editHabitReminderIds, weekdays, startedAt, goal, editHabitCompleteButton);
+                const editHabitCompleteButtonChecked = document.getElementById('editHabitCompleteButton')?.checked || false;
+                await syncHabitNotificationRule(habitId, frequency, daily_times || [], editReminderTime, name, editHabitReminderIds, weekdays, startedAt, goal, editHabitCompleteButtonChecked);
 
                 closeModal('editHabitModal');
                 showToast('Abitudine aggiornata! 🎉');
