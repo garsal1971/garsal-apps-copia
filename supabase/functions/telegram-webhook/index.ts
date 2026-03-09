@@ -193,10 +193,10 @@ Deno.serve(async (req) => {
   } else if (action === 'complete' && parts.length === 2) {
     const queueId = parts[1]
 
-    // Leggi la queue entry per ottenere metadata.completion_update e rule_id
+    // Leggi la queue entry per ottenere metadata.completion_update
     const { data: queueRow, error: fetchErr } = await sb
       .from('cm_notification_queue')
-      .select('metadata, entity_id, fire_at, rule_id')
+      .select('metadata, entity_id, fire_at')
       .eq('id', queueId)
       .maybeSingle()
 
@@ -239,37 +239,6 @@ Deno.serve(async (req) => {
       console.error('[telegram-webhook] errore insert completamento:', insertErr)
       await answerCallbackQuery(callbackQueryId, '❌ Errore durante il completamento')
       return json({ ok: false, error: String(insertErr) })
-    }
-
-    // Esegui rule_update se presente: appende lo slot completato a completed_slots
-    const ru = (cu as Record<string, unknown>).rule_update as
-      { append_to: string; value: string } | undefined
-    if (ru?.append_to && ru?.value && queueRow.rule_id) {
-      const resolvedValue = ru.value
-        .replace('{{fire_date_local}}', localDateStr)
-        .replace('{{slot_time}}', localTimeStr)
-
-      const { data: ruleRow } = await sb
-        .from('cm_notification_rules')
-        .select('reminder_presets')
-        .eq('id', queueRow.rule_id)
-        .maybeSingle()
-
-      if (ruleRow?.reminder_presets) {
-        const presets = ruleRow.reminder_presets as Record<string, unknown>
-        const existing = Array.isArray(presets[ru.append_to])
-          ? (presets[ru.append_to] as string[])
-          : []
-        if (!existing.includes(resolvedValue)) {
-          existing.push(resolvedValue)
-        }
-        presets[ru.append_to] = existing
-        await sb
-          .from('cm_notification_rules')
-          .update({ reminder_presets: presets })
-          .eq('id', queueRow.rule_id)
-        console.log(`[telegram-webhook] rule_update: appended ${resolvedValue} to ${ru.append_to}`)
-      }
     }
 
     // Annulla le notifiche pending della stessa queue entry

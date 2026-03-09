@@ -5455,17 +5455,23 @@
                 telegram_complete_button: true,
                 completion_update: {
                     app: 'habits',
-                    table: 'hb_completions',
-                    op: 'insert',
-                    fields: {
-                        habit_id: habitId,
-                        completed_at: '{{fire_date_local}}T{{slot_time}}:00',
-                        status: 'completed'
-                    },
-                    rule_update: {
-                        append_to: 'completed_slots',
-                        value: '{{fire_date_local}}T{{slot_time}}'
-                    }
+                    operations: [
+                        {
+                            op: 'insert',
+                            table: 'hb_completions',
+                            fields: {
+                                habit_id: habitId,
+                                completed_at: '{{fire_date_local}}T{{slot_time}}:00',
+                                status: 'completed'
+                            }
+                        },
+                        {
+                            op: 'update',
+                            table: 'hb_habits',
+                            set: { updated_at: '{{fire_date_local}}T{{slot_time}}:00' },
+                            where: { id: habitId }
+                        }
+                    ]
                 }
             } : {};
 

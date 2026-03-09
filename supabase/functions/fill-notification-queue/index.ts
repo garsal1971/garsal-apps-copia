@@ -47,14 +47,14 @@ interface HabitReminderPresets {
   days?:     number[]           // [0-6] solo per weekly (0=domenica)
   telegram_complete_button?: boolean
   completion_update?: {
-    app:    string
-    table:  string
-    op:     string
-    fields: Record<string, unknown>
-    rule_update?: {
-      append_to: string
-      value:     string
-    }
+    app:        string
+    operations: Array<{
+      op:     string
+      table:  string
+      fields?: Record<string, unknown>
+      set?:   Record<string, unknown>
+      where?: Record<string, unknown>
+    }>
   }
 }
 
