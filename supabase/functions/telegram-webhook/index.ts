@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
     // Leggi la queue entry per ottenere metadata.completion_update
     const { data: queueRow, error: fetchErr } = await sb
       .from('cm_notification_queue')
-      .select('metadata, entity_id, fire_at')
+      .select('metadata, entity_id, fire_at, rule_id')
       .eq('id', queueId)
       .maybeSingle()
 
@@ -250,11 +250,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Annulla le notifiche pending della stessa queue entry
+    // Cancella tutte le entry pending/sending dello stesso habit per lo stesso giorno UTC
+    // (un habit può avere più reminder, es. [6h, 5h, 1h] = 3 entry per slot)
+    const fireDay = (queueRow.fire_at as string).slice(0, 10) // YYYY-MM-DD
     await sb
       .from('cm_notification_queue')
       .update({ status: 'cancelled' })
-      .eq('id', queueId)
+      .eq('rule_id', queueRow.rule_id as string)
+      .in('status', ['pending', 'sending'])
+      .gte('fire_at', `${fireDay}T00:00:00.000Z`)
+      .lte('fire_at', `${fireDay}T23:59:59.999Z`)
 
     const nowStr = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
     const newText = `${originalText ?? ''}\n\n✅ <i>Completato alle ${nowStr}</i>`
