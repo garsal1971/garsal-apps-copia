@@ -79,6 +79,18 @@ function formatDateTime(date: Date): string {
   return `${dd}/${mm}/${yyyy} ${formatTime(date)}`
 }
 
+// Cancella tutti gli altri item pendenti/snoozed della stessa regola
+// (chiamata dopo ogni azione dell'utente per rimuovere notifiche duplicate)
+async function cancelSiblingItems(ruleId: string, excludeQueueId: string): Promise<void> {
+  const { error } = await sb
+    .from('cm_notification_queue')
+    .update({ status: 'cancelled' })
+    .eq('rule_id', ruleId)
+    .neq('id', excludeQueueId)
+    .in('status', ['pending', 'snoozed', 'sending'])
+  if (error) console.error('[telegram-webhook] errore cancelSiblingItems:', error)
+}
+
 // ---------------------------------------------------------------------------
 // Handler principale
 // ---------------------------------------------------------------------------
@@ -152,6 +164,13 @@ Deno.serve(async (req) => {
 
     const newFireAt = new Date(Date.now() + minutes * 60 * 1000)
 
+    // Leggi rule_id per poter cancellare i promemoria correlati
+    const { data: snoozeRow } = await sb
+      .from('cm_notification_queue')
+      .select('rule_id')
+      .eq('id', queueId)
+      .maybeSingle()
+
     const { error } = await sb
       .from('cm_notification_queue')
       .update({ status: 'snoozed', fire_at: newFireAt.toISOString() })
@@ -161,6 +180,12 @@ Deno.serve(async (req) => {
       console.error('[telegram-webhook] errore snooze:', error)
       await answerCallbackQuery(callbackQueryId, '❌ Errore durante la sospensione')
       return json({ ok: false, error: String(error) })
+    }
+
+    // Cancella tutti gli altri promemoria pendenti della stessa regola
+    // (l'item snoozato viene escluso tramite neq('id', queueId))
+    if (snoozeRow?.rule_id) {
+      await cancelSiblingItems(snoozeRow.rule_id as string, queueId)
     }
 
     // Etichetta leggibile per la durata
@@ -176,6 +201,13 @@ Deno.serve(async (req) => {
   } else if (action === 'cancel' && parts.length === 2) {
     const queueId = parts[1]
 
+    // Leggi rule_id per poter cancellare i promemoria correlati
+    const { data: cancelRow } = await sb
+      .from('cm_notification_queue')
+      .select('rule_id')
+      .eq('id', queueId)
+      .maybeSingle()
+
     const { error } = await sb
       .from('cm_notification_queue')
       .update({ status: 'cancelled' })
@@ -185,6 +217,11 @@ Deno.serve(async (req) => {
       console.error('[telegram-webhook] errore cancel:', error)
       await answerCallbackQuery(callbackQueryId, '❌ Errore durante l\'annullamento')
       return json({ ok: false, error: String(error) })
+    }
+
+    // Cancella tutti gli altri promemoria pendenti della stessa regola
+    if (cancelRow?.rule_id) {
+      await cancelSiblingItems(cancelRow.rule_id as string, queueId)
     }
 
     const newText = `${originalText ?? ''}\n\n❌ <i>Promemoria annullato</i>`
@@ -270,6 +307,9 @@ Deno.serve(async (req) => {
     await (slotTime
       ? cancelBase.filter('metadata->>slot_time', 'eq', slotTime)
       : cancelBase)
+
+    // Cancella anche gli altri promemoria pendenti della stessa regola (es. più offset per lo stesso task)
+    await cancelSiblingItems(queueRow.rule_id as string, queueId)
 
     const nowStr = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
     const newText = `${originalText ?? ''}\n\n✅ <i>Completato alle ${nowStr}</i>`
