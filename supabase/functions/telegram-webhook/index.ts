@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
       }>
     } | undefined
 
-    if (!cu?.operations?.length) {
+    if (!cu) {
       await answerCallbackQuery(callbackQueryId, '❌ Dati completamento non disponibili')
       return json({ ok: false, error: 'no completion_update in metadata' })
     }
@@ -295,8 +295,8 @@ Deno.serve(async (req) => {
         .replace('{{slot_time}}', localTimeStr)
     }
 
-    // Esegui ogni operazione nell'array
-    for (const operation of cu.operations) {
+    // Esegui ogni operazione nell'array (può essere vuoto per i task)
+    for (const operation of (cu.operations ?? [])) {
       if (operation.op === 'insert' && operation.fields) {
         const resolved: Record<string, unknown> = {}
         for (const [k, v] of Object.entries(operation.fields)) {
@@ -308,6 +308,23 @@ Deno.serve(async (req) => {
           await answerCallbackQuery(callbackQueryId, '❌ Errore durante il completamento')
           return json({ ok: false, error: String(insertErr) })
         }
+      }
+    }
+
+    // Per i task, chiama l'RPC di completamento
+    if (cu.app === 'tasks') {
+      const taskId = queueRow.entity_id as string | undefined
+      if (taskId) {
+        const { data: rpcResult, error: rpcErr } = await sb.rpc('task_complete_via_telegram', {
+          p_task_id: taskId,
+          p_today:   localDateStr,
+        })
+        if (rpcErr) {
+          console.error('[telegram-webhook] errore task_complete_via_telegram:', rpcErr)
+          await answerCallbackQuery(callbackQueryId, '❌ Errore completamento task')
+          return json({ ok: false, error: String(rpcErr) })
+        }
+        console.log('[telegram-webhook] task_complete_via_telegram:', JSON.stringify(rpcResult))
       }
     }
 

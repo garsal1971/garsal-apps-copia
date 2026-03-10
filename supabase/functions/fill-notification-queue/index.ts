@@ -36,8 +36,9 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 // Tipi
 // ---------------------------------------------------------------------------
 interface TaskReminderPresets {
-  reminders: number[]
-  due_at:    string     // ISO timestamptz — scadenza task
+  reminders:               number[]
+  due_at:                  string     // ISO timestamptz — scadenza task
+  telegram_complete_button?: boolean
 }
 
 interface HabitReminderPresets {
@@ -183,6 +184,10 @@ Deno.serve(async (_req) => {
               completion_update: hrp.completion_update,
               slot_time: entry.time,   // es. "08:00" — orario del slot habit
             }
+          }
+        } else if ((rp as TaskReminderPresets).telegram_complete_button) {
+          entryMetadata = {
+            completion_update: { app: 'tasks' },
           }
         }
 
