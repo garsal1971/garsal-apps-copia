@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.2</title>
+    <title>Tasks v19.18.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2079,8 +2079,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.2';
-        const BUILD_TIME  = '2026-03-10T12:00:00Z';
+        const APP_VERSION = 'v19.18.3';
+        const BUILD_TIME  = '2026-03-10T13:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2166,6 +2166,7 @@
         let history = [];
         let settings = {};
         let reminders = [];
+        let telegramCompleteButton = true; // Toggle bottone "Fatto" Telegram per il task corrente
         let selectedCategories = [];
         let currentViewTaskId = null;
         let notes = []; // Appunti
@@ -2364,7 +2365,7 @@
                     .maybeSingle();
 
                 const reminderPresets = { reminders: presetIds, due_at: dueDate || null };
-                if (taskType !== 'workflow') reminderPresets.telegram_complete_button = true;
+                if (taskType !== 'workflow' && telegramCompleteButton) reminderPresets.telegram_complete_button = true;
 
                 const rule = {
                     user_id:          userId,
@@ -5296,6 +5297,7 @@
             document.getElementById('taskForm').reset();
             selectedCategories = [];
             reminders = [];
+            telegramCompleteButton = true;
             console.log('🟢 reminders reset to:', reminders);
             yearlyDates = []; // Reset date annuali
             multipleDates = []; // Reset date multiple
@@ -5394,6 +5396,7 @@
             
             // Promemoria
             reminders = task.reminders || [];
+            telegramCompleteButton = true; // default true; l'utente può cambiarlo nel form
             
             // Punti
             document.getElementById('successPoints').value = task.success_points;
@@ -6179,6 +6182,9 @@
             // Lista promemoria da DB (cm_reminder_presets)
             const availableReminders = reminderPresets.map(p => p.label);
             
+            const currentType = document.getElementById('taskType')?.value || '';
+            const showTelegramToggle = currentType !== 'workflow';
+
             listEl.innerHTML = `
                 <!-- Disponibili: chip cliccabili a tutta larghezza -->
                 <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; min-height: 36px; margin-bottom: 0.5rem;">
@@ -6188,8 +6194,8 @@
                             display: inline-flex; align-items: center; gap: 0.3rem;
                             padding: 0.25rem 0.6rem; border-radius: 20px; cursor: pointer;
                             font-size: 0.85rem; transition: all 0.15s; user-select: none;
-                            ${isSelected 
-                                ? 'background: var(--accent); color: #fff; border: 1px solid var(--accent);' 
+                            ${isSelected
+                                ? 'background: var(--accent); color: #fff; border: 1px solid var(--accent);'
                                 : 'background: #fff; color: #333; border: 1px solid #ddd;'}
                         " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                             ${r}
@@ -6197,8 +6203,18 @@
                         </div>`;
                     }).join('')}
                 </div>
+                ${showTelegramToggle ? `
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.15rem 0.1rem;">
+                    <input type="checkbox" id="telegramCompleteToggle"
+                           ${telegramCompleteButton ? 'checked' : ''}
+                           onchange="telegramCompleteButton = this.checked"
+                           style="width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0;">
+                    <span style="font-size: 0.82rem; color: var(--muted); user-select: none;">
+                        Bottone "Fatto" su Telegram
+                    </span>
+                </label>` : ''}
             `;
-            
+
             console.log('🔵 Chip+textbox rendered');
         }
         
