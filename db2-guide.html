@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB2 Guide v1.0.0 — KCBPANAG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #FF3366;
+            --secondary: #6C5CE7;
+            --success:   #00B894;
+            --warning:   #F39C12;
+            --danger:    #E74C3C;
+            --dark:      #1F2937;
+            --light:     #FFFFFF;
+            --muted:     #6B7280;
+            --accent:    #2563EB;
+            --border:    #E5E7EB;
+            --card-bg:   #FFFFFF;
+            --input-bg:  #F9FAFB;
+            --code-bg:   #1F2937;
+            --code-text: #E2E8F0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Darker Grotesque', sans-serif;
+            background: var(--input-bg);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .page-header {
+            background: var(--dark);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .version-badge {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        .header-subtitle {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        /* ── CONTENT ── */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn:hover { color: var(--accent); }
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--dark);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title .icon {
+            font-size: 1.4rem;
+        }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: var(--input-bg);
+            padding: 0.6rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--input-bg); }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        .badge-in  { background: rgba(37, 99, 235, 0.1); color: var(--accent); }
+        .badge-out { background: rgba(0, 184, 148, 0.1); color: var(--success); }
+
+        /* ── CODE BLOCKS ── */
+        .code-block {
+            position: relative;
+            background: var(--code-bg);
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .code-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.72rem;
+            color: #94A3B8;
+            padding: 0.5rem 1rem 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-block pre {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--code-text);
+            padding: 0.8rem 1rem 1rem;
+            overflow-x: auto;
+            line-height: 1.6;
+            white-space: pre;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: rgba(37, 99, 235, 0.2);
+            color: #93C5FD;
+            border: 1px solid rgba(37, 99, 235, 0.4);
+            padding: 0.25rem 0.7rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover { background: rgba(37, 99, 235, 0.4); }
+        .copy-btn.copied { background: rgba(0,184,148,0.3); color: #6EE7B7; border-color: rgba(0,184,148,0.5); }
+
+        /* Syntax highlight colors */
+        .kw  { color: #93C5FD; }   /* keywords: EXEC, ADDRESS, IF, THEN... */
+        .cm  { color: #6B7280; font-style: italic; } /* commenti */
+        .st  { color: #A5F3FC; }   /* stringhe */
+        .nm  { color: #FCD34D; }   /* numeri/nomi proc */
+        .var { color: #86EFAC; }   /* variabili */
+
+        /* ── STEPS ── */
+        .step-list { list-style: none; counter-reset: steps; }
+        .step-list li {
+            counter-increment: steps;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            align-items: flex-start;
+        }
+
+        .step-list li::before {
+            content: counter(steps);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            height: 2rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .step-content { flex: 1; }
+        .step-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.3rem; }
+        .step-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+
+        /* ── ALERT ── */
+        .alert {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin: 1rem 0;
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+        }
+
+        .alert-info    { background: rgba(37,99,235,0.08);  border-left: 4px solid var(--accent);   color: #1E40AF; }
+        .alert-warning { background: rgba(243,156,18,0.08); border-left: 4px solid var(--warning);  color: #92400E; }
+        .alert-success { background: rgba(0,184,148,0.08);  border-left: 4px solid var(--success);  color: #065F46; }
+
+        /* ── SQLCODE TABLE ── */
+        .sqlcode-ok  { color: var(--success); font-weight: 700; }
+        .sqlcode-warn{ color: var(--warning); font-weight: 700; }
+        .sqlcode-err { color: var(--danger);  font-weight: 700; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .page-header { flex-wrap: wrap; }
+            .header-subtitle { margin-left: 0; width: 100%; }
+            .container { padding: 1rem 1rem 3rem; }
+            .code-block pre { font-size: 0.72rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <span class="logo">DB2 Guide</span>
+    <span class="version-badge">v1.0.0</span>
+    <span class="header-subtitle">Guida: Stored Procedure KCBPANAG — z/OS</span>
+</header>
+
+<div class="container">
+
+    <!-- TABS -->
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="showTab('panoramica')">Panoramica</button>
+        <button class="tab-btn" onclick="showTab('rexx')">REXX</button>
+        <button class="tab-btn" onclick="showTab('jcl')">JCL Esecuzione</button>
+        <button class="tab-btn" onclick="showTab('troubleshooting')">Troubleshooting</button>
+    </nav>
+
+    <!-- ========================= PANORAMICA ========================= -->
+    <div id="tab-panoramica" class="tab-panel active">
+
+        <div class="card">
+            <div class="card-title"><span class="icon">📋</span> Firma della Stored Procedure</div>
+            <div class="code-block">
+                <div class="code-label">DB2 z/OS — Signature</div>
+                <pre><span class="kw">CALL</span> <span class="nm">KCBPANAG</span> (
+    <span class="var">PARM1</span>,    <span class="cm">-- IN  VARCHAR — parametro di input (chiave/codice)</span>
+    <span class="var">PARM2</span>,    <span class="cm">-- OUT VARCHAR — valore restituito 1</span>
+    <span class="var">PARM3</span>,    <span class="cm">-- OUT VARCHAR — valore restituito 2</span>
+    <span class="var">PARM4</span>,    <span class="cm">-- OUT VARCHAR — valore restituito 3</span>
+    <span class="var">PARM5</span>     <span class="cm">-- OUT VARCHAR — valore restituito 4</span>
+)</pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copia</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">📊</span> Tabella Parametri</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parametro</th>
+                        <th>Direzione</th>
+                        <th>Tipo</th>
+                        <th>Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>PARM1</code></td>
+                        <td><span class="badge badge-in">IN</span></td>
+                        <td>VARCHAR</td>
+                        <td>Parametro di input — chiave o codice da passare alla proc</td>
+                    </tr>
+                    <tr>
+                        <td><code>PARM2</code></td>
+                        <td><span class="badge badge-out">OUT</span></td>
+                        <td>VARCHAR</td>
+                        <td>Primo valore restituito dalla stored procedure</td>
+                    </tr>
+                    <tr>
+                        <td><code>PARM3</code></td>
+                        <td><span class="badge badge-out">OUT</span></td>
+                        <td>VARCHAR</td>
+                        <td>Secondo valore restituito dalla stored procedure</td>
+                    </tr>
+                    <tr>
+                        <td><code>PARM4</code></td>
+                        <td><span class="badge badge-out">OUT</span></td>
+                        <td>VARCHAR</td>
+                        <td>Terzo valore restituito dalla stored procedure</td>
+                    </tr>
+                    <tr>
+                        <td><code>PARM5</code></td>
+                        <td><span class="badge badge-out">OUT</span></td>
+                        <td>VARCHAR</td>
+                        <td>Quarto valore restituito dalla stored procedure</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🔢</span> Passi da seguire</div>
+            <ol class="step-list">
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Prepara il REXX</div>
+                        <div class="step-desc">Crea un membro nel tuo dataset REXX con il codice di chiamata. Imposta il valore di PARM1 (il tuo parametro IN) e inizializza i parametri OUT a spazio vuoto.</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Connettiti al subsystem DB2</div>
+                        <div class="step-desc">Usa <code>ADDRESS DSNREXX</code> e il comando <code>DSNREXX CONNECT DSN1</code> (sostituisci DSN1 con il nome del tuo subsystem DB2).</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Esegui la CALL</div>
+                        <div class="step-desc">Usa <code>EXECSQL CALL KCBPANAG(:PARM1, :PARM2, :PARM3, :PARM4, :PARM5)</code>. I due punti (<code>:</code>) davanti al nome identificano le variabili host REXX.</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Controlla SQLCODE</div>
+                        <div class="step-desc">Verifica sempre la variabile <code>SQLCODE</code> dopo la CALL. <code>0</code> = successo, <code>100</code> = nessuna riga, negativo = errore.</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Leggi i parametri OUT</div>
+                        <div class="step-desc">Se SQLCODE = 0, le variabili PARM2, PARM3, PARM4, PARM5 contengono i valori restituiti dalla stored procedure. Usale direttamente nel codice REXX.</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Disconnetti e termina</div>
+                        <div class="step-desc">Chiama <code>DSNREXX DISCONNECT</code> per rilasciare la connessione DB2 prima di terminare il REXX.</div>
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+    </div>
+
+    <!-- ========================= REXX ========================= -->
+    <div id="tab-rexx" class="tab-panel">
+
+        <div class="card">
+            <div class="card-title"><span class="icon">📝</span> Codice REXX completo</div>
+            <p style="color:var(--muted); margin-bottom:1rem; font-size:0.95rem;">
+                Copia questo membro nel tuo dataset REXX (es. <code>MY.REXX(KCBPANAG)</code>).
+                Modifica il nome del subsystem DB2 (<code>DSN1</code>) e il valore di <code>PARM1_VAL</code>.
+            </p>
+            <div class="code-block">
+                <div class="code-label">REXX — MY.REXX(KCBPANAG)</div>
+                <pre><span class="cm">/* REXX — Chiamata stored procedure KCBPANAG                    */</span>
+<span class="cm">/* Parametri: PARM1 IN, PARM2/3/4/5 OUT                         */</span>
+
+<span class="kw">ADDRESS</span> <span class="nm">DSNREXX</span>
+
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="cm">/* STEP 1 — Connessione al subsystem DB2                        */</span>
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="st">"DSNREXX CONNECT DSN1"</span>          <span class="cm">/* &lt;-- sostituire DSN1 con il tuo subsystem */</span>
+<span class="kw">IF</span> <span class="var">RC</span> <span class="kw">&lt;&gt;</span> <span class="nm">0</span> <span class="kw">THEN DO</span>
+    <span class="kw">SAY</span> <span class="st">'ERRORE: Connessione DB2 fallita. RC='</span> <span class="var">RC</span>
+    <span class="kw">EXIT</span> <span class="nm">8</span>
+<span class="kw">END</span>
+
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="cm">/* STEP 2 — Inizializzazione parametri                          */</span>
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="var">PARM1</span> = <span class="st">'VALORE_INPUT'</span>            <span class="cm">/* &lt;-- IN:  imposta il tuo valore       */</span>
+<span class="var">PARM2</span> = <span class="st">' '</span>                        <span class="cm">/* OUT: inizializzato a spazio vuoto    */</span>
+<span class="var">PARM3</span> = <span class="st">' '</span>                        <span class="cm">/* OUT: inizializzato a spazio vuoto    */</span>
+<span class="var">PARM4</span> = <span class="st">' '</span>                        <span class="cm">/* OUT: inizializzato a spazio vuoto    */</span>
+<span class="var">PARM5</span> = <span class="st">' '</span>                        <span class="cm">/* OUT: inizializzato a spazio vuoto    */</span>
+
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="cm">/* STEP 3 — Chiamata alla stored procedure                      */</span>
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="st">"EXECSQL CALL KCBPANAG(:PARM1, :PARM2, :PARM3, :PARM4, :PARM5)"</span>
+
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="cm">/* STEP 4 — Controllo SQLCODE e lettura parametri OUT           */</span>
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="kw">SELECT</span>
+    <span class="kw">WHEN</span> <span class="var">SQLCODE</span> = <span class="nm">0</span> <span class="kw">THEN DO</span>
+        <span class="kw">SAY</span> <span class="st">'=== KCBPANAG eseguita con successo ==='</span>
+        <span class="kw">SAY</span> <span class="st">'PARM1 (IN)  :'</span> <span class="var">PARM1</span>
+        <span class="kw">SAY</span> <span class="st">'PARM2 (OUT) :'</span> <span class="var">PARM2</span>
+        <span class="kw">SAY</span> <span class="st">'PARM3 (OUT) :'</span> <span class="var">PARM3</span>
+        <span class="kw">SAY</span> <span class="st">'PARM4 (OUT) :'</span> <span class="var">PARM4</span>
+        <span class="kw">SAY</span> <span class="st">'PARM5 (OUT) :'</span> <span class="var">PARM5</span>
+    <span class="kw">END</span>
+    <span class="kw">WHEN</span> <span class="var">SQLCODE</span> = <span class="nm">100</span> <span class="kw">THEN DO</span>
+        <span class="kw">SAY</span> <span class="st">'ATTENZIONE: Nessuna riga trovata (SQLCODE 100)'</span>
+    <span class="kw">END</span>
+    <span class="kw">OTHERWISE DO</span>
+        <span class="kw">SAY</span> <span class="st">'=== ERRORE SQL ==='</span>
+        <span class="kw">SAY</span> <span class="st">'SQLCODE  ='</span> <span class="var">SQLCODE</span>
+        <span class="kw">SAY</span> <span class="st">'SQLERRM  ='</span> <span class="var">SQLERRM</span>
+        <span class="kw">SAY</span> <span class="st">'SQLSTATE ='</span> <span class="var">SQLSTATE</span>
+        <span class="cm">/* Disconnetti prima di uscire in errore */</span>
+        <span class="st">"DSNREXX DISCONNECT"</span>
+        <span class="kw">EXIT</span> <span class="nm">12</span>
+    <span class="kw">END</span>
+<span class="kw">END</span>
+
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="cm">/* STEP 5 — Disconnessione                                      */</span>
+<span class="cm">/* ------------------------------------------------------------ */</span>
+<span class="st">"DSNREXX DISCONNECT"</span>
+
+<span class="kw">EXIT</span> <span class="nm">0</span></pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copia</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">ℹ️</span> Note importanti</div>
+            <div class="alert alert-info">
+                <span>💡</span>
+                <span>Il prefisso <strong>:</strong> (due punti) davanti al nome variabile nella EXECSQL identifica una <strong>variabile host REXX</strong>. Senza i due punti DB2 non riconosce la variabile.</span>
+            </div>
+            <div class="alert alert-warning">
+                <span>⚠️</span>
+                <span>Sostituire <strong>DSN1</strong> con il nome reale del tuo subsystem DB2. Chiedere al DBA o verificare nel pannello ISPF DB2 Interactive.</span>
+            </div>
+            <div class="alert alert-success">
+                <span>✅</span>
+                <span>Non serve BIND né compilazione. Il REXX con DSNREXX è <strong>interpretato</strong>: modifica il membro e riesegui subito.</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">▶️</span> Come eseguire il REXX da ISPF</div>
+            <div class="code-block">
+                <div class="code-label">TSO Command Line</div>
+                <pre><span class="cm">/* Da ISPF Option 6 (TSO Commands) */</span>
+<span class="kw">EXEC</span> <span class="st">'MY.REXX(KCBPANAG)'</span>
+
+<span class="cm">/* Oppure con EXEC e argomenti */</span>
+<span class="kw">EXEC</span> <span class="st">'MY.REXX(KCBPANAG)'</span> <span class="st">'VALORE_INPUT'</span></pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copia</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================= JCL ESECUZIONE ========================= -->
+    <div id="tab-jcl" class="tab-panel">
+
+        <div class="card">
+            <div class="card-title"><span class="icon">⚙️</span> JCL per eseguire il REXX via batch</div>
+            <p style="color:var(--muted); margin-bottom:1rem; font-size:0.95rem;">
+                Usa questo JCL per lanciare il REXX in background (batch) senza dover aprire una sessione TSO interattiva.
+            </p>
+            <div class="code-block">
+                <div class="code-label">JCL — MY.JCL(RUNKCBPA)</div>
+                <pre><span class="cm">//*----------------------------------------------------------</span>
+<span class="cm">//* JOB: Esecuzione REXX per chiamata KCBPANAG               </span>
+<span class="cm">//*----------------------------------------------------------</span>
+<span class="nm">//RUNKCBPA</span> <span class="kw">JOB</span> (ACCT),<span class="st">'CALL KCBPANAG'</span>,
+<span class="nm">//</span>         CLASS=A,MSGCLASS=X,
+<span class="nm">//</span>         NOTIFY=&amp;SYSUID
+<span class="nm">//*</span>
+<span class="nm">//STEP1</span>    <span class="kw">EXEC</span> PGM=IKJEFT01
+<span class="nm">//STEPLIB</span>  DD DSN=DSN.SDSNEXIT,DISP=SHR      <span class="cm">← librerie DB2    </span>
+<span class="nm">//</span>         DD DSN=DSN.SDSNLOAD,DISP=SHR
+<span class="nm">//SYSTSPRT</span> DD SYSOUT=*
+<span class="nm">//SYSPRINT</span> DD SYSOUT=*
+<span class="nm">//SYSTSIN</span>  DD *
+  <span class="kw">EXEC</span> <span class="st">'MY.REXX(KCBPANAG)'</span>               <span class="cm">← dataset.membro REXX</span>
+<span class="nm">/*</span></pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copia</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🔧</span> Cosa personalizzare nel JCL</div>
+            <table>
+                <thead>
+                    <tr><th>Campo</th><th>Esempio</th><th>Cosa mettere</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>(ACCT)</code></td>
+                        <td><code>(A123)</code></td>
+                        <td>Il tuo account/centro di costo</td>
+                    </tr>
+                    <tr>
+                        <td><code>CLASS=A</code></td>
+                        <td><code>CLASS=B</code></td>
+                        <td>Job class del tuo sistema (chiedere al sysadmin)</td>
+                    </tr>
+                    <tr>
+                        <td><code>DSN.SDSNEXIT</code></td>
+                        <td><code>DB2T.SDSNEXIT</code></td>
+                        <td>HLQ del dataset DB2 SDSNEXIT del tuo sito</td>
+                    </tr>
+                    <tr>
+                        <td><code>DSN.SDSNLOAD</code></td>
+                        <td><code>DB2T.SDSNLOAD</code></td>
+                        <td>HLQ del dataset DB2 SDSNLOAD del tuo sito</td>
+                    </tr>
+                    <tr>
+                        <td><code>MY.REXX</code></td>
+                        <td><code>PIPPO.REXX</code></td>
+                        <td>Il tuo dataset dove hai salvato il membro REXX</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert alert-info" style="margin-top:1rem;">
+                <span>💡</span>
+                <span>Dopo il SUBMIT, controlla l'output in SDSF (opzione ST dal menu ISPF) filtrando per il tuo USERID. Il SAY del REXX apparirà nel SYSTSPRT (classe X = SYSOUT).</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">📤</span> Come fare il SUBMIT del JCL</div>
+            <ol class="step-list">
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Apri il membro JCL nell'editor ISPF</div>
+                        <div class="step-desc">ISPF → Option 2 (Edit) → digita il dataset e il membro (es. <code>MY.JCL(RUNKCBPA)</code>)</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Digita SUB sulla riga di comando</div>
+                        <div class="step-desc">Nella riga di comando in alto digita <code>SUB</code> e premi Invio. Il job viene sottomesso e riceverai un <strong>Job ID</strong> (es. <code>JOB01234</code>).</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Controlla l'output in SDSF</div>
+                        <div class="step-desc">ISPF → SDSF (opzione ST) → cerca il tuo job → premi <code>S</code> per aprirlo → controlla SYSTSPRT per il SAY del REXX e JESMSGLG per eventuali errori JCL.</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="step-content">
+                        <div class="step-title">Verifica il Return Code</div>
+                        <div class="step-desc">RC=0000 = tutto OK. RC=0008 = errore connessione DB2. RC=0012 = errore SQL nella CALL.</div>
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+    </div>
+
+    <!-- ========================= TROUBLESHOOTING ========================= -->
+    <div id="tab-troubleshooting" class="tab-panel">
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🔴</span> SQLCODE comuni</div>
+            <table>
+                <thead>
+                    <tr><th>SQLCODE</th><th>Significato</th><th>Soluzione</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="sqlcode-ok">0</span></td>
+                        <td>Successo</td>
+                        <td>I parametri OUT contengono i valori restituiti dalla proc</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-warn">+100</span></td>
+                        <td>Nessuna riga trovata</td>
+                        <td>Il valore di PARM1 non ha trovato corrispondenza; verificare l'input</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-204</span></td>
+                        <td>Oggetto non trovato</td>
+                        <td>La stored procedure KCBPANAG non esiste nello schema indicato — verificare lo schema corretto con il DBA</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-551</span></td>
+                        <td>Mancanza di autorizzazione</td>
+                        <td>Il tuo USERID non ha il privilegio EXECUTE sulla stored procedure — chiedere al DBA il GRANT</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-805</span></td>
+                        <td>Package non trovato</td>
+                        <td>Il DBRM/Package della stored procedure non è stato fatto il BIND — contattare il DBA</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-904</span></td>
+                        <td>Risorsa non disponibile</td>
+                        <td>Il WLM address space della stored procedure non è attivo — contattare l'operatore z/OS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-911</span></td>
+                        <td>Deadlock / timeout</td>
+                        <td>Conflitto di lock con un altro processo — riprovare dopo qualche secondo</td>
+                    </tr>
+                    <tr>
+                        <td><span class="sqlcode-err">-922</span></td>
+                        <td>Autorizzazione fallita</td>
+                        <td>Token di connessione non valido — verificare le credenziali e la connessione al subsystem</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🛠️</span> Errori frequenti in REXX</div>
+            <table>
+                <thead>
+                    <tr><th>Problema</th><th>Causa</th><th>Soluzione</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>RC &lt;&gt; 0 su DSNREXX CONNECT</td>
+                        <td>Nome subsystem DB2 sbagliato</td>
+                        <td>Verificare il nome subsystem con il DBA (es. <code>DB2P</code>, <code>DB2T</code>, <code>DBPX</code>...)</td>
+                    </tr>
+                    <tr>
+                        <td>REXX: variabile OUT resta vuota</td>
+                        <td>SQLCODE diverso da 0</td>
+                        <td>Controllare sempre SQLCODE prima di usare i parametri OUT</td>
+                    </tr>
+                    <tr>
+                        <td>IRXEXEC error / EXEC not found</td>
+                        <td>Dataset REXX non nel SYSEXEC</td>
+                        <td>Aggiungere nel JCL: <code>//SYSEXEC DD DSN=MY.REXX,DISP=SHR</code></td>
+                    </tr>
+                    <tr>
+                        <td>DSNREXX non riconosciuto</td>
+                        <td>DSN.SDSNLOAD non in STEPLIB</td>
+                        <td>Aggiungere <code>DSN.SDSNLOAD</code> e <code>DSN.SDSNEXIT</code> alla STEPLIB del JCL</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🔍</span> Debug rapido — aggiungi questi SAY</div>
+            <div class="code-block">
+                <div class="code-label">REXX — Istruzioni di debug</div>
+                <pre><span class="cm">/* Aggiungere subito DOPO la EXECSQL CALL per diagnosticare */</span>
+<span class="kw">SAY</span> <span class="st">'--- DEBUG ---'</span>
+<span class="kw">SAY</span> <span class="st">'SQLCODE  ='</span> <span class="var">SQLCODE</span>
+<span class="kw">SAY</span> <span class="st">'SQLSTATE ='</span> <span class="var">SQLSTATE</span>
+<span class="kw">SAY</span> <span class="st">'SQLERRM  ='</span> <span class="var">SQLERRM</span>
+<span class="kw">SAY</span> <span class="st">'SQLERRD  ='</span> <span class="var">SQLERRD</span>
+<span class="kw">SAY</span> <span class="st">'PARM1='</span><span class="var">PARM1</span> <span class="st">' PARM2='</span><span class="var">PARM2</span> <span class="st">' PARM3='</span><span class="var">PARM3</span>
+<span class="kw">SAY</span> <span class="st">'PARM4='</span><span class="var">PARM4</span> <span class="st">' PARM5='</span><span class="var">PARM5</span>
+<span class="kw">SAY</span> <span class="st">'--- FINE DEBUG ---'</span></pre>
+                <button class="copy-btn" onclick="copyCode(this)">Copia</button>
+            </div>
+        </div>
+
+    </div>
+
+</div><!-- /container -->
+
+<script>
+    var APP_VERSION = 'v1.0.0';
+    var BUILD_TIME  = '2026-03-10T00:00:00Z';
+    console.log('%c DB2 GUIDE ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
+        'background:#2563EB;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
+        'background:#1F2937;color:#94A3B8;padding:2px 6px;border-radius:0 3px 3px 0');
+
+    /* ── TAB SWITCHING ── */
+    function showTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(function(p) {
+            p.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-btn').forEach(function(b) {
+            b.classList.remove('active');
+        });
+        document.getElementById('tab-' + name).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    /* ── COPY CODE ── */
+    function copyCode(btn) {
+        var pre = btn.closest('.code-block').querySelector('pre');
+        var text = pre.innerText || pre.textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copiato!';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = 'Copia';
+                btn.classList.remove('copied');
+            }, 2000);
+        }).catch(function() {
+            /* Fallback per ambienti senza clipboard API */
+            var range = document.createRange();
+            range.selectNodeContents(pre);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            btn.textContent = 'Selezionato';
+            setTimeout(function() { btn.textContent = 'Copia'; }, 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
