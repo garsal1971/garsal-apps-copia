@@ -160,7 +160,7 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T22:00:00Z</p>
+    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T22:15:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
@@ -409,77 +409,85 @@ try (CallableStatement cs = conn.prepareCall(sql)) {
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 4 — VERIFICA UTENTE E PRIVILEGI
+       TASK 4 — RISULTATO SYSROUTINEAUTH (RISOLTO)
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-4">
     <div class="task-header">
       <div class="task-num">#004</div>
       <div class="task-info">
-        <div class="task-title">Verifica utente corrente e privilegi su <code>KCBPANAG</code></div>
+        <div class="task-title">✅ Privilegi verificati — PUBLIC = Y</div>
         <div class="task-desc">
-          Errore attuale: <strong>SQLCODE -440 "NO AUTHORIZED"</strong> — la firma è corretta ma
-          l'utente connesso non ha <code>EXECUTE</code> sulla procedura <code>DB2C.KCBPANAG</code>.
-          Eseguire questa query per vedere chi sei e quali grant hai.
-          Comunicare il risultato di entrambe le SELECT.
+          <strong>SYSROUTINEAUTH risultato:</strong><br>
+          • GRANTOR=DB2C · GRANTEE=<em>G…</em> (gruppo, EXECUTEAUTH da verificare)<br>
+          • GRANTOR=DB2C · GRANTEE=<strong>PUBLIC</strong> · EXECUTEAUTH=<strong>Y</strong><br><br>
+          <strong>Conclusione:</strong> PUBLIC=Y → tutti gli utenti hanno EXECUTE.
+          Il -440 <u>non è</u> un problema di autorizzazione. La causa è altrove
+          (sintassi CALL, PATH, o connessione sbagliata — vedi task #006).
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#7F1D1D22;color:#FCA5A5;border-color:#7F1D1D44;">🔴 errore auth</span>
+          <span class="task-status" style="background:#14532D22;color:#86EFAC;border-color:#14532D44;">✅ risolto</span>
           <span class="task-tag sql">SQL</span>
           <span class="task-tag db2">DB2 z/OS</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-4a">
-      <button class="copy-btn" onclick="copyCode('cb-4a', this)">Copia</button>
-      <pre>-- 1a) Chi sono? — sintassi VALUES (DB2 z/OS nativa)
-VALUES (USER);
-
--- 1b) Alternativa se VALUES non gira nel tool
-SELECT USER FROM SYSIBM.SYSDUMMY1;
-
--- 1c) Utente + schema corrente
-SELECT USER, CURRENT SCHEMA FROM SYSIBM.SYSDUMMY1;
-
--- 2) Ho EXECUTE su DB2C.KCBPANAG?
-SELECT GRANTOR, GRANTEE, EXECUTEAUTH
-FROM   SYSIBM.SYSROUTINEAUTH
-WHERE  SCHEMA = 'DB2C'
-  AND  NAME   = 'KCBPANAG'
-ORDER  BY GRANTEE;</pre>
-    </div>
-    <div class="platform-note">📍 DBeaver → Script → F5 · Comunicare entrambi i risultati (utente corrente + lista grant)</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 5 — GRANT EXECUTE (DA ESEGUIRE COME DBA)
+       TASK 5 — GRANT EXECUTE (NON NECESSARIO)
        ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-5">
+  <div class="task" id="task-5" style="opacity:0.45">
     <div class="task-header">
       <div class="task-num">#005</div>
       <div class="task-info">
-        <div class="task-title">GRANT EXECUTE su <code>KCBPANAG</code> — richiede DBA</div>
+        <div class="task-title">GRANT EXECUTE — <em>non necessario</em> (PUBLIC già = Y)</div>
+        <div class="task-meta">
+          <span class="task-status" style="background:#1E293B;color:#64748B;border-color:#334155;">⏭ saltato</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 6 — DIAGNOSI REALE DEL -440
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-6">
+    <div class="task-header">
+      <div class="task-num">#006</div>
+      <div class="task-info">
+        <div class="task-title">Diagnosi -440: CALL da connessione corretta + CURRENT PATH</div>
         <div class="task-desc">
-          Sostituire <code>TUOUTENTE</code> con l'utente trovato in #004 (es. <code>LOUJD0</code>).
-          Questa query deve essere eseguita da un utente con privilegi DBA/SECADM,
-          oppure chiesta al team DB2 tramite ticket.
-          Dopo il GRANT rieseguire la CALL del task #002.
+          <strong>Cause probabili ora che i permessi sono OK:</strong><br>
+          1. La CALL va sulla connessione <code>emergenza loc0d0</code> ma la procedura
+             risiede nel subsystem/location a cui punta <code>loujd0 testkcb</code> (tab 2)<br>
+          2. <code>CURRENT PATH</code> non include DB2C (raro con schema esplicito ma verificare)<br>
+          3. I <code>?</code> nella CALL non sono gestiti come OUT dal tool — usare
+             <kbd>Ctrl+Enter</kbd> solo sulla CALL (non F5 sull'intero script)<br><br>
+          <strong>Passo 1:</strong> aprire la CALL nel tab <code>loujd0 testkcb</code> e
+          selezionare solo il CALL → <kbd>Ctrl+Enter</kbd>.<br>
+          <strong>Passo 2:</strong> se ancora -440, eseguire la query diagnostica qui sotto.
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#78350F22;color:#FCD34D;border-color:#78350F44;">⚠ richiede DBA</span>
+          <span class="task-status" style="background:#7F1D1D22;color:#FCA5A5;border-color:#7F1D1D44;">🔴 da indagare</span>
           <span class="task-tag sql">SQL</span>
           <span class="task-tag db2">DB2 z/OS</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-5">
-      <button class="copy-btn" onclick="copyCode('cb-5', this)">Copia</button>
-      <pre>-- Sostituire TUOUTENTE con l'utente trovato in #004
-GRANT EXECUTE ON PROCEDURE DB2C.KCBPANAG TO TUOUTENTE;
+    <div class="code-block" id="cb-6a">
+      <button class="copy-btn" onclick="copyCode('cb-6a', this)">Copia</button>
+      <pre>-- Verifica path di risoluzione routine
+SELECT CURRENT PATH FROM SYSIBM.SYSDUMMY1;
 
--- Oppure, per concedere a tutti gli utenti autenticati:
--- GRANT EXECUTE ON PROCEDURE DB2C.KCBPANAG TO PUBLIC;</pre>
+-- Conta quante versioni di KCBPANAG esistono (overloading)
+SELECT SCHEMA, NAME, SPECIFICNAME, PARMS, LANGUAGE, ROUTINETYPE
+FROM   SYSIBM.SYSROUTINES
+WHERE  NAME = 'KCBPANAG';</pre>
     </div>
-    <div class="platform-note">📍 Deve girare come DBA/SECADM · Dopo il GRANT rieseguire il task #002 per verificare</div>
+    <div class="platform-note">
+      📍 Eseguire nel tab <strong>loujd0 testkcb</strong> (tab 2, non emergenza loc0d0) ·
+      Comunicare il CURRENT PATH e quante righe restituisce la seconda SELECT
+    </div>
   </div>
 
   <!-- Aggiungi nuovi task sopra questo commento -->
