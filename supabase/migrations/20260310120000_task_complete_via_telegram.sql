@@ -204,9 +204,9 @@ BEGIN
     END IF;
   END IF;
 
-  -- Inserisci il record history principale (completamento)
+  -- Inserisci il record history principale (action sempre 'completed', come nel JS)
   INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-  VALUES (p_task_id, v_from_status, 'completed', v_action, v_points, now());
+  VALUES (p_task_id, v_from_status, 'completed', 'completed', v_points, now());
 
   -- -------------------------------------------------------
   IF v_task.type = 'single' THEN
