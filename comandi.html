@@ -160,7 +160,7 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T21:30:00Z</p>
+    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T21:45:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
@@ -406,6 +406,74 @@ try (CallableStatement cs = conn.prepareCall(sql)) {
 }</pre>
     </div>
     <div class="platform-note">📍 Nota: verificare il codice di successo reale in RET_CODE (potrebbe essere "00", " ", o altro) — leggere prima senza il controllo per vedere cosa ritorna la proc</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 4 — VERIFICA UTENTE E PRIVILEGI
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-4">
+    <div class="task-header">
+      <div class="task-num">#004</div>
+      <div class="task-info">
+        <div class="task-title">Verifica utente corrente e privilegi su <code>KCBPANAG</code></div>
+        <div class="task-desc">
+          Errore attuale: <strong>SQLCODE -440 "NO AUTHORIZED"</strong> — la firma è corretta ma
+          l'utente connesso non ha <code>EXECUTE</code> sulla procedura <code>DB2C.KCBPANAG</code>.
+          Eseguire questa query per vedere chi sei e quali grant hai.
+          Comunicare il risultato di entrambe le SELECT.
+        </div>
+        <div class="task-meta">
+          <span class="task-status" style="background:#7F1D1D22;color:#FCA5A5;border-color:#7F1D1D44;">🔴 errore auth</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag db2">DB2 z/OS</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-4a">
+      <button class="copy-btn" onclick="copyCode('cb-4a', this)">Copia</button>
+      <pre>-- 1) Chi sono? (utente connesso)
+SELECT CURRENT USER, CURRENT SCHEMA FROM SYSIBM.SYSDUMMY1;
+
+-- 2) Ho EXECUTE su DB2C.KCBPANAG?
+SELECT GRANTOR, GRANTEE, EXECUTEAUTH
+FROM   SYSIBM.SYSROUTINEAUTH
+WHERE  SCHEMA = 'DB2C'
+  AND  NAME   = 'KCBPANAG'
+ORDER  BY GRANTEE;</pre>
+    </div>
+    <div class="platform-note">📍 DBeaver → Script → F5 · Comunicare entrambi i risultati (utente corrente + lista grant)</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 5 — GRANT EXECUTE (DA ESEGUIRE COME DBA)
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-5">
+    <div class="task-header">
+      <div class="task-num">#005</div>
+      <div class="task-info">
+        <div class="task-title">GRANT EXECUTE su <code>KCBPANAG</code> — richiede DBA</div>
+        <div class="task-desc">
+          Sostituire <code>TUOUTENTE</code> con l'utente trovato in #004 (es. <code>LOUJD0</code>).
+          Questa query deve essere eseguita da un utente con privilegi DBA/SECADM,
+          oppure chiesta al team DB2 tramite ticket.
+          Dopo il GRANT rieseguire la CALL del task #002.
+        </div>
+        <div class="task-meta">
+          <span class="task-status" style="background:#78350F22;color:#FCD34D;border-color:#78350F44;">⚠ richiede DBA</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag db2">DB2 z/OS</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-5">
+      <button class="copy-btn" onclick="copyCode('cb-5', this)">Copia</button>
+      <pre>-- Sostituire TUOUTENTE con l'utente trovato in #004
+GRANT EXECUTE ON PROCEDURE DB2C.KCBPANAG TO TUOUTENTE;
+
+-- Oppure, per concedere a tutti gli utenti autenticati:
+-- GRANT EXECUTE ON PROCEDURE DB2C.KCBPANAG TO PUBLIC;</pre>
+    </div>
+    <div class="platform-note">📍 Deve girare come DBA/SECADM · Dopo il GRANT rieseguire il task #002 per verificare</div>
   </div>
 
   <!-- Aggiungi nuovi task sopra questo commento -->
