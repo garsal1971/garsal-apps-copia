@@ -352,7 +352,9 @@ $$;</pre>
     </div>
     <div class="code-block" id="cb-2">
       <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>CREATE OR REPLACE FUNCTION task_complete_via_telegram(
+      <pre>-- Eseguire DOPO il task #001 (task_next_recurring_date)
+-- v2: variabili timestamptz per compatibilità con colonne ts_tasks
+CREATE OR REPLACE FUNCTION task_complete_via_telegram(
   p_task_id  uuid,
   p_today    date
 )
@@ -361,10 +363,10 @@ DECLARE
   v_task           ts_tasks%ROWTYPE;
   v_from_status    text;
   v_points         integer;
-  v_action         text    := 'completed';
+  v_action         text        := 'completed';
   v_next_date      date;
-  v_next_ts        text;
-  v_completed_date text;
+  v_next_ts        timestamptz;
+  v_completed_date timestamptz;
 BEGIN
   SELECT * INTO v_task FROM ts_tasks WHERE id = p_task_id;
 
@@ -379,9 +381,9 @@ BEGIN
   v_from_status    := v_task.status;
   v_points         := COALESCE(v_task.success_points, 0);
   v_completed_date := COALESCE(
-    v_task.next_occurrence_date::text,
-    v_task.start_date::text,
-    now()::text
+    v_task.next_occurrence_date::timestamptz,
+    v_task.start_date::timestamptz,
+    now()
   );
 
   -- Per task singoli con deadline: controlla se in ritardo
@@ -394,7 +396,7 @@ BEGIN
 
   -- Inserisci il record history principale (completamento)
   INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-  VALUES (p_task_id, v_from_status, 'completed', v_action, v_points, now()::text);
+  VALUES (p_task_id, v_from_status, 'completed', v_action, v_points, now());
 
   IF v_task.type = 'single' THEN
     UPDATE ts_tasks
@@ -403,17 +405,15 @@ BEGIN
      WHERE id = p_task_id;
 
     INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-    VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+    VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
 
     DELETE FROM cm_notification_rules
      WHERE entity_id = p_task_id::text
        AND app = 'tasks';
 
   ELSIF v_task.type = 'simple_recurring' THEN
-    v_next_ts := (
-      (COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::timestamp
-       + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval)
-    )::text;
+    v_next_ts := COALESCE(v_task.next_occurrence_date::timestamptz, v_task.start_date::timestamptz)
+                 + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval;
 
     UPDATE ts_tasks
        SET status               = 'completed',
@@ -428,7 +428,7 @@ BEGIN
     );
 
     IF v_next_date IS NOT NULL THEN
-      v_next_ts := v_next_date::text || 'T00:00:00';
+      v_next_ts := v_next_date::timestamptz;
     END IF;
 
     UPDATE ts_tasks
@@ -439,7 +439,7 @@ BEGIN
 
     IF v_next_date IS NULL THEN
       INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-      VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+      VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
     END IF;
 
   ELSIF v_task.type = 'multiple' THEN
@@ -470,12 +470,12 @@ BEGIN
       UPDATE ts_tasks
          SET status               = CASE WHEN v_next_str IS NULL THEN 'terminated' ELSE 'completed' END,
              last_completed_date  = v_completed_date,
-             next_occurrence_date = v_next_str
+             next_occurrence_date = v_next_str::timestamptz
        WHERE id = p_task_id;
 
       IF v_next_str IS NULL THEN
         INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-        VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+        VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
       END IF;
     END;
 

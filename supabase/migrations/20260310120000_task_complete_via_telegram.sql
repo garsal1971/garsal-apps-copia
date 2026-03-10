@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migration: task_complete_via_telegram
--- Data: 2026-03-10
+-- Data: 2026-03-10 (aggiornata fix tipi timestamptz)
 -- Scopo: Funzione RPC chiamata dal webhook Telegram quando l'utente
 --        clicca "✅ Fatto" su una notifica task.
 --        Replica la logica di completeTask() in tasks.html.
@@ -160,6 +160,9 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Principale: task_complete_via_telegram(p_task_id, p_today)
 -- Replica completeTask() in tasks.html, invocata dal webhook Telegram.
+-- v_completed_date e v_next_ts sono timestamptz per compatibilità con le
+-- colonne last_completed_date e next_occurrence_date di ts_tasks.
+-- ts_history.timestamp è timestamptz → now() senza ::text.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION task_complete_via_telegram(
   p_task_id  uuid,
@@ -170,10 +173,10 @@ DECLARE
   v_task           ts_tasks%ROWTYPE;
   v_from_status    text;
   v_points         integer;
-  v_action         text    := 'completed';
+  v_action         text        := 'completed';
   v_next_date      date;
-  v_next_ts        text;
-  v_completed_date text;
+  v_next_ts        timestamptz;
+  v_completed_date timestamptz;
 BEGIN
   SELECT * INTO v_task FROM ts_tasks WHERE id = p_task_id;
 
@@ -188,9 +191,9 @@ BEGIN
   v_from_status    := v_task.status;
   v_points         := COALESCE(v_task.success_points, 0);
   v_completed_date := COALESCE(
-    v_task.next_occurrence_date::text,
-    v_task.start_date::text,
-    now()::text
+    v_task.next_occurrence_date::timestamptz,
+    v_task.start_date::timestamptz,
+    now()
   );
 
   -- Per task singoli con deadline: controlla se in ritardo
@@ -203,7 +206,7 @@ BEGIN
 
   -- Inserisci il record history principale (completamento)
   INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-  VALUES (p_task_id, v_from_status, 'completed', v_action, v_points, now()::text);
+  VALUES (p_task_id, v_from_status, 'completed', v_action, v_points, now());
 
   -- -------------------------------------------------------
   IF v_task.type = 'single' THEN
@@ -213,7 +216,7 @@ BEGIN
      WHERE id = p_task_id;
 
     INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-    VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+    VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
 
     -- Elimina la regola di notifica (task singolo terminato)
     DELETE FROM cm_notification_rules
@@ -222,10 +225,8 @@ BEGIN
 
   -- -------------------------------------------------------
   ELSIF v_task.type = 'simple_recurring' THEN
-    v_next_ts := (
-      (COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::timestamp
-       + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval)
-    )::text;
+    v_next_ts := COALESCE(v_task.next_occurrence_date::timestamptz, v_task.start_date::timestamptz)
+                 + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval;
 
     UPDATE ts_tasks
        SET status               = 'completed',
@@ -241,7 +242,7 @@ BEGIN
     );
 
     IF v_next_date IS NOT NULL THEN
-      v_next_ts := v_next_date::text || 'T00:00:00';
+      v_next_ts := v_next_date::timestamptz;
     END IF;
 
     UPDATE ts_tasks
@@ -252,7 +253,7 @@ BEGIN
 
     IF v_next_date IS NULL THEN
       INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-      VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+      VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
     END IF;
 
   -- -------------------------------------------------------
@@ -264,14 +265,12 @@ BEGIN
       v_next_str text    := NULL;
       j          integer;
     BEGIN
-      -- Estrai e ordina le date dall'array JSONB
       SELECT array_agg(d ORDER BY d)
         INTO v_dates
         FROM jsonb_array_elements_text(v_task.multiple_dates::jsonb) AS d;
 
       v_cur_str := split_part(COALESCE(v_task.next_occurrence_date::text, ''), 'T', 1);
 
-      -- Trova indice della data corrente
       FOR j IN 1..array_length(v_dates, 1) LOOP
         IF v_dates[j] = v_cur_str THEN
           v_cur_idx := j;
@@ -279,7 +278,6 @@ BEGIN
         END IF;
       END LOOP;
 
-      -- Prendi la data successiva se esiste
       IF v_cur_idx IS NOT NULL AND v_cur_idx < array_length(v_dates, 1) THEN
         v_next_str := v_dates[v_cur_idx + 1] || 'T00:00:00';
       END IF;
@@ -287,17 +285,17 @@ BEGIN
       UPDATE ts_tasks
          SET status               = CASE WHEN v_next_str IS NULL THEN 'terminated' ELSE 'completed' END,
              last_completed_date  = v_completed_date,
-             next_occurrence_date = v_next_str
+             next_occurrence_date = v_next_str::timestamptz
        WHERE id = p_task_id;
 
       IF v_next_str IS NULL THEN
         INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-        VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now()::text);
+        VALUES (p_task_id, 'completed', 'terminated', 'terminated', 0, now());
       END IF;
     END;
 
   -- -------------------------------------------------------
-  ELSE -- free_repeat (e qualsiasi altro tipo non gestito sopra)
+  ELSE -- free_repeat
     UPDATE ts_tasks
        SET status              = 'completed',
            last_completed_date = v_completed_date
