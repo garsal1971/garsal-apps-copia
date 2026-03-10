@@ -160,8 +160,36 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T13:00:00Z</p>
+    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T15:00:00Z</p>
   </header>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 0 — DIAGNOSTICA
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-0">
+    <div class="task-header">
+      <div class="task-num">#000</div>
+      <div class="task-info">
+        <div class="task-title">Diagnostica — leggi definizione constraint <code>history_action_check</code></div>
+        <div class="task-desc">
+          Esegui questa query per vedere esattamente quali valori accetta il constraint su <code>ts_history</code>.
+          Copia il risultato e comunicalo: serve per capire quali valori sono vietati.
+        </div>
+        <div class="task-meta">
+          <span class="task-status" style="background:#0F766E22;color:#2DD4BF;border-color:#0F766E44;">🔍 diagnostica</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-0">
+      <button class="copy-btn" onclick="copyCode('cb-0', this)">Copia</button>
+      <pre>SELECT pg_get_constraintdef(oid) AS definizione_constraint
+FROM   pg_constraint
+WHERE  conname = 'history_action_check';</pre>
+    </div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run · Comunica il risultato</div>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════
        TASK 1 — PENDING
