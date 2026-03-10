@@ -188,8 +188,8 @@ BEGIN
   v_from_status    := v_task.status;
   v_points         := COALESCE(v_task.success_points, 0);
   v_completed_date := COALESCE(
-    v_task.next_occurrence_date,
-    v_task.start_date,
+    v_task.next_occurrence_date::text,
+    v_task.start_date::text,
     now()::text
   );
 
@@ -223,7 +223,7 @@ BEGIN
   -- -------------------------------------------------------
   ELSIF v_task.type = 'simple_recurring' THEN
     v_next_ts := (
-      (COALESCE(v_task.next_occurrence_date, v_task.start_date)::timestamp
+      (COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::timestamp
        + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval)
     )::text;
 
@@ -237,7 +237,7 @@ BEGIN
   ELSIF v_task.type = 'recurring' THEN
     v_next_date := task_next_recurring_date(
       v_task,
-      COALESCE(v_task.next_occurrence_date, v_task.start_date)::date
+      COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::date
     );
 
     IF v_next_date IS NOT NULL THEN
@@ -269,7 +269,7 @@ BEGIN
         INTO v_dates
         FROM jsonb_array_elements_text(v_task.multiple_dates::jsonb) AS d;
 
-      v_cur_str := split_part(COALESCE(v_task.next_occurrence_date, ''), 'T', 1);
+      v_cur_str := split_part(COALESCE(v_task.next_occurrence_date::text, ''), 'T', 1);
 
       -- Trova indice della data corrente
       FOR j IN 1..array_length(v_dates, 1) LOOP
