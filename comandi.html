@@ -160,7 +160,7 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T22:15:00Z</p>
+    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T22:35:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
@@ -487,6 +487,154 @@ WHERE  NAME = 'KCBPANAG';</pre>
     <div class="platform-note">
       📍 Eseguire nel tab <strong>loujd0 testkcb</strong> (tab 2, non emergenza loc0d0) ·
       Comunicare il CURRENT PATH e quante righe restituisce la seconda SELECT
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 7 — PROGRAMMA JAVA COMPLETO
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-7">
+    <div class="task-header">
+      <div class="task-num">#007</div>
+      <div class="task-info">
+        <div class="task-title">Programma Java completo — setup, connessione e CALL</div>
+        <div class="task-desc">
+          Tutto il necessario per far girare la chiamata a <code>KCBPANAG</code> da Java.<br>
+          <strong>Passo 1</strong>: procurarsi il driver DB2 JDBC (JAR IBM, vedi note sotto)<br>
+          <strong>Passo 2</strong>: adattare host, porta, database e credenziali<br>
+          <strong>Passo 3</strong>: compilare ed eseguire
+        </div>
+        <div class="task-meta">
+          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ pronto</span>
+          <span class="task-tag">Java</span>
+          <span class="task-tag db2">JDBC</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- pom.xml -->
+    <div style="margin:0 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">pom.xml — dipendenza driver DB2</div>
+    <div class="code-block" id="cb-7a">
+      <button class="copy-btn" onclick="copyCode('cb-7a', this)">Copia</button>
+      <pre>&lt;dependency&gt;
+    &lt;groupId&gt;com.ibm.db2&lt;/groupId&gt;
+    &lt;artifactId&gt;jcc&lt;/artifactId&gt;
+    &lt;version&gt;11.5.9.0&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- NOTA: il JAR IBM non è su Maven Central.
+     Opzioni:
+     A) Maven Central alternativo: usa coordinates sopra (disponibile da IBM Maven repo)
+     B) JAR locale: mvn install:install-file -Dfile=db2jcc4.jar
+            -DgroupId=com.ibm.db2 -DartifactId=jcc -Dversion=11.5 -Dpackaging=jar
+     Il JAR si trova in:
+       - /opt/IBM/SQLLIB/java/db2jcc4.jar  (se DB2 client installato)
+       - oppure scaricarlo da: https://www.ibm.com/support/pages/db2-jdbc-driver-versions-and-downloads --&gt;</pre>
+    </div>
+
+    <!-- KcbpanagCaller.java -->
+    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">KcbpanagCaller.java — classe completa pronta all'uso</div>
+    <div class="code-block" id="cb-7b">
+      <button class="copy-btn" onclick="copyCode('cb-7b', this)">Copia</button>
+      <pre>import java.sql.*;
+
+public class KcbpanagCaller {
+
+    // ── CONFIGURAZIONE ─────────────────────────────────────────
+    // Formato z/OS:  jdbc:db2://HOST:PORT/LOCATION
+    // Formato LUW:   jdbc:db2://HOST:PORT/DATABASE
+    static final String URL  = "jdbc:db2://HOSTNAME:50000/TESTKCB";
+    static final String USER = "loujd0";
+    static final String PASS = "password";
+    // ───────────────────────────────────────────────────────────
+
+    public static void main(String[] args) throws Exception {
+
+        // Parametri IN — adattare ai valori reali
+        String cdInterno = "02008";
+        String ndg       = "0000000024159636";
+        String lingua    = "IT";
+        String country   = "IT";
+
+        String sql = "{CALL DB2C.KCBPANAG(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+             CallableStatement cs = conn.prepareCall(sql)) {
+
+            // IN
+            cs.setString(1, cdInterno);
+            cs.setString(2, ndg);
+            cs.setString(3, lingua);
+            cs.setString(4, country);
+
+            // OUT
+            for (int i = 5; i <= 29; i++) {
+                cs.registerOutParameter(i, Types.CHAR);
+            }
+
+            cs.execute();
+
+            // Esito
+            String retCode = cs.getString(28);
+            String msg     = cs.getString(29);
+            System.out.println("RET_CODE : [" + retCode + "]");
+            System.out.println("MSG      : [" + msg     + "]");
+
+            // Dati
+            System.out.println("COMPANY_NAME : " + cs.getString(5));
+            System.out.println("REG_ADDRESS  : " + cs.getString(6));
+            System.out.println("TOWN         : " + cs.getString(7));
+            System.out.println("POSTAL_CODE  : " + cs.getString(8));
+            System.out.println("COUNTRY_HO   : " + cs.getString(9));
+            System.out.println("SWIFT_BIC    : " + cs.getString(19));
+            System.out.println("TP_REL       : " + cs.getString(26));
+            System.out.println("FLAG_NDG_POT : " + cs.getString(27));
+        }
+    }
+}</pre>
+    </div>
+
+    <!-- comandi shell -->
+    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">Compilare ed eseguire (senza Maven)</div>
+    <div class="code-block" id="cb-7c">
+      <button class="copy-btn" onclick="copyCode('cb-7c', this)">Copia</button>
+      <pre># Compilare (db2jcc4.jar deve essere presente)
+javac -cp db2jcc4.jar KcbpanagCaller.java
+
+# Eseguire
+java -cp .:db2jcc4.jar KcbpanagCaller
+
+# Windows (separatore ; invece di :)
+java -cp .;db2jcc4.jar KcbpanagCaller</pre>
+    </div>
+
+    <!-- errori comuni -->
+    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">Errori comuni e soluzioni</div>
+    <div class="code-block" id="cb-7d">
+      <button class="copy-btn" onclick="copyCode('cb-7d', this)">Copia</button>
+      <pre>// Errore: "No suitable driver found"
+//   → db2jcc4.jar non è nel classpath, oppure URL sbagliato
+
+// Errore: "Communication link failure" / ERRORCODE=-4499
+//   → HOST o PORT errati; DB2 non raggiungibile dalla macchina
+//   → verificare: telnet HOSTNAME 50000
+
+// Errore: SQLCODE -440 anche da Java
+//   → problema di CURRENT PATH / location
+//   → aggiungere dopo la connessione:
+conn.setSchema("DB2C");  // oppure:
+try (Statement st = conn.createStatement()) {
+    st.execute("SET CURRENT PATH = SYSIBM, SYSFUN, SYSPROC, DB2C");
+}
+
+// Errore: SQLCODE -30082 (autenticazione)
+//   → credenziali errate o utente non autorizzato alla connessione JDBC</pre>
+    </div>
+
+    <div class="platform-note">
+      📍 URL di connessione: chiedere al DBA l'hostname, la porta (default 50000) e il nome del
+      subsystem/location DB2 z/OS · Il JAR <code>db2jcc4.jar</code> è la versione universale
+      (supporta sia z/OS che LUW) — preferirla a <code>db2jcc.jar</code>
     </div>
   </div>
 
