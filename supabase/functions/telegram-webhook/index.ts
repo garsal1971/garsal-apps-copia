@@ -250,10 +250,10 @@ Deno.serve(async (req) => {
   } else if (action === 'cancel' && parts.length === 2) {
     const queueId = parts[1]
 
-    // Leggi rule_id per poter cancellare tutti i promemoria futuri della regola
+    // Leggi occurrence_id e rule_id per cancellare solo la stessa occorrenza
     const { data: cancelRow } = await sb
       .from('cm_notification_queue')
-      .select('rule_id')
+      .select('rule_id, occurrence_id')
       .eq('id', queueId)
       .maybeSingle()
 
@@ -270,10 +270,11 @@ Deno.serve(async (req) => {
 
     await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
 
-    // Cancella tutti i promemoria futuri della stessa regola (comportamento intenzionale)
-    if (cancelRow?.rule_id) {
-      await deleteSiblingMessages(cancelRow.rule_id as string, queueId, chatId)
-      await cancelSiblingItems(cancelRow.rule_id as string, queueId)
+    // Cancella solo i sibling della stessa occorrenza (stesso slot/giorno)
+    const cancelOccId = (cancelRow?.occurrence_id as string | null) ?? (cancelRow?.rule_id as string)
+    if (cancelOccId) {
+      await deleteSiblingsByOccurrence(cancelOccId, queueId, chatId)
+      await cancelByOccurrence(cancelOccId, queueId)
     }
     await deleteMessage(chatId, messageId)
 
