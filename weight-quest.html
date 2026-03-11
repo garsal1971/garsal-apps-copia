@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.23</title>
+    <title>Weight Quest v3.5.28</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -761,24 +761,21 @@
                     <div class="stats-grid">
                         <div class="stat-box" style="background: linear-gradient(135deg, #FF3366, #ff6b9d); color: white;">
                             <div class="stat-value" id="weightValue" style="color: white;">--</div>
-                            <div class="stat-label" style="color: rgba(255,255,255,0.85);">⚖️ Min oggi kg</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.85);">Minimo oggi</div>
+                        </div>
+                        <div class="stat-box" style="border: 3px solid #00B894;">
+                            <div class="stat-value" id="pesoTargetValue" style="color: #00B894;">-</div>
+                            <div class="stat-label" style="color: #00B894;">Target oggi</div>
+                        </div>
+                        <div class="stat-box" style="border: 3px solid #6C5CE7;">
+                            <div class="stat-value" id="dailyTargetValue" style="color: #6C5CE7;">-</div>
+                            <div class="stat-label" style="color: #6C5CE7;">Mancano al target</div>
                         </div>
                         <div class="stat-box" style="border: 3px solid #F39C12;">
                             <div class="stat-value" id="avgScoreValue" style="color: #F39C12;">-</div>
                             <div class="stat-label" style="color: #F39C12;">Kg alla fine</div>
                         </div>
-                        <div class="stat-box teal">
-                            <div class="stat-value" id="statsCompleted">0</div>
-                            <div class="stat-label">Completati</div>
-                        </div>
-                        <div class="stat-box red">
-                            <div class="stat-value" id="statsFailed">0</div>
-                            <div class="stat-label">Falliti</div>
-                        </div>
-                        <div class="stat-box yellow">
-                            <div class="stat-value" id="statsActive">0</div>
-                            <div class="stat-label">Attivi</div>
-                        </div>
+
                         <div class="stat-box gradient">
                             <div class="stat-value" id="statsScore">0</div>
                             <div class="stat-label">Punteggio</div>
@@ -1002,8 +999,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.23';
-        var BUILD_TIME  = '2026-03-08T00:10:00Z';
+        var APP_VERSION = 'v3.5.28';
+        var BUILD_TIME  = '2026-03-10T11:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2763,12 +2760,16 @@
             var scoreEl = document.getElementById('scoreValue');
             var kgEl    = document.getElementById('avgScoreValue');
 
-            // Nessun obiettivo attivo → trattino su entrambi i badge
+            // Nessun obiettivo attivo → trattino su tutti i badge
             var obj = userData.currentObjective;
             var isActive = obj && obj.status !== 'success' && obj.status !== 'failed';
             if (!isActive || !userData.milestones || userData.milestones.length < 2) {
                 if (scoreEl) scoreEl.textContent = '-';
                 if (kgEl)    kgEl.textContent    = '-';
+                var _ptEl = document.getElementById('pesoTargetValue');
+                if (_ptEl) _ptEl.textContent = '-';
+                var _dtEl = document.getElementById('dailyTargetValue');
+                if (_dtEl) _dtEl.textContent = '-';
                 return;
             }
 
@@ -2832,8 +2833,26 @@
 
             if (scoreEl) scoreEl.textContent = totalScore;
 
+            // --- Badge "Peso target": target interpolato di oggi ---
+            var pesoTargetEl   = document.getElementById('pesoTargetValue');
+            var currentWeight  = getTodayMinWeight(data);
+            var targetToday    = getInterpolatedTarget(todayStr);
+            if (targetToday != null && isFinite(targetToday)) {
+                if (pesoTargetEl) pesoTargetEl.textContent = targetToday.toFixed(1);
+            } else {
+                if (pesoTargetEl) pesoTargetEl.textContent = '-';
+            }
+
+            // --- Badge "Target giornaliero": peso attuale − target interpolato di oggi ---
+            var dailyTargetEl  = document.getElementById('dailyTargetValue');
+            if (currentWeight != null && targetToday != null && isFinite(currentWeight) && isFinite(targetToday)) {
+                var kgDailyDiff = currentWeight - targetToday;
+                if (dailyTargetEl) dailyTargetEl.textContent = kgDailyDiff.toFixed(1);
+            } else {
+                if (dailyTargetEl) dailyTargetEl.textContent = '-';
+            }
+
             // --- Badge "Kg alla fine": peso attuale − target alla data fine obiettivo ---
-            var currentWeight  = data && data.length > 0 ? data[0].weight : null;
             var targetAtEnd    = getInterpolatedTarget(endDateStr);
             if (currentWeight != null && targetAtEnd != null && isFinite(currentWeight) && isFinite(targetAtEnd)) {
                 var kgMancanti = currentWeight - targetAtEnd;
@@ -2842,7 +2861,7 @@
                 if (kgEl) kgEl.textContent = '-';
             }
 
-            log('Badge — Punti oggi: ' + totalScore + ' | Kg alla fine: ' + (kgEl ? kgEl.textContent : '-'));
+            log('Badge — Punti oggi: ' + totalScore + ' | Target giornaliero: ' + (dailyTargetEl ? dailyTargetEl.textContent : '-') + ' | Kg alla fine: ' + (kgEl ? kgEl.textContent : '-'));
         }
 
         var weightChart = null;
