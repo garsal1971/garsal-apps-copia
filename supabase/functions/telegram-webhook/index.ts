@@ -407,10 +407,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Edita il messaggio cliccato con il testo di completamento (rimuove i bottoni)
-    const completedAt   = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
-    const completedText = `${originalText ?? ''}\n✅ Completato alle ${completedAt}`
-    await editMessageText(chatId, messageId, completedText)
+    // 3. Elimina il messaggio cliccato
+    await deleteMessage(chatId, messageId)
 
   } else {
     console.warn('[telegram-webhook] callback_data non riconosciuto:', callbackData)
