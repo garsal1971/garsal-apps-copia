@@ -215,6 +215,7 @@ Deno.serve(async (_req) => {
         .from('cm_notification_queue')
         .update(updatePayload)
         .eq('id', item.id)
+        .in('status', ['pending', 'sending'])
 
       // Scrivi nel log storico
       await sb.from('cm_notification_log').insert({
