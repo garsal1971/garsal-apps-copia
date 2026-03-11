@@ -41,7 +41,7 @@
     overflow: hidden;
   }
   .task.done { opacity: 0.45; }
-  .task.done .task-status { background: #064E3B; color: #34D399; }
+  .task.done .task-status { background: #064E3B; color: #34D399; border-color: #065F46; }
 
   .task-header {
     display: flex;
@@ -99,7 +99,16 @@
     border: 1px solid #1E40AF44;
   }
   .task-tag.sql  { background: #78350F22; color: #FCD34D; border-color: #78350F44; }
-  .task-tag.db2  { background: #1E40AF22; color: #93C5FD; border-color: #1E40AF44; }
+  .task-tag.bash { background: #064E3B22; color: #6EE7B7; border-color: #064E3B44; }
+  .task-tag.order {
+    background: #1E293B;
+    color: #F97316;
+    border: 1px solid #F9731644;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
 
   .code-block {
     position: relative;
@@ -144,8 +153,6 @@
     font-family: monospace;
   }
 
-  .empty { text-align: center; padding: 60px 20px; color: #475569; font-size: 14px; }
-
   footer {
     margin-top: 40px;
     text-align: center;
@@ -160,482 +167,388 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · ultima modifica: 2026-03-10T22:35:00Z</p>
+    <p>// aggiornato da Claude · 2026-03-11T00:00:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 0 — CERCA LA ROUTINE NEL CATALOGO DB2
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-0">
-    <div class="task-header">
-      <div class="task-num">#000</div>
-      <div class="task-info">
-        <div class="task-title">Cerca la stored procedure <code>KCBPANAG</code> nel catalogo DB2</div>
-        <div class="task-desc">
-          Esegui questa query per verificare che la stored procedure esista e in quale schema si trova.
-          Se non appare nessuna riga, la proc non esiste o non hai i permessi per vederla.
-          Comunicare il risultato (NAME, SCHEMA, PARM_COUNT).
-        </div>
-        <div class="task-meta">
-          <span class="task-status" style="background:#0F766E22;color:#2DD4BF;border-color:#0F766E44;">🔍 diagnostica</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag db2">DB2 z/OS</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-0">
-      <button class="copy-btn" onclick="copyCode('cb-0', this)">Copia</button>
-      <pre>SELECT NAME,
-       SCHEMA,
-       PARM_COUNT,
-       LANGUAGE,
-       SPECIFICNAME
-FROM   SYSIBM.SYSROUTINES
-WHERE  NAME = 'KCBPANAG'</pre>
-    </div>
-    <div class="platform-note">📍 Dove: DBeaver → apri Script → incolla → esegui (F5) · Comunicare il risultato completo</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 1 — LEGGI LA FIRMA COMPLETA DEI PARAMETRI
+       TASK 1 — occurrence_id migration
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">Leggi la firma completa dei parametri di <code>KCBPANAG</code></div>
+        <div class="task-title">Migration — aggiunge <code>occurrence_id</code> a <code>cm_notification_queue</code></div>
         <div class="task-desc">
-          Esegui <strong>dopo</strong> il task #000. Sostituisci <code>DB2C</code> con lo schema
-          trovato nella query precedente. Mostra nome, tipo, lunghezza e direzione (P = IN, O = OUT)
-          di ogni parametro. Questo permette di costruire la CALL corretta.
+          Nuova colonna che identifica la specifica occorrenza di una notifica:<br>
+          • habit → <code>{rule_id}:{YYYY-MM-DD}:{slot_time}</code> (es. <code>abc:2026-03-11:08:00</code>)<br>
+          • task → <code>{rule_id}</code><br>
+          Usata dal webhook Telegram per cancellare solo le notifiche del singolo slot completato,
+          senza toccare i promemoria di altri slot orari o dei giorni futuri.
         </div>
         <div class="task-meta">
           <span class="task-status" style="background:#0F766E22;color:#2DD4BF;border-color:#0F766E44;">🔍 diagnostica</span>
           <span class="task-tag sql">SQL</span>
-          <span class="task-tag db2">DB2 z/OS</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">1° — eseguire per primo</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-1">
       <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>SELECT PARMNAME,
-       ROWTYPE,
-       TYPENAME,
-       LENGTH,
-       SCALE,
-       ORDINAL
-FROM   SYSIBM.SYSPARMS
-WHERE  SCHEMA = 'DB2C'              -- &lt;-- sostituire con lo schema trovato in #000
-  AND  SPECIFICNAME IN (
-           SELECT SPECIFICNAME
-           FROM   SYSIBM.SYSROUTINES
-           WHERE  SCHEMA = 'DB2C'   -- &lt;-- idem
-             AND  NAME   = 'KCBPANAG'
-       )
-ORDER  BY ORDINAL</pre>
+      <pre>ALTER TABLE cm_notification_queue
+  ADD COLUMN IF NOT EXISTS occurrence_id text;
+
+CREATE INDEX IF NOT EXISTS idx_queue_occurrence_id
+  ON cm_notification_queue (occurrence_id)
+  WHERE status IN ('pending', 'snoozed', 'sending');</pre>
     </div>
-    <div class="platform-note">📍 Dove: DBeaver → apri Script → incolla → esegui (F5) · Eseguire dopo #000 · Sostituire DB2C con lo schema reale</div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 2 — CALL COMPLETA KCBPANAG
+       TASK 2 — task_next_recurring_date
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">CALL completa di <code>KCBPANAG</code> — 4 IN + 25 OUT</div>
+        <div class="task-title">Crea funzione helper <code>task_next_recurring_date()</code></div>
         <div class="task-desc">
-          Firma verificata da SYSPARMS (29 parametri, tutti CHAR).
-          Sostituire i valori di <code>CD_INTERNO</code>, <code>NDG</code>, <code>LINGUA</code>, <code>COUNTRY</code>
-          con i dati reali. Le variabili OUT vengono popolate dalla proc.
-          Se in Java/JDBC usare <code>registerOutParameter</code> per i parametri 5–29.
+          Calcola la prossima occorrenza di un task <em>recurring</em> dopo una data base.
+          Supporta frequenza <strong>daily, weekly, monthly, yearly</strong> con intervalli e giorni multipli.
+          Equivalente SQL di <code>getNextRecurringDate()</code> in tasks.html.
+          Richiesta da <code>task_complete_via_telegram</code> (#003).
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ da eseguire</span>
+          <span class="task-status">⏳ da fare</span>
           <span class="task-tag sql">SQL</span>
-          <span class="task-tag db2">DB2 z/OS</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">2°</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-2">
       <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>-- Firma KCBPANAG — schema DB2C — 29 parametri (4 IN, 25 OUT)
--- Tutti CHAR; lunghezze da SYSPARMS
---
--- #  NOME               DIR  LEN
--- 1  CD_INTERNO          IN    5
--- 2  NDG                 IN   16
--- 3  LINGUA              IN    2
--- 4  COUNTRY             IN    2
--- 5  COMPANY_NAME        OUT 100
--- 6  REG_ADDRESS         OUT 100
--- 7  TOWN                OUT 100
--- 8  POSTAL_CODE         OUT   5
--- 9  COUNTRY_HO          OUT   3
--- 10 COUNTRY_BRANCH      OUT   3
--- 11 CUSTOMER_COUNT_1    OUT 100
--- 12 ROLE_1              OUT 100
--- 13 E_MAIL_1            OUT 100
--- 14 FAX_NUMB_1          OUT  20
--- 15 CUSTOMER_COUNT_2    OUT 100
--- 16 ROLE_2              OUT 100
--- 17 E_MAIL_2            OUT 100
--- 18 FAX_NUMB_2          OUT  20
--- 19 SWIFT_BIC           OUT  11
--- 20 UIC                 OUT   9
--- 21 TYPE_HBS            OUT 100
--- 22 PURPOSE_BUSN        OUT 100
--- 23 EB_VOLUME_MONTH     OUT 100
--- 24 EB_REVENUES_YEAR    OUT 100
--- 25 ADDITIONAL_INFO     OUT 100
--- 26 TP_REL              OUT   5
--- 27 FLAG_NDG_POTENZ     OUT   1
--- 28 RET_CODE            OUT   2
--- 29 MSG                 OUT 200
+      <pre>CREATE OR REPLACE FUNCTION task_next_recurring_date(
+  p_task    ts_tasks,
+  p_base    date
+)
+RETURNS date LANGUAGE plpgsql AS $$
+DECLARE
+  v_interval  integer := COALESCE(p_task.recurring_interval, 1);
+  v_freq      text    := p_task.recurring_frequency;
 
-CALL DB2C.KCBPANAG(
-  'CDINP',          -- 1  CD_INTERNO       CHAR(5)   IN
-  '1234567890123456',-- 2  NDG              CHAR(16)  IN
-  'IT',             -- 3  LINGUA           CHAR(2)   IN
-  'IT',             -- 4  COUNTRY          CHAR(2)   IN
-  ?,                -- 5  COMPANY_NAME     CHAR(100) OUT
-  ?,                -- 6  REG_ADDRESS      CHAR(100) OUT
-  ?,                -- 7  TOWN             CHAR(100) OUT
-  ?,                -- 8  POSTAL_CODE      CHAR(5)   OUT
-  ?,                -- 9  COUNTRY_HO       CHAR(3)   OUT
-  ?,                -- 10 COUNTRY_BRANCH   CHAR(3)   OUT
-  ?,                -- 11 CUSTOMER_COUNT_1 CHAR(100) OUT
-  ?,                -- 12 ROLE_1           CHAR(100) OUT
-  ?,                -- 13 E_MAIL_1         CHAR(100) OUT
-  ?,                -- 14 FAX_NUMB_1       CHAR(20)  OUT
-  ?,                -- 15 CUSTOMER_COUNT_2 CHAR(100) OUT
-  ?,                -- 16 ROLE_2           CHAR(100) OUT
-  ?,                -- 17 E_MAIL_2         CHAR(100) OUT
-  ?,                -- 18 FAX_NUMB_2       CHAR(20)  OUT
-  ?,                -- 19 SWIFT_BIC        CHAR(11)  OUT
-  ?,                -- 20 UIC              CHAR(9)   OUT
-  ?,                -- 21 TYPE_HBS         CHAR(100) OUT
-  ?,                -- 22 PURPOSE_BUSN     CHAR(100) OUT
-  ?,                -- 23 EB_VOLUME_MONTH  CHAR(100) OUT
-  ?,                -- 24 EB_REVENUES_YEAR CHAR(100) OUT
-  ?,                -- 25 ADDITIONAL_INFO  CHAR(100) OUT
-  ?,                -- 26 TP_REL           CHAR(5)   OUT
-  ?,                -- 27 FLAG_NDG_POTENZ  CHAR(1)   OUT
-  ?,                -- 28 RET_CODE         CHAR(2)   OUT
-  ?                 -- 29 MSG              CHAR(200) OUT
-)</pre>
+  v_dow_arr     integer[];
+  v_start_dow   integer;
+  v_cur_dow     integer;
+  v_test_date   date;
+  i             integer;
+  v_days_to_sun integer;
+  v_target_sun  date;
+
+  v_day_arr    integer[];
+  v_start_day  integer;
+  v_cur_day    integer;
+  v_cur_month  integer;
+  v_cur_year   integer;
+  v_next_month date;
+
+  v_dates_arr text[];
+  v_date_str  text;
+  v_parts     text[];
+  v_d         integer;
+  v_m         integer;
+  v_next_year integer;
+BEGIN
+
+  IF v_freq = 'daily' THEN
+    RETURN p_base + (v_interval || ' days')::interval;
+  END IF;
+
+  IF v_freq = 'weekly' THEN
+    IF p_task.recurring_days_of_week IS NOT NULL
+       AND jsonb_array_length(p_task.recurring_days_of_week::jsonb) > 0 THEN
+      SELECT array_agg(v::integer ORDER BY v::integer)
+        INTO v_dow_arr
+        FROM jsonb_array_elements_text(p_task.recurring_days_of_week::jsonb) AS v;
+    ELSE
+      v_start_dow := EXTRACT(DOW FROM p_task.start_date::date)::integer;
+      v_dow_arr   := ARRAY[v_start_dow];
+    END IF;
+
+    v_cur_dow := EXTRACT(DOW FROM p_base)::integer;
+
+    FOR i IN 1..(7 - v_cur_dow) LOOP
+      v_test_date := p_base + i;
+      IF EXTRACT(DOW FROM v_test_date)::integer = ANY(v_dow_arr) THEN
+        RETURN v_test_date;
+      END IF;
+    END LOOP;
+
+    v_days_to_sun := CASE WHEN v_cur_dow = 0 THEN 7 ELSE (7 - v_cur_dow) END;
+    v_target_sun  := p_base + v_days_to_sun + ((v_interval - 1) * 7);
+
+    FOR i IN 0..6 LOOP
+      v_test_date := v_target_sun + i;
+      IF EXTRACT(DOW FROM v_test_date)::integer = ANY(v_dow_arr) THEN
+        RETURN v_test_date;
+      END IF;
+    END LOOP;
+
+    RETURN NULL;
+  END IF;
+
+  IF v_freq = 'monthly' THEN
+    IF p_task.recurring_day_of_month IS NOT NULL
+       AND jsonb_array_length(p_task.recurring_day_of_month::jsonb) > 0 THEN
+      SELECT array_agg(v::integer ORDER BY v::integer)
+        INTO v_day_arr
+        FROM jsonb_array_elements_text(p_task.recurring_day_of_month::jsonb) AS v;
+    ELSE
+      v_start_day := EXTRACT(DAY FROM p_task.start_date::date)::integer;
+      v_day_arr   := ARRAY[v_start_day];
+    END IF;
+
+    v_cur_day   := EXTRACT(DAY   FROM p_base)::integer;
+    v_cur_month := EXTRACT(MONTH FROM p_base)::integer;
+    v_cur_year  := EXTRACT(YEAR  FROM p_base)::integer;
+
+    FOREACH i IN ARRAY v_day_arr LOOP
+      IF i > v_cur_day THEN
+        RETURN make_date(v_cur_year, v_cur_month, i);
+      END IF;
+    END LOOP;
+
+    v_next_month := (make_date(v_cur_year, v_cur_month, 1) + (v_interval || ' months')::interval)::date;
+    RETURN make_date(EXTRACT(YEAR  FROM v_next_month)::integer,
+                     EXTRACT(MONTH FROM v_next_month)::integer,
+                     v_day_arr[1]);
+  END IF;
+
+  IF v_freq = 'yearly' THEN
+    IF p_task.recurring_dates IS NOT NULL
+       AND jsonb_array_length(p_task.recurring_dates::jsonb) > 0 THEN
+      SELECT array_agg(v ORDER BY v)
+        INTO v_dates_arr
+        FROM jsonb_array_elements_text(p_task.recurring_dates::jsonb) AS v;
+    ELSIF p_task.recurring_day_of_year IS NOT NULL AND p_task.recurring_month IS NOT NULL THEN
+      v_dates_arr := ARRAY[lpad(p_task.recurring_day_of_year::text, 2, '0')
+                           || '-' || lpad(p_task.recurring_month::text, 2, '0')];
+    ELSE
+      RETURN NULL;
+    END IF;
+
+    v_cur_year := EXTRACT(YEAR FROM p_base)::integer;
+    FOREACH v_date_str IN ARRAY v_dates_arr LOOP
+      v_parts := string_to_array(v_date_str, '-');
+      v_d := v_parts[1]::integer;
+      v_m := v_parts[2]::integer;
+      v_test_date := make_date(v_cur_year, v_m, v_d);
+      IF v_test_date > p_base THEN
+        RETURN v_test_date;
+      END IF;
+    END LOOP;
+
+    v_next_year := v_cur_year + v_interval;
+    v_parts     := string_to_array(v_dates_arr[1], '-');
+    v_d         := v_parts[1]::integer;
+    v_m         := v_parts[2]::integer;
+    RETURN make_date(v_next_year, v_m, v_d);
+  END IF;
+
+  RETURN NULL;
+END;
+$$;</pre>
     </div>
-    <div class="platform-note">📍 DBeaver: Script → esegui · Java/JDBC: CallableStatement con registerOutParameter(5..29, Types.CHAR) · Controllare RET_CODE (param 28) e MSG (param 29) per esito</div>
+    <div class="platform-note">📍 Dove: DBeaver → apri Script → incolla → esegui (F5) · Eseguire dopo #000 · Sostituire DB2C con lo schema reale</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 3 — SNIPPET JAVA/JDBC
+       TASK 3 — task_complete_via_telegram
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">Snippet Java/JDBC per chiamare <code>KCBPANAG</code></div>
+        <div class="task-title">Crea funzione RPC <code>task_complete_via_telegram()</code></div>
         <div class="task-desc">
-          Codice Java pronto all'uso con <code>CallableStatement</code>.
-          Imposta i 4 parametri IN, registra i 25 OUT, esegue la CALL e legge i risultati.
-          Adattare i valori di input e il <code>DataSource</code> al proprio contesto.
+          Funzione chiamata dal webhook Telegram quando l'utente clicca <strong>✅ Fatto</strong> su una notifica task.
+          Gestisce tutti i tipi: <strong>single</strong> (→ terminated, elimina regola notifica),
+          <strong>simple_recurring</strong>, <strong>recurring</strong>, <strong>multiple</strong>, <strong>free_repeat</strong>.
+          Inserisce un record in <code>ts_history</code> con <code>action='completed'</code>
+          (rispetta il constraint <code>history_action_check</code>).
+          Eseguire <strong>dopo</strong> il task #002.
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ snippet</span>
-          <span class="task-tag">Java</span>
-          <span class="task-tag db2">JDBC</span>
+          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ da eseguire</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">3° — dopo #002</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>String sql = "{CALL DB2C.KCBPANAG(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
+      <pre>CREATE OR REPLACE FUNCTION task_complete_via_telegram(
+  p_task_id  uuid,
+  p_today    date
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_task           ts_tasks%ROWTYPE;
+  v_from_status    text;
+  v_points         integer;
+  v_action         text        := 'completed';
+  v_next_date      date;
+  v_next_ts        timestamptz;
+  v_completed_date timestamptz;
+BEGIN
+  SELECT * INTO v_task FROM ts_tasks WHERE id = p_task_id;
 
-try (CallableStatement cs = conn.prepareCall(sql)) {
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'task non trovato');
+  END IF;
 
-    // --- parametri IN (1-4) ---
-    cs.setString(1, cdInterno);   // CD_INTERNO  CHAR(5)
-    cs.setString(2, ndg);         // NDG         CHAR(16)
-    cs.setString(3, lingua);      // LINGUA      CHAR(2)
-    cs.setString(4, country);     // COUNTRY     CHAR(2)
+  IF v_task.type = 'workflow' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'workflow non supportato via Telegram');
+  END IF;
 
-    // --- parametri OUT (5-29) ---
-    cs.registerOutParameter( 5, Types.CHAR);  // COMPANY_NAME
-    cs.registerOutParameter( 6, Types.CHAR);  // REG_ADDRESS
-    cs.registerOutParameter( 7, Types.CHAR);  // TOWN
-    cs.registerOutParameter( 8, Types.CHAR);  // POSTAL_CODE
-    cs.registerOutParameter( 9, Types.CHAR);  // COUNTRY_HO
-    cs.registerOutParameter(10, Types.CHAR);  // COUNTRY_BRANCH
-    cs.registerOutParameter(11, Types.CHAR);  // CUSTOMER_COUNT_1
-    cs.registerOutParameter(12, Types.CHAR);  // ROLE_1
-    cs.registerOutParameter(13, Types.CHAR);  // E_MAIL_1
-    cs.registerOutParameter(14, Types.CHAR);  // FAX_NUMB_1
-    cs.registerOutParameter(15, Types.CHAR);  // CUSTOMER_COUNT_2
-    cs.registerOutParameter(16, Types.CHAR);  // ROLE_2
-    cs.registerOutParameter(17, Types.CHAR);  // E_MAIL_2
-    cs.registerOutParameter(18, Types.CHAR);  // FAX_NUMB_2
-    cs.registerOutParameter(19, Types.CHAR);  // SWIFT_BIC
-    cs.registerOutParameter(20, Types.CHAR);  // UIC
-    cs.registerOutParameter(21, Types.CHAR);  // TYPE_HBS
-    cs.registerOutParameter(22, Types.CHAR);  // PURPOSE_BUSN
-    cs.registerOutParameter(23, Types.CHAR);  // EB_VOLUME_MONTH
-    cs.registerOutParameter(24, Types.CHAR);  // EB_REVENUES_YEAR
-    cs.registerOutParameter(25, Types.CHAR);  // ADDITIONAL_INFO
-    cs.registerOutParameter(26, Types.CHAR);  // TP_REL
-    cs.registerOutParameter(27, Types.CHAR);  // FLAG_NDG_POTENZ
-    cs.registerOutParameter(28, Types.CHAR);  // RET_CODE
-    cs.registerOutParameter(29, Types.CHAR);  // MSG
+  v_from_status    := v_task.status;
+  v_points         := COALESCE(v_task.success_points, 0);
+  v_completed_date := COALESCE(
+    v_task.next_occurrence_date::timestamptz,
+    v_task.start_date::timestamptz,
+    now()
+  );
 
-    cs.execute();
+  IF v_task.type = 'single' AND v_task.deadline IS NOT NULL THEN
+    IF p_today > v_task.deadline::date THEN
+      v_points := COALESCE(v_task.late_points, 0);
+      v_action  := 'completed_late';
+    END IF;
+  END IF;
 
-    // --- leggi esito ---
-    String retCode = cs.getString(28); // es. "00" = OK
-    String msg     = cs.getString(29);
+  INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
+  VALUES (p_task_id, v_from_status, 'completed', 'completed', v_points, now());
 
-    if (!"00".equals(retCode != null ? retCode.trim() : "")) {
-        throw new RuntimeException("KCBPANAG errore: " + retCode + " — " + msg);
-    }
+  IF v_task.type = 'single' THEN
+    UPDATE ts_tasks
+       SET status              = 'terminated',
+           last_completed_date = v_completed_date
+     WHERE id = p_task_id;
 
-    // --- leggi dati output ---
-    String companyName = cs.getString(5);
-    String address     = cs.getString(6);
-    String town        = cs.getString(7);
-    // ... ecc.
-}</pre>
+    DELETE FROM cm_notification_rules
+     WHERE entity_id = p_task_id::text
+       AND app = 'tasks';
+
+  ELSIF v_task.type = 'simple_recurring' THEN
+    v_next_ts := COALESCE(v_task.next_occurrence_date::timestamptz, v_task.start_date::timestamptz)
+                 + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval;
+
+    UPDATE ts_tasks
+       SET status               = 'completed',
+           last_completed_date  = v_completed_date,
+           next_occurrence_date = v_next_ts
+     WHERE id = p_task_id;
+
+  ELSIF v_task.type = 'recurring' THEN
+    v_next_date := task_next_recurring_date(
+      v_task,
+      COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::date
+    );
+
+    IF v_next_date IS NOT NULL THEN
+      v_next_ts := v_next_date::timestamptz;
+    END IF;
+
+    UPDATE ts_tasks
+       SET status               = CASE WHEN v_next_date IS NULL THEN 'terminated' ELSE 'completed' END,
+           last_completed_date  = v_completed_date,
+           next_occurrence_date = v_next_ts
+     WHERE id = p_task_id;
+
+  ELSIF v_task.type = 'multiple' THEN
+    DECLARE
+      v_dates    text[];
+      v_cur_str  text;
+      v_cur_idx  integer := NULL;
+      v_next_str text    := NULL;
+      j          integer;
+    BEGIN
+      SELECT array_agg(d ORDER BY d)
+        INTO v_dates
+        FROM jsonb_array_elements_text(v_task.multiple_dates::jsonb) AS d;
+
+      v_cur_str := split_part(COALESCE(v_task.next_occurrence_date::text, ''), 'T', 1);
+
+      FOR j IN 1..array_length(v_dates, 1) LOOP
+        IF v_dates[j] = v_cur_str THEN
+          v_cur_idx := j;
+          EXIT;
+        END IF;
+      END LOOP;
+
+      IF v_cur_idx IS NOT NULL AND v_cur_idx &lt; array_length(v_dates, 1) THEN
+        v_next_str := v_dates[v_cur_idx + 1] || 'T00:00:00';
+      END IF;
+
+      UPDATE ts_tasks
+         SET status               = CASE WHEN v_next_str IS NULL THEN 'terminated' ELSE 'completed' END,
+             last_completed_date  = v_completed_date,
+             next_occurrence_date = v_next_str::timestamptz
+       WHERE id = p_task_id;
+    END;
+
+  ELSE -- free_repeat
+    UPDATE ts_tasks
+       SET status              = 'completed',
+           last_completed_date = v_completed_date
+     WHERE id = p_task_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'ok',     true,
+    'action', v_action,
+    'points', v_points,
+    'type',   v_task.type
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION task_complete_via_telegram(uuid, date) TO authenticated;</pre>
     </div>
-    <div class="platform-note">📍 Nota: verificare il codice di successo reale in RET_CODE (potrebbe essere "00", " ", o altro) — leggere prima senza il controllo per vedere cosa ritorna la proc</div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run · Eseguire dopo #002</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 4 — RISULTATO SYSROUTINEAUTH (RISOLTO)
+       TASK 4 — Deploy Edge Functions
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-4">
     <div class="task-header">
       <div class="task-num">#004</div>
       <div class="task-info">
-        <div class="task-title">✅ Privilegi verificati — PUBLIC = Y</div>
+        <div class="task-title">Deploy Edge Functions — <code>fill-notification-queue</code> &amp; <code>telegram-webhook</code></div>
         <div class="task-desc">
-          <strong>SYSROUTINEAUTH risultato:</strong><br>
-          • GRANTOR=DB2C · GRANTEE=<em>G…</em> (gruppo, EXECUTEAUTH da verificare)<br>
-          • GRANTOR=DB2C · GRANTEE=<strong>PUBLIC</strong> · EXECUTEAUTH=<strong>Y</strong><br><br>
-          <strong>Conclusione:</strong> PUBLIC=Y → tutti gli utenti hanno EXECUTE.
-          Il -440 <u>non è</u> un problema di autorizzazione. La causa è altrove
-          (sintassi CALL, PATH, o connessione sbagliata — vedi task #006).
+          Aggiorna le due Edge Function su Supabase dopo le modifiche a <code>occurrence_id</code>:<br>
+          • <strong>fill-notification-queue</strong> — ora popola <code>occurrence_id</code> per ogni entry della coda<br>
+          • <strong>telegram-webhook</strong> — usa <code>occurrence_id</code> per cancellare solo le notifiche dello stesso slot<br>
+          Eseguire dalla radice del repo con Supabase CLI (link progetto: <code>jajlmmdsjlvzgcxiiypk</code>).
+          Dopo il deploy, invocare manualmente <code>fill-notification-queue</code> per rigenerare le entry con <code>occurrence_id</code>.
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#14532D22;color:#86EFAC;border-color:#14532D44;">✅ risolto</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag db2">DB2 z/OS</span>
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag bash">Bash</span>
+          <span class="task-tag">Supabase CLI</span>
+          <span class="task-tag order">4° — dopo #001</span>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 5 — GRANT EXECUTE (NON NECESSARIO)
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-5" style="opacity:0.45">
-    <div class="task-header">
-      <div class="task-num">#005</div>
-      <div class="task-info">
-        <div class="task-title">GRANT EXECUTE — <em>non necessario</em> (PUBLIC già = Y)</div>
-        <div class="task-meta">
-          <span class="task-status" style="background:#1E293B;color:#64748B;border-color:#334155;">⏭ saltato</span>
-        </div>
-      </div>
+    <div class="code-block" id="cb-4">
+      <button class="copy-btn" onclick="copyCode('cb-4', this)">Copia</button>
+      <pre>supabase functions deploy fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk
+supabase functions deploy telegram-webhook --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 6 — DIAGNOSI REALE DEL -440
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-6">
-    <div class="task-header">
-      <div class="task-num">#006</div>
-      <div class="task-info">
-        <div class="task-title">Diagnosi -440: CALL da connessione corretta + CURRENT PATH</div>
-        <div class="task-desc">
-          <strong>Cause probabili ora che i permessi sono OK:</strong><br>
-          1. La CALL va sulla connessione <code>emergenza loc0d0</code> ma la procedura
-             risiede nel subsystem/location a cui punta <code>loujd0 testkcb</code> (tab 2)<br>
-          2. <code>CURRENT PATH</code> non include DB2C (raro con schema esplicito ma verificare)<br>
-          3. I <code>?</code> nella CALL non sono gestiti come OUT dal tool — usare
-             <kbd>Ctrl+Enter</kbd> solo sulla CALL (non F5 sull'intero script)<br><br>
-          <strong>Passo 1:</strong> aprire la CALL nel tab <code>loujd0 testkcb</code> e
-          selezionare solo il CALL → <kbd>Ctrl+Enter</kbd>.<br>
-          <strong>Passo 2:</strong> se ancora -440, eseguire la query diagnostica qui sotto.
-        </div>
-        <div class="task-meta">
-          <span class="task-status" style="background:#7F1D1D22;color:#FCA5A5;border-color:#7F1D1D44;">🔴 da indagare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag db2">DB2 z/OS</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-6a">
-      <button class="copy-btn" onclick="copyCode('cb-6a', this)">Copia</button>
-      <pre>-- Verifica path di risoluzione routine
-SELECT CURRENT PATH FROM SYSIBM.SYSDUMMY1;
-
--- Conta quante versioni di KCBPANAG esistono (overloading)
-SELECT SCHEMA, NAME, SPECIFICNAME, PARMS, LANGUAGE, ROUTINETYPE
-FROM   SYSIBM.SYSROUTINES
-WHERE  NAME = 'KCBPANAG';</pre>
-    </div>
-    <div class="platform-note">
-      📍 Eseguire nel tab <strong>loujd0 testkcb</strong> (tab 2, non emergenza loc0d0) ·
-      Comunicare il CURRENT PATH e quante righe restituisce la seconda SELECT
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 7 — PROGRAMMA JAVA COMPLETO
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-7">
-    <div class="task-header">
-      <div class="task-num">#007</div>
-      <div class="task-info">
-        <div class="task-title">Programma Java completo — setup, connessione e CALL</div>
-        <div class="task-desc">
-          Tutto il necessario per far girare la chiamata a <code>KCBPANAG</code> da Java.<br>
-          <strong>Passo 1</strong>: procurarsi il driver DB2 JDBC (JAR IBM, vedi note sotto)<br>
-          <strong>Passo 2</strong>: adattare host, porta, database e credenziali<br>
-          <strong>Passo 3</strong>: compilare ed eseguire
-        </div>
-        <div class="task-meta">
-          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ pronto</span>
-          <span class="task-tag">Java</span>
-          <span class="task-tag db2">JDBC</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- pom.xml -->
-    <div style="margin:0 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">pom.xml — dipendenza driver DB2</div>
-    <div class="code-block" id="cb-7a">
-      <button class="copy-btn" onclick="copyCode('cb-7a', this)">Copia</button>
-      <pre>&lt;dependency&gt;
-    &lt;groupId&gt;com.ibm.db2&lt;/groupId&gt;
-    &lt;artifactId&gt;jcc&lt;/artifactId&gt;
-    &lt;version&gt;11.5.9.0&lt;/version&gt;
-&lt;/dependency&gt;
-
-&lt;!-- NOTA: il JAR IBM non è su Maven Central.
-     Opzioni:
-     A) Maven Central alternativo: usa coordinates sopra (disponibile da IBM Maven repo)
-     B) JAR locale: mvn install:install-file -Dfile=db2jcc4.jar
-            -DgroupId=com.ibm.db2 -DartifactId=jcc -Dversion=11.5 -Dpackaging=jar
-     Il JAR si trova in:
-       - /opt/IBM/SQLLIB/java/db2jcc4.jar  (se DB2 client installato)
-       - oppure scaricarlo da: https://www.ibm.com/support/pages/db2-jdbc-driver-versions-and-downloads --&gt;</pre>
-    </div>
-
-    <!-- KcbpanagCaller.java -->
-    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">KcbpanagCaller.java — classe completa pronta all'uso</div>
-    <div class="code-block" id="cb-7b">
-      <button class="copy-btn" onclick="copyCode('cb-7b', this)">Copia</button>
-      <pre>import java.sql.*;
-
-public class KcbpanagCaller {
-
-    // ── CONFIGURAZIONE ─────────────────────────────────────────
-    // Formato z/OS:  jdbc:db2://HOST:PORT/LOCATION
-    // Formato LUW:   jdbc:db2://HOST:PORT/DATABASE
-    static final String URL  = "jdbc:db2://HOSTNAME:50000/TESTKCB";
-    static final String USER = "loujd0";
-    static final String PASS = "password";
-    // ───────────────────────────────────────────────────────────
-
-    public static void main(String[] args) throws Exception {
-
-        // Parametri IN — adattare ai valori reali
-        String cdInterno = "02008";
-        String ndg       = "0000000024159636";
-        String lingua    = "IT";
-        String country   = "IT";
-
-        String sql = "{CALL DB2C.KCBPANAG(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}";
-
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
-             CallableStatement cs = conn.prepareCall(sql)) {
-
-            // IN
-            cs.setString(1, cdInterno);
-            cs.setString(2, ndg);
-            cs.setString(3, lingua);
-            cs.setString(4, country);
-
-            // OUT
-            for (int i = 5; i <= 29; i++) {
-                cs.registerOutParameter(i, Types.CHAR);
-            }
-
-            cs.execute();
-
-            // Esito
-            String retCode = cs.getString(28);
-            String msg     = cs.getString(29);
-            System.out.println("RET_CODE : [" + retCode + "]");
-            System.out.println("MSG      : [" + msg     + "]");
-
-            // Dati
-            System.out.println("COMPANY_NAME : " + cs.getString(5));
-            System.out.println("REG_ADDRESS  : " + cs.getString(6));
-            System.out.println("TOWN         : " + cs.getString(7));
-            System.out.println("POSTAL_CODE  : " + cs.getString(8));
-            System.out.println("COUNTRY_HO   : " + cs.getString(9));
-            System.out.println("SWIFT_BIC    : " + cs.getString(19));
-            System.out.println("TP_REL       : " + cs.getString(26));
-            System.out.println("FLAG_NDG_POT : " + cs.getString(27));
-        }
-    }
-}</pre>
-    </div>
-
-    <!-- comandi shell -->
-    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">Compilare ed eseguire (senza Maven)</div>
-    <div class="code-block" id="cb-7c">
-      <button class="copy-btn" onclick="copyCode('cb-7c', this)">Copia</button>
-      <pre># Compilare (db2jcc4.jar deve essere presente)
-javac -cp db2jcc4.jar KcbpanagCaller.java
-
-# Eseguire
-java -cp .:db2jcc4.jar KcbpanagCaller
-
-# Windows (separatore ; invece di :)
-java -cp .;db2jcc4.jar KcbpanagCaller</pre>
-    </div>
-
-    <!-- errori comuni -->
-    <div style="margin:12px 0 4px 0;font-size:11px;color:#6B7280;padding:0 4px">Errori comuni e soluzioni</div>
-    <div class="code-block" id="cb-7d">
-      <button class="copy-btn" onclick="copyCode('cb-7d', this)">Copia</button>
-      <pre>// Errore: "No suitable driver found"
-//   → db2jcc4.jar non è nel classpath, oppure URL sbagliato
-
-// Errore: "Communication link failure" / ERRORCODE=-4499
-//   → HOST o PORT errati; DB2 non raggiungibile dalla macchina
-//   → verificare: telnet HOSTNAME 50000
-
-// Errore: SQLCODE -440 anche da Java
-//   → problema di CURRENT PATH / location
-//   → aggiungere dopo la connessione:
-conn.setSchema("DB2C");  // oppure:
-try (Statement st = conn.createStatement()) {
-    st.execute("SET CURRENT PATH = SYSIBM, SYSFUN, SYSPROC, DB2C");
-}
-
-// Errore: SQLCODE -30082 (autenticazione)
-//   → credenziali errate o utente non autorizzato alla connessione JDBC</pre>
-    </div>
-
-    <div class="platform-note">
-      📍 URL di connessione: chiedere al DBA l'hostname, la porta (default 50000) e il nome del
-      subsystem/location DB2 z/OS · Il JAR <code>db2jcc4.jar</code> è la versione universale
-      (supporta sia z/OS che LUW) — preferirla a <code>db2jcc.jar</code>
-    </div>
+    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- Aggiungi nuovi task sopra questo commento -->
@@ -647,7 +560,6 @@ try (Statement st = conn.createStatement()) {
 <script>
 function copyCode(blockId, btn) {
   const pre = document.getElementById(blockId).querySelector('pre');
-  // Per il copia, ripristina < al posto di &lt;
   const text = pre.innerHTML
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
