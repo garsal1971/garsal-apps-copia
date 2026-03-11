@@ -386,12 +386,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cancella le notifiche della stessa occorrenza (stesso slot/giorno)
-    // occurrence_id = "{rule_id}:{YYYY-MM-DD}:{slot_time}" per habit
-    // occurrence_id = "{rule_id}" per task
-    // Fallback a rule_id per entry precedenti senza occurrence_id
-    // Segna l'item cliccato come completato
-    await sb.from('cm_notification_queue').update({ status: 'completed' }).eq('id', queueId)
+    // Segna l'item cliccato come cancelled (non deve essere reinviato)
+    const { error: completeErr } = await sb
+      .from('cm_notification_queue')
+      .update({ status: 'cancelled' })
+      .eq('id', queueId)
+    if (completeErr) console.error('[telegram-webhook] errore update cancelled:', completeErr)
 
     const occId = (queueRow.occurrence_id as string | null) ?? (queueRow.rule_id as string)
     await cancelByOccurrence(occId, queueId)
