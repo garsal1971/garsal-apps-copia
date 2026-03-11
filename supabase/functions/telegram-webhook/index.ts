@@ -15,7 +15,7 @@
 //   2. Parsa il body JSON di Telegram (callback_query)
 //   3. Aggiorna cm_notification_queue (status + fire_at)
 //   4. Risponde a Telegram con answerCallbackQuery (obbligatorio)
-//   5. Elimina il messaggio cliccato e tutti i messaggi sibling (stesso rule_id)
+//   5. Elimina il messaggio cliccato e tutti i messaggi sibling (stesso occurrence_id)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -69,12 +69,28 @@ async function editMessageText(chatId: number, messageId: number, text: string):
   })
 }
 
-// Elimina i messaggi Telegram di tutti gli item sibling (stesso rule_id)
+// Elimina i messaggi Telegram degli item sibling (stesso rule_id, esclude quello corrente)
 async function deleteSiblingMessages(ruleId: string, excludeQueueId: string, chatId: number): Promise<void> {
   const { data } = await sb
     .from('cm_notification_queue')
     .select('telegram_message_id')
     .eq('rule_id', ruleId)
+    .neq('id', excludeQueueId)
+    .not('telegram_message_id', 'is', null)
+  if (!data) return
+  for (const row of data) {
+    if (row.telegram_message_id) {
+      await deleteMessage(chatId, row.telegram_message_id as number)
+    }
+  }
+}
+
+// Elimina i messaggi Telegram degli item con lo stesso occurrence_id
+async function deleteSiblingsByOccurrence(occId: string, excludeQueueId: string, chatId: number): Promise<void> {
+  const { data } = await sb
+    .from('cm_notification_queue')
+    .select('telegram_message_id')
+    .eq('occurrence_id', occId)
     .neq('id', excludeQueueId)
     .not('telegram_message_id', 'is', null)
   if (!data) return
@@ -99,7 +115,7 @@ function formatDateTime(date: Date): string {
 }
 
 // Cancella tutti gli altri item pendenti/snoozed della stessa regola
-// (chiamata dopo ogni azione dell'utente per rimuovere notifiche duplicate)
+// (usato per cancel: l'utente vuole eliminare tutti i promemoria futuri della regola)
 async function cancelSiblingItems(ruleId: string, excludeQueueId: string): Promise<void> {
   const { error } = await sb
     .from('cm_notification_queue')
@@ -108,6 +124,18 @@ async function cancelSiblingItems(ruleId: string, excludeQueueId: string): Promi
     .neq('id', excludeQueueId)
     .in('status', ['pending', 'snoozed', 'sending'])
   if (error) console.error('[telegram-webhook] errore cancelSiblingItems:', error)
+}
+
+// Cancella gli item pending/snoozed con lo stesso occurrence_id
+// (usato per complete e snooze: opera solo sulla specifica occorrenza giorno+slot)
+async function cancelByOccurrence(occId: string, excludeQueueId: string): Promise<void> {
+  const { error } = await sb
+    .from('cm_notification_queue')
+    .update({ status: 'cancelled' })
+    .eq('occurrence_id', occId)
+    .neq('id', excludeQueueId)
+    .in('status', ['pending', 'snoozed', 'sending'])
+  if (error) console.error('[telegram-webhook] errore cancelByOccurrence:', error)
 }
 
 // ---------------------------------------------------------------------------
@@ -183,10 +211,10 @@ Deno.serve(async (req) => {
 
     const newFireAt = new Date(Date.now() + minutes * 60 * 1000)
 
-    // Leggi rule_id per poter cancellare i promemoria correlati
+    // Leggi rule_id e occurrence_id per poter cancellare i promemoria correlati
     const { data: snoozeRow } = await sb
       .from('cm_notification_queue')
-      .select('rule_id')
+      .select('rule_id, occurrence_id')
       .eq('id', queueId)
       .maybeSingle()
 
@@ -209,17 +237,20 @@ Deno.serve(async (req) => {
 
     await answerCallbackQuery(callbackQueryId, `⏸ Sospeso per ${label}`)
 
-    // Elimina i messaggi sibling + cancella dalla coda, poi elimina il messaggio cliccato
-    if (snoozeRow?.rule_id) {
-      await deleteSiblingMessages(snoozeRow.rule_id as string, queueId, chatId)
-      await cancelSiblingItems(snoozeRow.rule_id as string, queueId)
+    // Cancella i sibling dello stesso slot (occurrence_id) o fallback a rule_id
+    if (snoozeRow) {
+      const occId = snoozeRow.occurrence_id ?? snoozeRow.rule_id
+      if (occId) {
+        await deleteSiblingsByOccurrence(occId as string, queueId, chatId)
+        await cancelByOccurrence(occId as string, queueId)
+      }
     }
     await deleteMessage(chatId, messageId)
 
   } else if (action === 'cancel' && parts.length === 2) {
     const queueId = parts[1]
 
-    // Leggi rule_id per poter cancellare i promemoria correlati
+    // Leggi rule_id per poter cancellare tutti i promemoria futuri della regola
     const { data: cancelRow } = await sb
       .from('cm_notification_queue')
       .select('rule_id')
@@ -239,7 +270,7 @@ Deno.serve(async (req) => {
 
     await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
 
-    // Elimina i messaggi sibling + cancella dalla coda, poi elimina il messaggio cliccato
+    // Cancella tutti i promemoria futuri della stessa regola (comportamento intenzionale)
     if (cancelRow?.rule_id) {
       await deleteSiblingMessages(cancelRow.rule_id as string, queueId, chatId)
       await cancelSiblingItems(cancelRow.rule_id as string, queueId)
@@ -252,7 +283,7 @@ Deno.serve(async (req) => {
     // Leggi la queue entry per ottenere metadata.completion_update
     const { data: queueRow, error: fetchErr } = await sb
       .from('cm_notification_queue')
-      .select('metadata, entity_id, fire_at, rule_id')
+      .select('metadata, entity_id, fire_at, rule_id, occurrence_id')
       .eq('id', queueId)
       .maybeSingle()
 
@@ -355,26 +386,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cancella le entry pending/sending dello stesso slot (rule_id + slot_time + giorno UTC)
-    // Evita di cancellare altri slot dello stesso habit (es. 08:00 vs 22:00)
-    const fireDay    = (queueRow.fire_at as string).slice(0, 10) // YYYY-MM-DD
-    const cancelBase = sb
-      .from('cm_notification_queue')
-      .update({ status: 'cancelled' })
-      .eq('rule_id', queueRow.rule_id as string)
-      .in('status', ['pending', 'sending'])
-      .gte('fire_at', `${fireDay}T00:00:00.000Z`)
-      .lte('fire_at', `${fireDay}T23:59:59.999Z`)
-
-    await (slotTime
-      ? cancelBase.filter('metadata->>slot_time', 'eq', slotTime)
-      : cancelBase)
+    // Cancella le notifiche della stessa occorrenza (stesso slot/giorno)
+    // occurrence_id = "{rule_id}:{YYYY-MM-DD}:{slot_time}" per habit
+    // occurrence_id = "{rule_id}" per task
+    // Fallback a rule_id per entry precedenti senza occurrence_id
+    const occId = (queueRow.occurrence_id as string | null) ?? (queueRow.rule_id as string)
+    await cancelByOccurrence(occId, queueId)
 
     await answerCallbackQuery(callbackQueryId, '✅ Completato!')
 
-    // 1. Elimina i messaggi sibling (altre entry con stesso rule_id)
-    await deleteSiblingMessages(queueRow.rule_id as string, queueId, chatId)
-    await cancelSiblingItems(queueRow.rule_id as string, queueId)
+    // 1. Elimina i messaggi Telegram della stessa occorrenza
+    await deleteSiblingsByOccurrence(occId, queueId, chatId)
 
     // 2. Elimina i messaggi di reinvio precedenti della stessa entry
     //    (accumulati in metadata.telegram_message_ids da send-notifications)

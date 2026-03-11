@@ -1,7 +1,7 @@
 // ============================================================
 // Job 1 — fill-notification-queue
 // Frequenza: ogni 6 ore (cron: "0 */6 * * *")
-// Aggiornato: 2026-03-07 — supporto struttura habit (times[] + from-to)
+// Aggiornato: 2026-03-11 — aggiunto occurrence_id per cancellazione mirata
 //
 // Gestisce due tipi di struttura in reminder_presets:
 //
@@ -79,9 +79,10 @@ interface Preset {
 }
 
 interface QueueEntry {
-  fire_at: string
-  label:   string
-  time:    string   // HH:MM usato come riferimento (per task = ora di due_at)
+  fire_at:       string
+  label:         string
+  time:          string   // HH:MM usato come riferimento (per task = ora di due_at)
+  occurrence_id: string   // identifica la specifica occorrenza (habit: ruleId:YYYY-MM-DD:HH:MM, task: ruleId)
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +142,7 @@ Deno.serve(async (_req) => {
           skipped++
           continue
         }
-        entries = generateHabitEntries(hrp, presetsMap, now, horizon)
+        entries = generateHabitEntries(hrp, presetsMap, now, horizon, rule.id)
       } else {
         const trp = rp as TaskReminderPresets
         if (!trp.due_at) {
@@ -149,7 +150,7 @@ Deno.serve(async (_req) => {
           skipped++
           continue
         }
-        entries = generateTaskEntries(trp, presetsMap, now, horizon)
+        entries = generateTaskEntries(trp, presetsMap, now, horizon, rule.id)
       }
 
       // 3. Elimina entry pending stale per questa regola
@@ -192,15 +193,16 @@ Deno.serve(async (_req) => {
         }
 
         const queueEntry: Record<string, unknown> = {
-          rule_id:   rule.id,
-          user_id:   rule.user_id,
-          app:       rule.app,
-          entity_id: rule.entity_id,
+          rule_id:       rule.id,
+          user_id:       rule.user_id,
+          app:           rule.app,
+          entity_id:     rule.entity_id,
           title,
           body,
-          channel:   rule.channel,
-          fire_at:   entry.fire_at,
-          status:    'pending',
+          channel:       rule.channel,
+          fire_at:       entry.fire_at,
+          status:        'pending',
+          occurrence_id: entry.occurrence_id,
         }
         if (entryMetadata) queueEntry.metadata = entryMetadata
 
@@ -248,6 +250,7 @@ function generateTaskEntries(
   presetsMap: Map<number, { label: string; offset_minutes: number }>,
   now:        Date,
   horizon:    Date,
+  ruleId:     string,
 ): QueueEntry[] {
   const dueAt  = new Date(rp.due_at)
   const timeStr = `${String(dueAt.getUTCHours()).padStart(2,'0')}:${String(dueAt.getUTCMinutes()).padStart(2,'0')}`
@@ -258,7 +261,7 @@ function generateTaskEntries(
     if (!preset) { console.warn(`[fill-queue] preset int_id=${pid} non trovato`); continue }
     const fireAt = new Date(dueAt.getTime() - preset.offset_minutes * 60 * 1000)
     if (fireAt > now && fireAt <= horizon) {
-      results.push({ fire_at: fireAt.toISOString(), label: preset.label, time: timeStr })
+      results.push({ fire_at: fireAt.toISOString(), label: preset.label, time: timeStr, occurrence_id: ruleId })
     }
   }
 
@@ -273,6 +276,7 @@ function generateHabitEntries(
   presetsMap: Map<number, { label: string; offset_minutes: number }>,
   now:        Date,
   horizon:    Date,
+  ruleId:     string,
 ): QueueEntry[] {
   const [fromStr, toStr] = rp['from-to']
 
@@ -295,7 +299,8 @@ function generateHabitEntries(
   cursor.setUTCHours(0, 0, 0, 0)
 
   while (cursor <= endDay) {
-    const dayOfWeek = cursor.getUTCDay()  // 0=domenica ... 6=sabato
+    const dayOfWeek    = cursor.getUTCDay()  // 0=domenica ... 6=sabato
+    const cursorDateStr = cursor.toISOString().slice(0, 10) // YYYY-MM-DD
 
     // Weekly: salta se il giorno non è nella lista
     if (rp.days && !rp.days.includes(dayOfWeek)) {
@@ -308,13 +313,16 @@ function generateHabitEntries(
       const baseDate = new Date(cursor)
       baseDate.setUTCHours(hh, mm, 0, 0)
 
+      // occurrence_id identifica univocamente questo giorno + slot
+      const occurrenceId = `${ruleId}:${cursorDateStr}:${timeStr}`
+
       for (const pid of rp.reminders) {
         const preset = presetsMap.get(pid)
         if (!preset) { console.warn(`[fill-queue] preset int_id=${pid} non trovato`); continue }
 
         const fireAt = new Date(baseDate.getTime() - preset.offset_minutes * 60 * 1000)
         if (fireAt > now && fireAt <= horizon) {
-          results.push({ fire_at: fireAt.toISOString(), label: preset.label, time: timeStr })
+          results.push({ fire_at: fireAt.toISOString(), label: preset.label, time: timeStr, occurrence_id: occurrenceId })
         }
       }
     }
