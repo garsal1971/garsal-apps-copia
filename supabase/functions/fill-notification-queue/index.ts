@@ -108,6 +108,19 @@ Deno.serve(async (_req) => {
     const horizon    = new Date(now.getTime() + HORIZON_DAYS * 24 * 60 * 60 * 1000)
     const safeDelete = new Date(now.getTime() + SAFE_WINDOW_MS)
 
+    // 0. Pulizia: elimina tutte le notifiche in stato terminale
+    const TERMINAL_STATUSES = ['sent', 'failed', 'cancelled', 'completed']
+    const { error: cleanErr, count: cleanCount } = await sb
+      .from('cm_notification_queue')
+      .delete({ count: 'exact' })
+      .in('status', TERMINAL_STATUSES)
+
+    if (cleanErr) {
+      console.error('[fill-queue] pulizia stati terminali error:', cleanErr)
+    } else {
+      console.log(`[fill-queue] pulizia stati terminali: ${cleanCount ?? 0} righe eliminate`)
+    }
+
     // 1. Carica tutti i preset → mappa int_id → {label, offset_minutes}
     const { data: presetsRows, error: presetsError } = await sb
       .from('cm_reminder_presets')
