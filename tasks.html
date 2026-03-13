@@ -2147,6 +2147,7 @@
         // sb inizializzato dopo ricezione token (in initWithToken)
         let sb            = null;
         let sbAccessToken = sessionStorage.getItem('sb_token') || null;
+        let hiddenMode    = false; // modalità nascosta: mostra oggetti riservati
 
         function initWithToken(token) {
             if (sb) return; // già inizializzato
@@ -2689,7 +2690,9 @@
             console.log('Loading tasks...');
             debugLog('Loading tasks...');
             try {
-                const { data, error } = await sb.from('ts_tasks').select('*');
+                let taskQuery = sb.from('ts_tasks').select('*');
+                if (!hiddenMode) taskQuery = taskQuery.or('riservato.eq.false,riservato.is.null');
+                const { data, error } = await taskQuery;
                 if (error) {
                     console.error('Error loading tasks:', error);
                     debugLog('❌ Error loading tasks:', error.message || JSON.stringify(error));
@@ -9789,15 +9792,23 @@ Per attivarle:
         }
 
 
-        // Riceve token dal launcher (app-launcher.html) via postMessage
+        // Riceve token e stato hidden mode dal launcher (app-launcher.html) via postMessage
         window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'SB_TOKEN' && e.data.token) {
+            if (!e.data) return;
+            if (e.data.type === 'SB_TOKEN' && e.data.token) {
                 console.log('✅ SB_TOKEN ricevuto dal launcher (Tasks)');
                 initWithToken(e.data.token);
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                if (sb) loadTasks().then(() => {
+                    const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
+                    if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
+                });
             }
         });
 
-        // Logout broadcast da AppSphere: invalida sessione e mostra overlay
+        // Logout/token refresh/hidden mode broadcast da AppSphere
         const _authChannel = new BroadcastChannel('appsphere_auth');
         _authChannel.onmessage = (e) => {
             if (!e.data) return;
@@ -9818,6 +9829,13 @@ Per attivarle:
                     });
                 }
                 console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                if (sb) loadTasks().then(() => {
+                    const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
+                    if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
+                });
             }
         };
 

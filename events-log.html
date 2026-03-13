@@ -960,6 +960,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
     let sb             = null; // inizializzato in initWithToken()
     let sbAccessToken  = null;
+    let hiddenMode     = false; // modalità nascosta: mostra oggetti riservati
 
     function initWithToken(token) {
         if (sb) return; // già inizializzato
@@ -1771,7 +1772,9 @@ async function loadGroups() {
 }
 
 async function loadEvents() {
-    const { data, error } = await sb.from('el_events').select('*').order('sort_order', { ascending: true }).order('name');
+    let eventsQuery = sb.from('el_events').select('*').order('sort_order', { ascending: true }).order('name');
+    if (!hiddenMode) eventsQuery = eventsQuery.or('riservato.eq.false,riservato.is.null');
+    const { data, error } = await eventsQuery;
     if (error) { console.error('loadEvents', error); return; }
     events = (data || []).map(e => ({ ...e, groupId: e.group_id }));
 }
@@ -2113,13 +2116,18 @@ async function startApp() {
 
 // AUTH — token da launcher via postMessage o sessionStorage
 window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === 'SB_TOKEN' && e.data.token) {
+    if (!e.data) return;
+    if (e.data.type === 'SB_TOKEN' && e.data.token) {
         console.log('✅ SB_TOKEN ricevuto dal launcher (Events Log)');
         initWithToken(e.data.token);
+    } else if (e.data.type === 'HIDDEN_MODE') {
+        hiddenMode = !!e.data.active;
+        console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        if (sb) loadEvents().then(() => renderLogPage());
     }
 });
 
-// Logout broadcast da AppSphere: invalida sessione e mostra overlay
+// Logout/token refresh/hidden mode broadcast da AppSphere
 const _authChannel = new BroadcastChannel('appsphere_auth');
 _authChannel.onmessage = (e) => {
     if (!e.data) return;
@@ -2140,6 +2148,10 @@ _authChannel.onmessage = (e) => {
             });
         }
         console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+    } else if (e.data.type === 'HIDDEN_MODE') {
+        hiddenMode = !!e.data.active;
+        console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        if (sb) loadEvents().then(() => renderLogPage());
     }
 };
 

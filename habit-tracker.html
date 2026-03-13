@@ -1617,6 +1617,7 @@
 
         let supabaseClient = null; // inizializzato in initWithToken()
         let sbAccessToken  = null;
+        let hiddenMode     = false; // modalità nascosta: mostra oggetti riservati
 
         function initWithToken(token) {
             if (supabaseClient) return; // già inizializzato
@@ -1845,11 +1846,13 @@
         async function loadHabits() {
             try {
                 console.log('📥 Caricamento abitudini...');
-                const { data, error } = await supabaseClient
+                let habitsQuery = supabaseClient
                     .from('hb_habits')
                     .select('*')
                     .in('status', ['active', 'stopped'])
                     .order('created_at', { ascending: false });
+                if (!hiddenMode) habitsQuery = habitsQuery.or('riservato.eq.false,riservato.is.null');
+                const { data, error } = await habitsQuery;
                 
                 if (error) throw error;
                 
@@ -5792,13 +5795,18 @@
         // AUTH — token da launcher via postMessage o sessionStorage
         // ==========================================
         window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'SB_TOKEN' && e.data.token) {
+            if (!e.data) return;
+            if (e.data.type === 'SB_TOKEN' && e.data.token) {
                 console.log('✅ SB_TOKEN ricevuto dal launcher (Habit Stack)');
                 initWithToken(e.data.token);
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                if (supabaseClient) loadHabits().then(() => renderDashboard());
             }
         });
 
-        // Logout broadcast da AppSphere: invalida sessione e mostra overlay
+        // Logout/token refresh/hidden mode broadcast da AppSphere
         const _authChannel = new BroadcastChannel('appsphere_auth');
         _authChannel.onmessage = (e) => {
             if (!e.data) return;
@@ -5819,6 +5827,10 @@
                     });
                 }
                 console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                if (supabaseClient) loadHabits().then(() => renderDashboard());
             }
         };
 
