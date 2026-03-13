@@ -353,12 +353,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cancella i pending della stessa occorrenza + segna il row cliccato come cancelled
+    // Cancella TUTTI i row della stessa occorrenza (qualsiasi stato) + rimuovi i messaggi Telegram
     const occId = queueRow.occurrence_id as string | null
     if (occId) {
-      await cancelByOccurrence(occId, queueId)
+      // Elimina messaggi Telegram di tutti i sibling (status qualsiasi, telegram_message_id set)
       await deleteSiblingsByOccurrence(occId, queueId, chatId)
+      // Marca tutti i sibling come cancelled (qualsiasi stato)
+      await sb
+        .from('cm_notification_queue')
+        .update({ status: 'cancelled' })
+        .eq('occurrence_id', occId)
+        .neq('id', queueId)
     }
+    // Segna il row cliccato come cancelled
     await sb
       .from('cm_notification_queue')
       .update({ status: 'cancelled' })
