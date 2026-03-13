@@ -1715,7 +1715,7 @@
                 'Interrotti': habits.filter(h => h.status === 'stopped').length,
                 'Categorie': categories.length,
                 'Completamenti': completions.length,
-                'Oggi': completions.filter(c => c.completed_at.startsWith(new Date().toISOString().split('T')[0])).length,
+                'Oggi': completions.filter(c => c.completed_at.startsWith(localDateStr())).length,
                 'Logs': debugLogs.length,
                 'Supabase': SUPABASE_URL.includes('jajlmm') ? '✅ Connesso' : '❌ Errore'
             };
@@ -2082,7 +2082,7 @@
         }
 
         async function setTimeState(habitId, time, dateStr, newState) {
-            const targetDate = dateStr || new Date().toISOString().split('T')[0];
+            const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
             
             const existing = completions.find(c => {
@@ -2234,7 +2234,7 @@
         }
 
         async function toggleHabitTimeCompletion(habitId, time, dateStr = null) {
-            const targetDate = dateStr || new Date().toISOString().split('T')[0];
+            const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
             
             const existing = completions.find(c => {
@@ -2304,7 +2304,7 @@
         }
 
         async function toggleHabitCompletion(habitId) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = localDateStr();
             const existing = completions.find(c => 
                 c.habit_id === habitId && c.completed_at.startsWith(today)
             );
@@ -2331,7 +2331,7 @@
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
-                            completed_at: new Date().toISOString()
+                            completed_at: localDateTimeStr()
                         }])
                         .select();
 
@@ -2352,6 +2352,22 @@
                 console.error('❌ Errore toggle completamento:', error);
                 showToast('Errore nel salvataggio');
             }
+        }
+
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            const dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        function localDateTimeStr(d) {
+            const dt = d || new Date();
+            return localDateStr(dt) + 'T' +
+                String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
         }
 
         // Helper per parsare date come locale invece di UTC
@@ -2412,7 +2428,7 @@
             const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
 
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = localDateStr();
             const pointsReward = habit.points_reward || 0;
 
             console.log(`🏆 Stack completato! Punti: +${pointsReward}`);
@@ -2482,7 +2498,7 @@
             // Crea nuovo stack attivo dal giorno dopo
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            const tomorrowStr = localDateStr(tomorrow);
             await supabaseClient
                 .from('hb_habits')
                 .insert([{
@@ -3773,7 +3789,7 @@
                 // Crea nuovo stack attivo dal giorno dopo
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                const tomorrowStr = localDateStr(tomorrow);
                 await supabaseClient
                     .from('hb_habits')
                     .insert([{
@@ -3996,7 +4012,7 @@
                 // STEP 3: Crea nuovo stack attivo dal giorno dopo
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                const tomorrowStr = localDateStr(tomorrow);
                 const { error } = await supabaseClient
                     .from('hb_habits')
                     .insert([{
