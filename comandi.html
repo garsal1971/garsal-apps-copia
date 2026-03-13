@@ -390,6 +390,56 @@ ORDER BY n DESC;</pre>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════
+       TASK 6 — migrazione hidden mode (riservato + cm_settings)
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-6">
+    <div class="task-header">
+      <div class="task-num">#006</div>
+      <div class="task-info">
+        <div class="task-title">SQL — migrazione Hidden Mode: colonna <code>riservato</code> + tabella <code>cm_settings</code></div>
+        <div class="task-desc">
+          La modalità nascosta (Hidden Mode) richiede:<br>
+          • Tabella <code>cm_settings</code> per memorizzare la sequenza segreta<br>
+          • Colonna <code>riservato BOOLEAN</code> in <code>cm_apps</code> per nascondere le app riservate<br>
+          Senza questa migrazione il launcher mostra una pagina bianca (query 400 per colonna mancante).
+        </div>
+        <div class="task-meta">
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">prerequisito hidden mode</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-6">
+      <button class="copy-btn" onclick="copyCode('cb-6', this)">Copia</button>
+      <pre>-- 1. Crea la tabella cm_settings (sequenza hidden mode)
+CREATE TABLE IF NOT EXISTS cm_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+
+-- 2. Aggiungi la colonna riservato a cm_apps
+ALTER TABLE cm_apps
+  ADD COLUMN IF NOT EXISTS riservato BOOLEAN DEFAULT FALSE;
+
+-- 3. (Opzionale) Inserisci una sequenza segreta
+--    Sostituisci i colori con quelli dei cerchi delle tue app
+INSERT INTO cm_settings (key, value)
+VALUES ('hidden_mode_sequence', '["#0081C8","#FCB131","#00A651"]')
+ON CONFLICT (key) DO NOTHING;
+
+-- Verifica
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'cm_apps' AND column_name = 'riservato';
+
+SELECT * FROM cm_settings WHERE key = 'hidden_mode_sequence';</pre>
+    </div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+  </div>
+
   <!-- Aggiungi nuovi task sopra questo commento -->
 
   <footer>garsal-apps · comandi.html · aggiornato automaticamente da Claude</footer>
