@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.2</title>
+    <title>Events Log v2.2.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -947,8 +947,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.2';
-    var BUILD_TIME  = '2026-03-08T10:00:00Z';
+    var APP_VERSION = 'v2.2.3';
+    var BUILD_TIME  = '2026-03-13T23:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -972,6 +972,25 @@
         console.log('✅ Supabase autenticato con token Google (Events Log ' + APP_VERSION + ')');
         document.getElementById('authOverlay').style.display = 'none';
         startApp();
+    }
+
+    // Rileva errori JWT scaduto/non autenticato e mostra l'overlay di login.
+    // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+    function handleAuthError(error) {
+        if (!error) return false;
+        const msg = (error.message || '').toLowerCase();
+        const isAuthError = error.status === 401
+            || msg.includes('jwt expired')
+            || msg.includes('invalid jwt')
+            || msg.includes('not authenticated')
+            || msg.includes('pgjwt');
+        if (!isAuthError) return false;
+        console.warn('🔒 Token scaduto — sessione invalidata');
+        sb = null;
+        sbAccessToken = null;
+        sessionStorage.removeItem('sb_token');
+        document.getElementById('authOverlay').style.display = 'flex';
+        return true;
     }
 
 // ==========================================

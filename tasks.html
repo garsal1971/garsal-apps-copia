@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.5</title>
+    <title>Tasks v19.18.6</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2079,8 +2079,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.5';
-        const BUILD_TIME  = '2026-03-13T22:00:00Z';
+        const APP_VERSION = 'v19.18.6';
+        const BUILD_TIME  = '2026-03-13T23:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2159,6 +2159,25 @@
             console.log('✅ Supabase autenticato con token Google (Tasks ' + APP_VERSION + ')');
             document.getElementById('authOverlay').style.display = 'none';
             init();
+        }
+
+        // Rileva errori JWT scaduto/non autenticato e mostra l'overlay di login.
+        // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+        function handleAuthError(error) {
+            if (!error) return false;
+            const msg = (error.message || '').toLowerCase();
+            const isAuthError = error.status === 401
+                || msg.includes('jwt expired')
+                || msg.includes('invalid jwt')
+                || msg.includes('not authenticated')
+                || msg.includes('pgjwt');
+            if (!isAuthError) return false;
+            console.warn('🔒 Token scaduto — sessione invalidata');
+            sb = null;
+            sbAccessToken = null;
+            sessionStorage.removeItem('sb_token');
+            document.getElementById('authOverlay').style.display = 'flex';
+            return true;
         }
 
         let categories = [];

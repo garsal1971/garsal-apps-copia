@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.28</title>
+    <title>Weight Quest v3.5.29</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -999,8 +999,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.28';
-        var BUILD_TIME  = '2026-03-10T11:00:00Z';
+        var APP_VERSION = 'v3.5.29';
+        var BUILD_TIME  = '2026-03-13T23:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1072,6 +1072,11 @@
                     method: 'GET',
                     headers: this.headers
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return res.json().then(function(data) {
                         return { data: data, error: null };
                     });
@@ -1087,6 +1092,11 @@
                     headers: this.headers,
                     body: JSON.stringify(data)
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return res.json().then(function(data) {
                         return { data: data, error: null };
                     });
@@ -1126,6 +1136,11 @@
                     headers: this.headers,
                     body: JSON.stringify(data)
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return { data: null, error: null };
                 }).catch(function(error) {
                     return { data: null, error: error };
@@ -1778,6 +1793,26 @@
                 log('🔒 Sessione invalidata da AppSphere (logout)');
             }
         };
+
+        // Rileva errori JWT scaduto/non autenticato e mostra la schermata di login.
+        // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+        function handleAuthError(error) {
+            if (!error) return false;
+            var msg = (error.message || '').toLowerCase();
+            var isAuthError = error.status === 401
+                || msg.includes('jwt expired')
+                || msg.includes('invalid jwt')
+                || msg.includes('not authenticated')
+                || msg.includes('pgjwt');
+            if (!isAuthError) return false;
+            log('🔒 Token scaduto — sessione invalidata');
+            sbToken = null;
+            sessionStorage.removeItem('sb_token');
+            supabase.setAuthToken(CONFIG.supabaseKey);
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            return true;
+        }
 
         function checkToken() {
             log('Controllo token...');
