@@ -167,23 +167,22 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// aggiornato da Claude · 2026-03-11T00:00:00Z</p>
+    <p>// refactoring notifiche: occurrence_id unificato + body con titolo e data · 2026-03-13T12:00:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 1 — occurrence_id migration
+       TASK 1 — pulizia entry pending task con vecchio occurrence_id
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">Migration — aggiunge <code>occurrence_id</code> a <code>cm_notification_queue</code></div>
+        <div class="task-title">SQL — pulizia entry <code>pending</code> task con vecchio <code>occurrence_id</code></div>
         <div class="task-desc">
-          Nuova colonna che identifica la specifica occorrenza di una notifica:<br>
-          • habit → <code>{rule_id}:{YYYY-MM-DD}:{slot_time}</code> (es. <code>abc:2026-03-11:08:00</code>)<br>
-          • task → <code>{rule_id}</code><br>
-          Usata dal webhook Telegram per cancellare solo le notifiche del singolo slot completato,
-          senza toccare i promemoria di altri slot orari o dei giorni futuri.
+          I task avevano <code>occurrence_id = "{rule_id}"</code> (solo UUID, senza data/ora).<br>
+          Il nuovo formato è <code>"{rule_id}:{YYYY-MM-DD}:{HH:MM}"</code>, uniforme con gli habit.<br>
+          Questo SQL elimina le entry pending/snoozed dei task nel vecchio formato per evitare orfane.
+          La funzione <code>fill-notification-queue</code> le rigenererà con il formato corretto al prossimo run (#003).
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
@@ -195,360 +194,127 @@
     </div>
     <div class="code-block" id="cb-1">
       <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>ALTER TABLE cm_notification_queue
-  ADD COLUMN IF NOT EXISTS occurrence_id text;
+      <pre>-- Elimina entry pending/snoozed dei task con occurrence_id nel vecchio formato
+-- (vecchio formato: solo UUID senza ':' — es. "abc123-def456-...")
+-- (nuovo formato:   "abc123-...:2026-03-15:00:00")
+DELETE FROM cm_notification_queue
+WHERE status IN ('pending', 'snoozed')
+  AND app = 'tasks'
+  AND occurrence_id IS NOT NULL
+  AND occurrence_id NOT LIKE '%:%';
 
-CREATE INDEX IF NOT EXISTS idx_queue_occurrence_id
-  ON cm_notification_queue (occurrence_id)
-  WHERE status IN ('pending', 'snoozed', 'sending');</pre>
+-- Verifica: deve restituire 0 righe dopo la pulizia
+SELECT COUNT(*) AS vecchio_formato_rimasto
+FROM cm_notification_queue
+WHERE app = 'tasks'
+  AND occurrence_id IS NOT NULL
+  AND occurrence_id NOT LIKE '%:%';</pre>
     </div>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 2 — task_next_recurring_date
+       TASK 2 — Deploy fill-notification-queue
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">Crea funzione helper <code>task_next_recurring_date()</code></div>
+        <div class="task-title">Deploy Edge Function — <code>fill-notification-queue</code></div>
         <div class="task-desc">
-          Calcola la prossima occorrenza di un task <em>recurring</em> dopo una data base.
-          Supporta frequenza <strong>daily, weekly, monthly, yearly</strong> con intervalli e giorni multipli.
-          Equivalente SQL di <code>getNextRecurringDate()</code> in tasks.html.
-          Richiesta da <code>task_complete_via_telegram</code> (#003).
+          Deploy della funzione aggiornata. Le modifiche principali:<br>
+          • <code>occurrence_id</code> per i task ora è <code>ruleId:YYYY-MM-DD:HH:MM</code> (era solo <code>ruleId</code>)<br>
+          • <code>body</code> unificato per task e habit: <code>"{titolo} — {label} prima — DD/MM/YYYY[ ore HH:MM]"</code><br>
+          • tutte le notifiche della stessa occorrenza condividono <code>occurrence_id</code>, differiscono per <code>fire_at</code>
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">2°</span>
+          <span class="task-tag bash">Bash</span>
+          <span class="task-tag">Supabase CLI</span>
+          <span class="task-tag order">2° — dopo #001</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-2">
       <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>CREATE OR REPLACE FUNCTION task_next_recurring_date(
-  p_task    ts_tasks,
-  p_base    date
-)
-RETURNS date LANGUAGE plpgsql AS $$
-DECLARE
-  v_interval  integer := COALESCE(p_task.recurring_interval, 1);
-  v_freq      text    := p_task.recurring_frequency;
-
-  v_dow_arr     integer[];
-  v_start_dow   integer;
-  v_cur_dow     integer;
-  v_test_date   date;
-  i             integer;
-  v_days_to_sun integer;
-  v_target_sun  date;
-
-  v_day_arr    integer[];
-  v_start_day  integer;
-  v_cur_day    integer;
-  v_cur_month  integer;
-  v_cur_year   integer;
-  v_next_month date;
-
-  v_dates_arr text[];
-  v_date_str  text;
-  v_parts     text[];
-  v_d         integer;
-  v_m         integer;
-  v_next_year integer;
-BEGIN
-
-  IF v_freq = 'daily' THEN
-    RETURN p_base + (v_interval || ' days')::interval;
-  END IF;
-
-  IF v_freq = 'weekly' THEN
-    IF p_task.recurring_days_of_week IS NOT NULL
-       AND jsonb_array_length(p_task.recurring_days_of_week::jsonb) > 0 THEN
-      SELECT array_agg(v::integer ORDER BY v::integer)
-        INTO v_dow_arr
-        FROM jsonb_array_elements_text(p_task.recurring_days_of_week::jsonb) AS v;
-    ELSE
-      v_start_dow := EXTRACT(DOW FROM p_task.start_date::date)::integer;
-      v_dow_arr   := ARRAY[v_start_dow];
-    END IF;
-
-    v_cur_dow := EXTRACT(DOW FROM p_base)::integer;
-
-    FOR i IN 1..(7 - v_cur_dow) LOOP
-      v_test_date := p_base + i;
-      IF EXTRACT(DOW FROM v_test_date)::integer = ANY(v_dow_arr) THEN
-        RETURN v_test_date;
-      END IF;
-    END LOOP;
-
-    v_days_to_sun := CASE WHEN v_cur_dow = 0 THEN 7 ELSE (7 - v_cur_dow) END;
-    v_target_sun  := p_base + v_days_to_sun + ((v_interval - 1) * 7);
-
-    FOR i IN 0..6 LOOP
-      v_test_date := v_target_sun + i;
-      IF EXTRACT(DOW FROM v_test_date)::integer = ANY(v_dow_arr) THEN
-        RETURN v_test_date;
-      END IF;
-    END LOOP;
-
-    RETURN NULL;
-  END IF;
-
-  IF v_freq = 'monthly' THEN
-    IF p_task.recurring_day_of_month IS NOT NULL
-       AND jsonb_array_length(p_task.recurring_day_of_month::jsonb) > 0 THEN
-      SELECT array_agg(v::integer ORDER BY v::integer)
-        INTO v_day_arr
-        FROM jsonb_array_elements_text(p_task.recurring_day_of_month::jsonb) AS v;
-    ELSE
-      v_start_day := EXTRACT(DAY FROM p_task.start_date::date)::integer;
-      v_day_arr   := ARRAY[v_start_day];
-    END IF;
-
-    v_cur_day   := EXTRACT(DAY   FROM p_base)::integer;
-    v_cur_month := EXTRACT(MONTH FROM p_base)::integer;
-    v_cur_year  := EXTRACT(YEAR  FROM p_base)::integer;
-
-    FOREACH i IN ARRAY v_day_arr LOOP
-      IF i > v_cur_day THEN
-        RETURN make_date(v_cur_year, v_cur_month, i);
-      END IF;
-    END LOOP;
-
-    v_next_month := (make_date(v_cur_year, v_cur_month, 1) + (v_interval || ' months')::interval)::date;
-    RETURN make_date(EXTRACT(YEAR  FROM v_next_month)::integer,
-                     EXTRACT(MONTH FROM v_next_month)::integer,
-                     v_day_arr[1]);
-  END IF;
-
-  IF v_freq = 'yearly' THEN
-    IF p_task.recurring_dates IS NOT NULL
-       AND jsonb_array_length(p_task.recurring_dates::jsonb) > 0 THEN
-      SELECT array_agg(v ORDER BY v)
-        INTO v_dates_arr
-        FROM jsonb_array_elements_text(p_task.recurring_dates::jsonb) AS v;
-    ELSIF p_task.recurring_day_of_year IS NOT NULL AND p_task.recurring_month IS NOT NULL THEN
-      v_dates_arr := ARRAY[lpad(p_task.recurring_day_of_year::text, 2, '0')
-                           || '-' || lpad(p_task.recurring_month::text, 2, '0')];
-    ELSE
-      RETURN NULL;
-    END IF;
-
-    v_cur_year := EXTRACT(YEAR FROM p_base)::integer;
-    FOREACH v_date_str IN ARRAY v_dates_arr LOOP
-      v_parts := string_to_array(v_date_str, '-');
-      v_d := v_parts[1]::integer;
-      v_m := v_parts[2]::integer;
-      v_test_date := make_date(v_cur_year, v_m, v_d);
-      IF v_test_date > p_base THEN
-        RETURN v_test_date;
-      END IF;
-    END LOOP;
-
-    v_next_year := v_cur_year + v_interval;
-    v_parts     := string_to_array(v_dates_arr[1], '-');
-    v_d         := v_parts[1]::integer;
-    v_m         := v_parts[2]::integer;
-    RETURN make_date(v_next_year, v_m, v_d);
-  END IF;
-
-  RETURN NULL;
-END;
-$$;</pre>
+      <pre>supabase functions deploy fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 3 — task_complete_via_telegram
+       TASK 3 — Invocazione manuale fill-notification-queue
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">Crea funzione RPC <code>task_complete_via_telegram()</code></div>
+        <div class="task-title">Invoca <code>fill-notification-queue</code> manualmente</div>
         <div class="task-desc">
-          Funzione chiamata dal webhook Telegram quando l'utente clicca <strong>✅ Fatto</strong> su una notifica task.
-          Gestisce tutti i tipi: <strong>single</strong> (→ terminated, elimina regola notifica),
-          <strong>simple_recurring</strong>, <strong>recurring</strong>, <strong>multiple</strong>, <strong>free_repeat</strong>.
-          Inserisce un record in <code>ts_history</code> con <code>action='completed'</code>
-          (rispetta il constraint <code>history_action_check</code>).
-          Eseguire <strong>dopo</strong> il task #002.
+          Dopo il deploy (#002), invoca subito la funzione per rigenerare tutte le entry
+          della coda con il nuovo formato <code>occurrence_id</code> e il nuovo <code>body</code>.<br>
+          Normalmente gira ogni 6 ore via cron — questo la forza a rieseguire subito.
         </div>
         <div class="task-meta">
-          <span class="task-status" style="background:#1E40AF22;color:#93C5FD;border-color:#1E40AF44;">▶ da eseguire</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag bash">Bash</span>
+          <span class="task-tag">Supabase CLI</span>
           <span class="task-tag order">3° — dopo #002</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>CREATE OR REPLACE FUNCTION task_complete_via_telegram(
-  p_task_id  uuid,
-  p_today    date
-)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-  v_task           ts_tasks%ROWTYPE;
-  v_from_status    text;
-  v_points         integer;
-  v_action         text        := 'completed';
-  v_next_date      date;
-  v_next_ts        timestamptz;
-  v_completed_date timestamptz;
-BEGIN
-  SELECT * INTO v_task FROM ts_tasks WHERE id = p_task_id;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'task non trovato');
-  END IF;
-
-  IF v_task.type = 'workflow' THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'workflow non supportato via Telegram');
-  END IF;
-
-  v_from_status    := v_task.status;
-  v_points         := COALESCE(v_task.success_points, 0);
-  v_completed_date := COALESCE(
-    v_task.next_occurrence_date::timestamptz,
-    v_task.start_date::timestamptz,
-    now()
-  );
-
-  IF v_task.type = 'single' AND v_task.deadline IS NOT NULL THEN
-    IF p_today > v_task.deadline::date THEN
-      v_points := COALESCE(v_task.late_points, 0);
-      v_action  := 'completed_late';
-    END IF;
-  END IF;
-
-  INSERT INTO ts_history (task_id, from_status, to_status, action, points, timestamp)
-  VALUES (p_task_id, v_from_status, 'completed', 'completed', v_points, now());
-
-  IF v_task.type = 'single' THEN
-    UPDATE ts_tasks
-       SET status              = 'terminated',
-           last_completed_date = v_completed_date
-     WHERE id = p_task_id;
-
-    DELETE FROM cm_notification_rules
-     WHERE entity_id = p_task_id::text
-       AND app = 'tasks';
-
-  ELSIF v_task.type = 'simple_recurring' THEN
-    v_next_ts := COALESCE(v_task.next_occurrence_date::timestamptz, v_task.start_date::timestamptz)
-                 + (COALESCE(v_task.repeat_after_days, 7) || ' days')::interval;
-
-    UPDATE ts_tasks
-       SET status               = 'completed',
-           last_completed_date  = v_completed_date,
-           next_occurrence_date = v_next_ts
-     WHERE id = p_task_id;
-
-  ELSIF v_task.type = 'recurring' THEN
-    v_next_date := task_next_recurring_date(
-      v_task,
-      COALESCE(v_task.next_occurrence_date::text, v_task.start_date::text)::date
-    );
-
-    IF v_next_date IS NOT NULL THEN
-      v_next_ts := v_next_date::timestamptz;
-    END IF;
-
-    UPDATE ts_tasks
-       SET status               = CASE WHEN v_next_date IS NULL THEN 'terminated' ELSE 'completed' END,
-           last_completed_date  = v_completed_date,
-           next_occurrence_date = v_next_ts
-     WHERE id = p_task_id;
-
-  ELSIF v_task.type = 'multiple' THEN
-    DECLARE
-      v_dates    text[];
-      v_cur_str  text;
-      v_cur_idx  integer := NULL;
-      v_next_str text    := NULL;
-      j          integer;
-    BEGIN
-      SELECT array_agg(d ORDER BY d)
-        INTO v_dates
-        FROM jsonb_array_elements_text(v_task.multiple_dates::jsonb) AS d;
-
-      v_cur_str := split_part(COALESCE(v_task.next_occurrence_date::text, ''), 'T', 1);
-
-      FOR j IN 1..array_length(v_dates, 1) LOOP
-        IF v_dates[j] = v_cur_str THEN
-          v_cur_idx := j;
-          EXIT;
-        END IF;
-      END LOOP;
-
-      IF v_cur_idx IS NOT NULL AND v_cur_idx &lt; array_length(v_dates, 1) THEN
-        v_next_str := v_dates[v_cur_idx + 1] || 'T00:00:00';
-      END IF;
-
-      UPDATE ts_tasks
-         SET status               = CASE WHEN v_next_str IS NULL THEN 'terminated' ELSE 'completed' END,
-             last_completed_date  = v_completed_date,
-             next_occurrence_date = v_next_str::timestamptz
-       WHERE id = p_task_id;
-    END;
-
-  ELSE -- free_repeat
-    UPDATE ts_tasks
-       SET status              = 'completed',
-           last_completed_date = v_completed_date
-     WHERE id = p_task_id;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'ok',     true,
-    'action', v_action,
-    'points', v_points,
-    'type',   v_task.type
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION task_complete_via_telegram(uuid, date) TO authenticated;</pre>
+      <pre>supabase functions invoke fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run · Eseguire dopo #002</div>
+    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 4 — Deploy Edge Functions
+       TASK 4 — Verifica risultato in SQL Editor
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-4">
     <div class="task-header">
       <div class="task-num">#004</div>
       <div class="task-info">
-        <div class="task-title">Deploy Edge Functions — <code>fill-notification-queue</code> &amp; <code>telegram-webhook</code></div>
+        <div class="task-title">SQL — verifica entry rigenerate in <code>cm_notification_queue</code></div>
         <div class="task-desc">
-          Aggiorna le due Edge Function su Supabase dopo le modifiche a <code>occurrence_id</code>:<br>
-          • <strong>fill-notification-queue</strong> — ora popola <code>occurrence_id</code> per ogni entry della coda<br>
-          • <strong>telegram-webhook</strong> — usa <code>occurrence_id</code> per cancellare solo le notifiche dello stesso slot<br>
-          Eseguire dalla radice del repo con Supabase CLI (link progetto: <code>jajlmmdsjlvzgcxiiypk</code>).
-          Dopo il deploy, invocare manualmente <code>fill-notification-queue</code> per rigenerare le entry con <code>occurrence_id</code>.
+          Controlla che le nuove entry abbiano il formato corretto:<br>
+          • <code>occurrence_id</code> dei task deve contenere <code>:</code> (formato <code>uuid:data:ora</code>)<br>
+          • <code>body</code> deve iniziare con il titolo dell'entity<br>
+          • notifiche dello stesso slot condividono <code>occurrence_id</code>, differiscono per <code>fire_at</code>
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
-          <span class="task-tag bash">Bash</span>
-          <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">4° — dopo #001</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">4° — verifica finale</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-4">
       <button class="copy-btn" onclick="copyCode('cb-4', this)">Copia</button>
-      <pre>supabase functions deploy fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk
-supabase functions deploy telegram-webhook --project-ref jajlmmdsjlvzgcxiiypk</pre>
+      <pre>-- Mostra le ultime 20 entry con occurrence_id e body
+SELECT
+  app,
+  occurrence_id,
+  fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome,
+  title,
+  body,
+  status
+FROM cm_notification_queue
+WHERE status = 'pending'
+ORDER BY fire_at
+LIMIT 20;
+
+-- Controlla che non ci siano task con occurrence_id nel vecchio formato (solo UUID)
+SELECT COUNT(*) AS task_vecchio_formato
+FROM cm_notification_queue
+WHERE app = 'tasks'
+  AND occurrence_id IS NOT NULL
+  AND occurrence_id NOT LIKE '%:%';</pre>
     </div>
-    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
   <!-- Aggiungi nuovi task sopra questo commento -->
