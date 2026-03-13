@@ -214,68 +214,39 @@ WHERE app = 'tasks'
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 2 — Deploy fill-notification-queue
+       TASK 2 — Invocazione manuale fill-notification-queue
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">Deploy Edge Function — <code>fill-notification-queue</code></div>
-        <div class="task-desc">
-          Deploy della funzione aggiornata. Le modifiche principali:<br>
-          • <code>occurrence_id</code> per i task ora è <code>ruleId:YYYY-MM-DD:HH:MM</code> (era solo <code>ruleId</code>)<br>
-          • <code>body</code> unificato per task e habit: <code>"{titolo} — {label} prima — DD/MM/YYYY[ ore HH:MM]"</code><br>
-          • tutte le notifiche della stessa occorrenza condividono <code>occurrence_id</code>, differiscono per <code>fire_at</code>
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag bash">Bash</span>
-          <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">2° — dopo #001</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-2">
-      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>supabase functions deploy fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk</pre>
-    </div>
-    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 3 — Invocazione manuale fill-notification-queue
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-3">
-    <div class="task-header">
-      <div class="task-num">#003</div>
-      <div class="task-info">
         <div class="task-title">Invoca <code>fill-notification-queue</code> manualmente</div>
         <div class="task-desc">
-          Dopo il deploy (#002), invoca subito la funzione per rigenerare tutte le entry
-          della coda con il nuovo formato <code>occurrence_id</code> e il nuovo <code>body</code>.<br>
+          Dopo che il deploy da git è completato, invoca subito la funzione per rigenerare
+          tutte le entry della coda con il nuovo <code>occurrence_id</code> e il nuovo <code>body</code>.<br>
           Normalmente gira ogni 6 ore via cron — questo la forza a rieseguire subito.
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
           <span class="task-tag bash">Bash</span>
           <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">3° — dopo #002</span>
+          <span class="task-tag order">2° — dopo che il deploy git è live</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-3">
-      <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
+    <div class="code-block" id="cb-2">
+      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
       <pre>supabase functions invoke fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
     <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 4 — Verifica risultato in SQL Editor
+       TASK 3 — Verifica risultato in SQL Editor
        ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-4">
+  <div class="task" id="task-3">
     <div class="task-header">
-      <div class="task-num">#004</div>
+      <div class="task-num">#003</div>
       <div class="task-info">
         <div class="task-title">SQL — verifica entry rigenerate in <code>cm_notification_queue</code></div>
         <div class="task-desc">
@@ -288,12 +259,12 @@ WHERE app = 'tasks'
           <span class="task-status">⏳ da fare</span>
           <span class="task-tag sql">SQL</span>
           <span class="task-tag">Supabase</span>
-          <span class="task-tag order">4° — verifica finale</span>
+          <span class="task-tag order">3° — verifica finale</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-4">
-      <button class="copy-btn" onclick="copyCode('cb-4', this)">Copia</button>
+    <div class="code-block" id="cb-3">
+      <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
       <pre>-- Mostra le ultime 20 entry con occurrence_id e body
 SELECT
   app,
