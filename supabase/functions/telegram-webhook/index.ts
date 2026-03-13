@@ -231,11 +231,16 @@ Deno.serve(async (req) => {
 
     await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
 
-    // Cancella i pending della stessa occorrenza (no completamento)
+    // Cancella TUTTI i row della stessa occorrenza, qualsiasi stato (no completamento)
     const cancelOccId = cancelRow?.occurrence_id as string | null
     if (cancelOccId) {
       await deleteSiblingsByOccurrence(cancelOccId, queueId, chatId)
-      await cancelByOccurrence(cancelOccId, queueId)
+      const { error: cancelAllErr } = await sb
+        .from('cm_notification_queue')
+        .update({ status: 'cancelled' })
+        .eq('occurrence_id', cancelOccId)
+        .neq('id', queueId)
+      if (cancelAllErr) console.error('[telegram-webhook] errore cancelAll:', cancelAllErr)
     }
     await deleteMessage(chatId, messageId)
 
