@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.4.7</title>
+<title>AppSphere v1.5.0</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -710,6 +710,35 @@
   }
   .rw-btn-save:hover { opacity: 0.88; }
 
+  /* ── MODALITÀ NASCOSTA ── */
+  #hidden-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    z-index: 300;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    user-select: none;
+  }
+  #hidden-indicator:hover { transform: scale(1.1); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+  #hidden-indicator.visible { display: flex; }
+
+  /* feedback visivo durante cattura sequenza */
+  #field.capture-mode {
+    outline: 2px dashed rgba(0,129,200,0.4);
+    outline-offset: -4px;
+  }
+
 </style>
 </head>
 <body>
@@ -754,6 +783,9 @@
 </div>
 
 <div id="field"></div>
+
+<!-- MODALITÀ NASCOSTA — indicatore visivo -->
+<div id="hidden-indicator" title="Modalità nascosta attiva — doppio click per disattivare">👁</div>
 
 <!-- SCORE PANEL -->
 <div id="score-panel" onclick="openRewards()" title="Apri Catalogo Premi">
@@ -847,11 +879,18 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.4.7';
-const BUILD_TIME  = '2026-03-13T23:00:00Z';
+const APP_VERSION = 'v1.5.0';
+const BUILD_TIME  = '2026-03-13T23:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
+
+// ── MODALITÀ NASCOSTA ──
+let hiddenMode    = false;
+let hiddenSequence = [];   // sequenza caricata dal DB (array di colori hex)
+let captureMode   = false; // true durante cattura sequenza
+let capturedColors = [];   // colori cliccati finora
+let captureTimeout = null; // timer di scadenza (10s)
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
@@ -1223,7 +1262,15 @@ function makeDraggable(node) {
     window.removeEventListener('touchmove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchend', onUp);
-    if (!moved) launchApp(node.app);
+    if (!moved) {
+      if (captureMode) {
+        // Cattura colore del cerchio cliccato per la sequenza
+        capturedColors.push(node.app.color);
+        if (capturedColors.length >= hiddenSequence.length) checkSequence();
+      } else {
+        launchApp(node.app);
+      }
+    }
   }
 
   el.addEventListener('mousedown', onDown);
@@ -1240,6 +1287,7 @@ function launchApp(app) {
     setTimeout(() => {
       if (googleToken) win.postMessage({ type: 'GOOGLE_TOKEN', token: googleToken }, '*');
       if (sbToken)     win.postMessage({ type: 'SB_TOKEN',     token: sbToken     }, '*');
+      win.postMessage({ type: 'HIDDEN_MODE', active: hiddenMode }, '*');
     }, 1000);
   }
 }
@@ -1357,13 +1405,76 @@ function showApp(user) {
   }, 500);
 }
 
+// ── HIDDEN MODE: carica sequenza dal DB ──
+async function loadHiddenSequence() {
+  const token = sessionStorage.getItem('sb_token');
+  if (!token) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_settings?key=eq.hidden_mode_sequence&select=value&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (rows.length && rows[0].value) {
+      hiddenSequence = JSON.parse(rows[0].value);
+    }
+  } catch(e) {
+    console.warn('Sequenza hidden mode non disponibile:', e);
+  }
+}
+
+function enterCaptureMode() {
+  captureMode = true;
+  capturedColors = [];
+  clearTimeout(captureTimeout);
+  document.getElementById('field').classList.add('capture-mode');
+  // Timeout: annulla cattura dopo 10 secondi
+  captureTimeout = setTimeout(() => {
+    captureMode = false;
+    capturedColors = [];
+    document.getElementById('field').classList.remove('capture-mode');
+  }, 10000);
+}
+
+function checkSequence() {
+  captureMode = false;
+  clearTimeout(captureTimeout);
+  document.getElementById('field').classList.remove('capture-mode');
+  const match = capturedColors.length === hiddenSequence.length &&
+    capturedColors.every((c, i) => c === hiddenSequence[i]);
+  capturedColors = [];
+  if (match) {
+    hiddenMode = !hiddenMode;
+    broadcastHiddenMode();
+    updateHiddenIndicator();
+    loadApps();
+  }
+}
+
+function broadcastHiddenMode() {
+  _authChannel.postMessage({ type: 'HIDDEN_MODE', active: hiddenMode });
+}
+
+function updateHiddenIndicator() {
+  const el = document.getElementById('hidden-indicator');
+  if (el) el.classList.toggle('visible', hiddenMode);
+}
+
 // ── CARICA APP DA SUPABASE ──
 async function loadApps() {
   const token = sessionStorage.getItem('sb_token');
 
-  // 1. Leggi tutte le app attive
+  // Carica anche la sequenza nascosta se non ancora disponibile
+  if (!hiddenSequence.length) await loadHiddenSequence();
+
+  // 1. Leggi le app: in modalità normale solo quelle attive e non riservate;
+  //    in modalità nascosta anche quelle riservate
+  const activeFilter = hiddenMode
+    ? `active=eq.true`
+    : `active=eq.true&or=(riservato.eq.false,riservato.is.null)`;
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/cm_apps?active=eq.true&select=id,title,description,score_query,html_file,color&order=id.asc`,
+    `${SUPABASE_URL}/rest/v1/cm_apps?${activeFilter}&select=id,title,description,score_query,html_file,color,riservato&order=id.asc`,
     {
       headers: {
         'apikey': SUPABASE_KEY,
@@ -1770,6 +1881,20 @@ async function init() {
 init();
 
 window.addEventListener('resize', () => { if (CURRENT_APPS.length) render(); });
+
+// Doppio click sullo sfondo bianco → avvia cattura sequenza nascosta
+document.getElementById('field').addEventListener('dblclick', (e) => {
+  if (e.target.closest('.cw')) return; // ignora doppio click su cerchio
+  if (!hiddenSequence.length) return;  // sequenza non ancora caricata
+  enterCaptureMode();
+});
+
+// Click sull'indicatore 👁 → mostra messaggio (la disattivazione richiede la sequenza)
+document.getElementById('hidden-indicator').addEventListener('dblclick', (e) => {
+  e.stopPropagation();
+  if (!hiddenSequence.length) return;
+  enterCaptureMode();
+});
 
 // ── PWA Service Worker ───────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
