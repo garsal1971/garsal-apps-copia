@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
     if (cu.app === 'tasks') {
       const taskId = queueRow.entity_id as string | undefined
       if (taskId) {
-        const { data: rpcResult, error: rpcErr } = await sb.rpc('task_complete_via_telegram', {
+        const { data: rpcResult, error: rpcErr } = await sb.rpc('task_complete', {
           p_task_id: taskId,
           p_today:   localDateStr,
         })

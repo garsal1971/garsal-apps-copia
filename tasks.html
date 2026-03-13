@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.4</title>
+    <title>Tasks v19.18.5</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2079,8 +2079,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.4';
-        const BUILD_TIME  = '2026-03-10T14:00:00Z';
+        const APP_VERSION = 'v19.18.5';
+        const BUILD_TIME  = '2026-03-13T22:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -6931,141 +6931,42 @@
 
         async function completeTask(id) {
             if (!confirm('Segnare task come completato?')) return;
-            
+
             try {
                 const task = tasks.find(t => t.id === id);
                 if (!task) {
                     showToast('❌ Task non trovato');
                     return;
                 }
-                
+
                 debugLog('✅ Completing task:', task.title, 'type:', task.type);
-                
-                // Per task singoli, verifica se il completamento è in ritardo rispetto alla deadline
-                let completionPoints = task.success_points;
-                let completionAction = 'completed';
-                
-                if (task.type === 'single' && task.deadline) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const deadlineStr = task.deadline.includes('T') ? task.deadline.split('T')[0] : task.deadline;
-                    const deadline = new Date(deadlineStr + 'T00:00:00');
-                    
-                    if (today > deadline) {
-                        completionPoints = task.late_points || 0;
-                        completionAction = 'completed_late';
-                        debugLog('⏰ LATE! Using late_points:', completionPoints);
-                    }
+
+                const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD locale
+
+                const { data: result, error: rpcErr } = await sb.rpc('task_complete', {
+                    p_task_id: id,
+                    p_today:   todayStr,
+                });
+
+                if (rpcErr) {
+                    console.error('Error completing task (rpc):', rpcErr);
+                    showToast('❌ Errore nel completare il task: ' + (rpcErr.message || rpcErr));
+                    return;
                 }
-                
-                const fromStatus = task.status;
-                await sb.from('ts_history').insert([historyRecord(id, fromStatus, 'completed', 'completed', completionPoints)]);
-
-                // Determina la data di completamento (next_occurrence_date o start_date)
-                const completedDate = task.next_occurrence_date || task.start_date || new Date().toISOString();
-
-                if (task.type === 'single') {
-                    debugLog('📅 Type: SINGLE - marking as terminated');
-                    await sb.from('ts_tasks').update({
-                        status: 'terminated',
-                        last_completed_date: completedDate
-                    }).eq('id', id);
-                    await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-                    await deleteNotificationRules(id);
-                } else if (task.type === 'simple_recurring') {
-                    debugLog('🔁 Type: SIMPLE_RECURRING - calculating next date');
-                    // Calcola la prossima occorrenza dalla next_occurrence_date + repeat_after_days
-                    const baseDate = new Date(task.next_occurrence_date || task.start_date);
-                    const nextDate = new Date(baseDate);
-                    nextDate.setDate(baseDate.getDate() + (task.repeat_after_days || 7));
-                    debugLog('🔁 Next date:', nextDate.toISOString());
-                    
-                    await sb.from('ts_tasks').update({
-                        status: 'completed',
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextDate.toISOString()
-                    }).eq('id', id);
-
-                    debugLog('🔁 Updated simple_recurring task');
-                } else if (task.type === 'recurring') {
-                    debugLog('♾️ Type: RECURRING - calculating next date');
-                    // Calcola la prossima occorrenza dalla next_occurrence_date (o start_date se non esiste)
-                    const baseDate = task.next_occurrence_date ? new Date(task.next_occurrence_date) : new Date(task.start_date);
-                    debugLog('📅 BaseDate for next calc:', baseDate.toISOString());
-                    
-                    const nextDate = getNextRecurringDate(task, baseDate);
-                    debugLog('📅 Calculated nextDate:', nextDate ? nextDate.toISOString() : 'NULL');
-                    
-                    await sb.from('ts_tasks').update({
-                        status: nextDate ? 'completed' : 'terminated',
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextDate ? nextDate.toISOString() : null
-                    }).eq('id', id);
-                    if (!nextDate) await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-
-                    debugLog('✅ Updated recurring task');
-                } else if (task.type === 'multiple') {
-                    debugLog('📅 Type: MULTIPLE - moving to next date');
-                    
-                    // Assicurati che multiple_dates sia un array
-                    let datesArray = task.multiple_dates;
-                    if (typeof datesArray === 'string') {
-                        datesArray = JSON.parse(datesArray);
-                    }
-                    
-                    // Ordina le date
-                    const sortedDates = [...datesArray].sort();
-                    
-                    debugLog('🔵 sortedDates: ' + JSON.stringify(sortedDates));
-                    debugLog('🔵 next_occurrence_date: ' + task.next_occurrence_date);
-                    
-                    // Trova l'indice della data corrente
-                    // IMPORTANTE: Estrarre la data SENZA conversione UTC
-                    const currentDateStr = task.next_occurrence_date.split('T')[0]; // Prende solo YYYY-MM-DD
-                    const currentIndex = sortedDates.indexOf(currentDateStr);
-                    
-                    debugLog('🔵 currentDateStr: ' + currentDateStr);
-                    debugLog('🔵 currentIndex: ' + currentIndex);
-                    debugLog('🔵 array length: ' + sortedDates.length);
-                    
-                    // Calcola la prossima data
-                    let nextOccurrence = null;
-                    
-                    if (currentIndex !== -1 && currentIndex < sortedDates.length - 1) {
-                        // C'è ancora una data successiva
-                        nextOccurrence = sortedDates[currentIndex + 1] + 'T00:00:00';
-                        debugLog('✅ Next date found: ' + nextOccurrence);
-                    } else {
-                        if (currentIndex === -1) {
-                            debugLog('❌ currentDate NOT FOUND in array!');
-                        } else {
-                            debugLog('❌ Was last date in array');
-                        }
-                    }
-                    // Se nextOccurrence è null, era l'ultima data
-                    
-                    await sb.from('ts_tasks').update({
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextOccurrence,
-                        status: nextOccurrence === null ? 'terminated' : 'completed'
-                    }).eq('id', id);
-                    if (nextOccurrence === null) await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-
-                    debugLog('✅ Updated multiple task, next: ' + nextOccurrence);
-                } else {
-                    // free_repeat
-                    await sb.from('ts_tasks').update({ status: 'completed', last_completed_date: completedDate }).eq('id', id);
+                if (result?.ok === false) {
+                    console.warn('task_complete ok=false:', result);
+                    showToast('❌ ' + (result.error || 'Errore completamento'));
+                    return;
                 }
-                
+
                 await loadTasks();
                 await loadHistory();
-                
-                // Refresh della vista corrente
+
                 renderDashboard();
                 renderCalendar();
                 renderManagement();
-                
-                showToast(completionAction === 'completed_late' ? '⏰ Task completato in ritardo!' : '✅ Task completato!');
+
+                showToast(result?.action === 'completed_late' ? '⏰ Task completato in ritardo!' : '✅ Task completato!');
             } catch (error) {
                 console.error('Error completing task:', error);
                 showToast('❌ Errore nel completare il task');
