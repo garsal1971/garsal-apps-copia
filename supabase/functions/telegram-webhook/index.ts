@@ -6,16 +6,21 @@
 // clicca un bottone inline su un messaggio del bot.
 //
 // Azioni supportate (callback_data):
-//   snooze:<minutes>:<queue_id>  — sospende il promemoria per N minuti
-//   cancel:<queue_id>            — annulla definitivamente il promemoria
-//   complete:<queue_id>          — segna l'abitudine come completata
+//   snooze:<minutes>:<queue_id>  — reinserisce il promemoria con nuovo fire_at
+//   cancel:<queue_id>            — annulla i pending della stessa occorrenza (senza completamento)
+//   complete:<queue_id>          — annulla i pending della stessa occorrenza + esegue completamento
 //
-// Flusso:
-//   1. Verifica header di sicurezza X-Telegram-Bot-Api-Secret-Token
-//   2. Parsa il body JSON di Telegram (callback_query)
-//   3. Aggiorna cm_notification_queue (status + fire_at)
-//   4. Risponde a Telegram con answerCallbackQuery (obbligatorio)
-//   5. Elimina il messaggio cliccato e tutti i messaggi sibling (stesso occurrence_id)
+// Flusso snooze:
+//   1. Legge il row originale per copiarne i campi
+//   2. Cancella i pending siblings (stesso occurrence_id) per evitare duplicati
+//   3. INSERT nuovo row pending con il nuovo fire_at
+//   4. Elimina il messaggio Telegram corrente
+//
+// Flusso cancel:
+//   Cancella tutti i pending con stesso occurrence_id. Nessun completamento.
+//
+// Flusso complete:
+//   Cancella tutti i pending con stesso occurrence_id. Esegue l'azione di completamento.
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -55,36 +60,6 @@ async function deleteMessage(chatId: number, messageId: number): Promise<void> {
   })
 }
 
-async function editMessageText(chatId: number, messageId: number, text: string): Promise<void> {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`
-  await fetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      chat_id:      chatId,
-      message_id:   messageId,
-      text,
-      reply_markup: { inline_keyboard: [] },
-    }),
-  })
-}
-
-// Elimina i messaggi Telegram degli item sibling (stesso rule_id, esclude quello corrente)
-async function deleteSiblingMessages(ruleId: string, excludeQueueId: string, chatId: number): Promise<void> {
-  const { data } = await sb
-    .from('cm_notification_queue')
-    .select('telegram_message_id')
-    .eq('rule_id', ruleId)
-    .neq('id', excludeQueueId)
-    .not('telegram_message_id', 'is', null)
-  if (!data) return
-  for (const row of data) {
-    if (row.telegram_message_id) {
-      await deleteMessage(chatId, row.telegram_message_id as number)
-    }
-  }
-}
-
 // Elimina i messaggi Telegram degli item con lo stesso occurrence_id
 async function deleteSiblingsByOccurrence(occId: string, excludeQueueId: string, chatId: number): Promise<void> {
   const { data } = await sb
@@ -101,32 +76,7 @@ async function deleteSiblingsByOccurrence(occId: string, excludeQueueId: string,
   }
 }
 
-// Formatta un'ora in formato HH:MM italiano
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
-}
-
-// Formatta data e ora in formato italiano (dd/mm/yyyy HH:MM)
-function formatDateTime(date: Date): string {
-  const dd   = String(date.getDate()).padStart(2, '0')
-  const mm   = String(date.getMonth() + 1).padStart(2, '0')
-  const yyyy = date.getFullYear()
-  return `${dd}/${mm}/${yyyy} ${formatTime(date)}`
-}
-
-// Cancella tutti gli altri item pendenti/snoozed della stessa regola
-// (usato per cancel: l'utente vuole eliminare tutti i promemoria futuri della regola)
-async function cancelSiblingItems(ruleId: string, excludeQueueId: string): Promise<void> {
-  const { error } = await sb
-    .from('cm_notification_queue')
-    .update({ status: 'cancelled' })
-    .eq('rule_id', ruleId)
-    .neq('id', excludeQueueId)
-    .in('status', ['pending', 'snoozed', 'sending'])
-  if (error) console.error('[telegram-webhook] errore cancelSiblingItems:', error)
-}
-
-// Cancella gli item pending/snoozed con lo stesso occurrence_id
+// Cancella gli item pending con lo stesso occurrence_id
 // (usato per complete e snooze: opera solo sulla specifica occorrenza giorno+slot)
 async function cancelByOccurrence(occId: string, excludeQueueId: string): Promise<void> {
   const { error } = await sb
@@ -134,7 +84,7 @@ async function cancelByOccurrence(occId: string, excludeQueueId: string): Promis
     .update({ status: 'cancelled' })
     .eq('occurrence_id', occId)
     .neq('id', excludeQueueId)
-    .in('status', ['pending', 'snoozed', 'sending'])
+    .eq('status', 'pending')
   if (error) console.error('[telegram-webhook] errore cancelByOccurrence:', error)
 }
 
@@ -186,7 +136,6 @@ Deno.serve(async (req) => {
   const message         = cq.message as Record<string, unknown> | undefined
   const chatId          = (message?.chat as Record<string, unknown>)?.id as number | undefined
   const messageId       = message?.message_id as number | undefined
-  const originalText    = message?.text as string | undefined
 
   console.log(`[telegram-webhook] callback_data="${callbackData}" chat=${chatId} msg=${messageId}`)
 
@@ -211,22 +160,43 @@ Deno.serve(async (req) => {
 
     const newFireAt = new Date(Date.now() + minutes * 60 * 1000)
 
-    // Leggi rule_id e occurrence_id per poter cancellare i promemoria correlati
-    const { data: snoozeRow } = await sb
+    // Leggi il row originale per copiarne i campi nel nuovo insert
+    const { data: original } = await sb
       .from('cm_notification_queue')
-      .select('rule_id, occurrence_id')
+      .select('rule_id, user_id, app, entity_id, title, body, channel, occurrence_id, metadata')
       .eq('id', queueId)
       .maybeSingle()
 
-    const { error } = await sb
-      .from('cm_notification_queue')
-      .update({ status: 'snoozed', fire_at: newFireAt.toISOString() })
-      .eq('id', queueId)
+    if (!original) {
+      await answerCallbackQuery(callbackQueryId, '❌ Promemoria non trovato')
+      return json({ ok: false, error: 'queue row not found' })
+    }
 
-    if (error) {
-      console.error('[telegram-webhook] errore snooze:', error)
+    // Cancella i pending siblings (stesso occurrence_id) per non duplicare
+    await cancelByOccurrence(original.occurrence_id as string, queueId)
+    await deleteSiblingsByOccurrence(original.occurrence_id as string, queueId, chatId)
+
+    // Inserisce un nuovo row pending con il nuovo fire_at
+    const { error: insertErr } = await sb
+      .from('cm_notification_queue')
+      .insert({
+        rule_id:       original.rule_id,
+        user_id:       original.user_id,
+        app:           original.app,
+        entity_id:     original.entity_id,
+        title:         original.title,
+        body:          original.body,
+        channel:       original.channel,
+        fire_at:       newFireAt.toISOString(),
+        status:        'pending',
+        occurrence_id: original.occurrence_id,
+        metadata:      original.metadata,
+      })
+
+    if (insertErr) {
+      console.error('[telegram-webhook] errore snooze insert:', insertErr)
       await answerCallbackQuery(callbackQueryId, '❌ Errore durante la sospensione')
-      return json({ ok: false, error: String(error) })
+      return json({ ok: false, error: String(insertErr) })
     }
 
     // Etichetta leggibile per la durata
@@ -236,15 +206,6 @@ Deno.serve(async (req) => {
     else                     label = 'domani'
 
     await answerCallbackQuery(callbackQueryId, `⏸ Sospeso per ${label}`)
-
-    // Cancella i sibling dello stesso slot (occurrence_id) o fallback a rule_id
-    if (snoozeRow) {
-      const occId = snoozeRow.occurrence_id ?? snoozeRow.rule_id
-      if (occId) {
-        await deleteSiblingsByOccurrence(occId as string, queueId, chatId)
-        await cancelByOccurrence(occId as string, queueId)
-      }
-    }
     await deleteMessage(chatId, messageId)
 
   } else if (action === 'cancel' && parts.length === 2) {
@@ -270,8 +231,8 @@ Deno.serve(async (req) => {
 
     await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
 
-    // Cancella solo i sibling della stessa occorrenza (stesso slot/giorno)
-    const cancelOccId = (cancelRow?.occurrence_id as string | null) ?? (cancelRow?.rule_id as string)
+    // Cancella i pending della stessa occorrenza (no completamento)
+    const cancelOccId = cancelRow?.occurrence_id as string | null
     if (cancelOccId) {
       await deleteSiblingsByOccurrence(cancelOccId, queueId, chatId)
       await cancelByOccurrence(cancelOccId, queueId)
@@ -387,31 +348,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Segna l'item cliccato come cancelled (non deve essere reinviato)
-    const { error: completeErr } = await sb
+    // Cancella i pending della stessa occorrenza + segna il row cliccato come cancelled
+    const occId = queueRow.occurrence_id as string | null
+    if (occId) {
+      await cancelByOccurrence(occId, queueId)
+      await deleteSiblingsByOccurrence(occId, queueId, chatId)
+    }
+    await sb
       .from('cm_notification_queue')
       .update({ status: 'cancelled' })
       .eq('id', queueId)
-    if (completeErr) console.error('[telegram-webhook] errore update cancelled:', completeErr)
-
-    const occId = (queueRow.occurrence_id as string | null) ?? (queueRow.rule_id as string)
-    await cancelByOccurrence(occId, queueId)
 
     await answerCallbackQuery(callbackQueryId, '✅ Completato!')
-
-    // 1. Elimina i messaggi Telegram della stessa occorrenza
-    await deleteSiblingsByOccurrence(occId, queueId, chatId)
-
-    // 2. Elimina i messaggi di reinvio precedenti della stessa entry
-    //    (accumulati in metadata.telegram_message_ids da send-notifications)
-    const allMsgIds = (queueRow.metadata as Record<string, unknown> | null)?.telegram_message_ids as number[] ?? []
-    for (const oldMsgId of allMsgIds) {
-      if (oldMsgId !== messageId) {
-        await deleteMessage(chatId, oldMsgId)
-      }
-    }
-
-    // 3. Elimina il messaggio cliccato
     await deleteMessage(chatId, messageId)
 
   } else {

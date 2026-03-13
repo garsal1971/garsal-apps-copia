@@ -167,22 +167,23 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// refactoring notifiche: occurrence_id unificato + body con titolo e data · 2026-03-13T12:00:00Z</p>
+    <p>// semplificazione send-notifications: finestra ±5 min, no retry, snooze via INSERT · 2026-03-13T14:00:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 1 — pulizia entry pending task con vecchio occurrence_id
+       TASK 1 — migrazione cleanup stati dismessi
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">SQL — pulizia entry <code>pending</code> task con vecchio <code>occurrence_id</code></div>
+        <div class="task-title">SQL — pulizia stati <code>sending</code> e <code>snoozed</code> dismessi</div>
         <div class="task-desc">
-          I task avevano <code>occurrence_id = "{rule_id}"</code> (solo UUID, senza data/ora).<br>
-          Il nuovo formato è <code>"{rule_id}:{YYYY-MM-DD}:{HH:MM}"</code>, uniforme con gli habit.<br>
-          Questo SQL elimina le entry pending/snoozed dei task nel vecchio formato per evitare orfane.
-          La funzione <code>fill-notification-queue</code> le rigenererà con il formato corretto al prossimo run (#003).
+          Gli stati <code>sending</code> e <code>snoozed</code> non vengono più usati dopo il refactoring.<br>
+          • <code>sending</code> — eliminato: nessun retry, status passa direttamente <code>pending → sent/failed</code><br>
+          • <code>snoozed</code> — eliminato: sostituito da INSERT di un nuovo row <code>pending</code> con nuovo <code>fire_at</code><br>
+          Row recenti (fire_at &lt; 1 ora fa) → riportati a <code>pending</code> per la nuova finestra ±5 min.<br>
+          Row più vecchi → marcati <code>failed</code>.
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
@@ -194,66 +195,69 @@
     </div>
     <div class="code-block" id="cb-1">
       <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>-- Elimina entry pending/snoozed dei task con occurrence_id nel vecchio formato
--- (vecchio formato: solo UUID senza ':' — es. "abc123-def456-...")
--- (nuovo formato:   "abc123-...:2026-03-15:00:00")
-DELETE FROM cm_notification_queue
-WHERE status IN ('pending', 'snoozed')
-  AND app = 'tasks'
-  AND occurrence_id IS NOT NULL
-  AND occurrence_id NOT LIKE '%:%';
+      <pre>-- Riporta a 'pending' i row recenti con stati dismessi
+UPDATE cm_notification_queue
+SET status = 'pending'
+WHERE status IN ('sending', 'snoozed')
+  AND fire_at >= now() - interval '1 hour';
 
--- Verifica: deve restituire 0 righe dopo la pulizia
-SELECT COUNT(*) AS vecchio_formato_rimasto
+-- Marca come 'failed' i row più vecchi con stati dismessi
+UPDATE cm_notification_queue
+SET status = 'failed'
+WHERE status IN ('sending', 'snoozed')
+  AND fire_at &lt; now() - interval '1 hour';
+
+-- Verifica: devono risultare 0 righe con stati dismessi
+SELECT COUNT(*), status
 FROM cm_notification_queue
-WHERE app = 'tasks'
-  AND occurrence_id IS NOT NULL
-  AND occurrence_id NOT LIKE '%:%';</pre>
+WHERE status IN ('sending', 'snoozed')
+GROUP BY status;</pre>
     </div>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 2 — Invocazione manuale fill-notification-queue
+       TASK 2 — invoca manualmente send-notifications
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">Invoca <code>fill-notification-queue</code> manualmente</div>
+        <div class="task-title">Invoca <code>send-notifications</code> manualmente</div>
         <div class="task-desc">
-          Dopo che il deploy da git è completato, invoca subito la funzione per rigenerare
-          tutte le entry della coda con il nuovo <code>occurrence_id</code> e il nuovo <code>body</code>.<br>
-          Normalmente gira ogni 6 ore via cron — questo la forza a rieseguire subito.
+          Dopo che il deploy da git è live, invoca subito la funzione per testare la nuova logica.<br>
+          Invia le notifiche con <code>fire_at</code> nella finestra <code>[now−5min, now+5min]</code> → status <code>sent</code> o <code>failed</code>.<br>
+          Nessun retry. Nessun digest.
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
           <span class="task-tag bash">Bash</span>
           <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">2° — dopo che il deploy git è live</span>
+          <span class="task-tag order">2° — dopo il deploy git</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-2">
       <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>supabase functions invoke fill-notification-queue --project-ref jajlmmdsjlvzgcxiiypk</pre>
+      <pre>supabase functions invoke send-notifications --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
     <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 3 — Verifica risultato in SQL Editor
+       TASK 3 — verifica coda
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">SQL — verifica entry rigenerate in <code>cm_notification_queue</code></div>
+        <div class="task-title">SQL — verifica stato della coda dopo il run</div>
         <div class="task-desc">
-          Controlla che le nuove entry abbiano il formato corretto:<br>
-          • <code>occurrence_id</code> dei task deve contenere <code>:</code> (formato <code>uuid:data:ora</code>)<br>
-          • <code>body</code> deve iniziare con il titolo dell'entity<br>
-          • notifiche dello stesso slot condividono <code>occurrence_id</code>, differiscono per <code>fire_at</code>
+          Controlla che:<br>
+          • row con <code>fire_at</code> nella finestra ±5 min abbiano status <code>sent</code> o <code>failed</code><br>
+          • row fuori finestra rimangano <code>pending</code><br>
+          • nessun row abbia status <code>sending</code> o <code>snoozed</code><br>
+          • lo snooze da Telegram inserisca un nuovo row <code>pending</code> con il nuovo <code>fire_at</code>
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
@@ -265,25 +269,30 @@ WHERE app = 'tasks'
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>-- Mostra le ultime 20 entry con occurrence_id e body
+      <pre>-- Distribuzione degli stati attuali
+SELECT status, COUNT(*) AS n
+FROM cm_notification_queue
+GROUP BY status
+ORDER BY n DESC;
+
+-- Ultime 20 notifiche inviate
 SELECT
   app,
   occurrence_id,
   fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome,
   title,
   body,
-  status
+  status,
+  telegram_message_id
 FROM cm_notification_queue
-WHERE status = 'pending'
-ORDER BY fire_at
+WHERE status IN ('sent', 'failed')
+ORDER BY fire_at DESC
 LIMIT 20;
 
--- Controlla che non ci siano task con occurrence_id nel vecchio formato (solo UUID)
-SELECT COUNT(*) AS task_vecchio_formato
+-- Verifica: nessun stato dismesso
+SELECT COUNT(*) AS stati_dismessi
 FROM cm_notification_queue
-WHERE app = 'tasks'
-  AND occurrence_id IS NOT NULL
-  AND occurrence_id NOT LIKE '%:%';</pre>
+WHERE status IN ('sending', 'snoozed');</pre>
     </div>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
