@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.0</title>
+<title>AppSphere v1.5.1</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -879,8 +879,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.0';
-const BUILD_TIME  = '2026-03-13T23:30:00Z';
+const APP_VERSION = 'v1.5.1';
+const BUILD_TIME  = '2026-03-13T23:15:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1470,26 +1470,40 @@ async function loadApps() {
 
   // 1. Leggi le app: in modalità normale solo quelle attive e non riservate;
   //    in modalità nascosta anche quelle riservate
+  // Prova prima con la colonna riservato; se la colonna non esiste ancora (DB non migrato)
+  // fa fallback senza filtro riservato e filtra lato client.
+  const hdrs = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json',
+  };
   const activeFilter = hiddenMode
     ? `active=eq.true`
     : `active=eq.true&or=(riservato.eq.false,riservato.is.null)`;
-  const res = await fetch(
+  let res = await fetch(
     `${SUPABASE_URL}/rest/v1/cm_apps?${activeFilter}&select=id,title,description,score_query,html_file,color,riservato&order=id.asc`,
-    {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-      }
-    }
+    { headers: hdrs }
   );
 
+  let riservatoSupported = res.ok;
   if (!res.ok) {
-    console.error('Errore fetch cm_apps:', await res.text());
-    return;
+    // Fallback: colonna riservato non ancora presente nel DB
+    console.warn('Colonna riservato non disponibile, fallback senza filtro riservato');
+    res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_apps?active=eq.true&select=id,title,description,score_query,html_file,color&order=id.asc`,
+      { headers: hdrs }
+    );
+    if (!res.ok) {
+      console.error('Errore fetch cm_apps:', await res.text());
+      return;
+    }
   }
 
-  const rows = await res.json();
+  let rows = await res.json();
+  // Se riservato non è supportato mostriamo tutto; altrimenti il DB ha già filtrato
+  if (!riservatoSupported && !hiddenMode) {
+    rows = rows.filter(r => !r.riservato);
+  }
 
   // 2. Per ogni app esegui la score_query
   const apps = await Promise.all(rows.map(async (row, i) => {
