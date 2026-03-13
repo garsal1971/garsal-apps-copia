@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.7</title>
+    <title>Tasks v19.18.8</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2079,7 +2079,7 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.7';
+        const APP_VERSION = 'v19.18.8';
         const BUILD_TIME  = '2026-03-13T23:30:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
@@ -3140,7 +3140,23 @@
             const minutes = m[5] ? parseInt(m[5]) : 0;
             const d = new Date(year, month, day, hours, minutes);
             if (isNaN(d.getTime())) return null;
-            return d.toISOString();
+            return localDateTimeStr(d);
+        }
+
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            const dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        function localDateTimeStr(d) {
+            const dt = d || new Date();
+            return localDateStr(dt) + 'T' +
+                String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
         }
 
         // Formatta data in formato GG-MM-AAAA HH:MM (orario italiano)
@@ -4664,7 +4680,7 @@
                     // Verifica se il promemoria è scaduto nelle ultime 24 ore
                     if (reminderTime >= twentyFourHoursAgo && reminderTime <= now) {
                         // Salta i promemoria nascosti manualmente
-                        const dateKey = targetDate.toISOString().split('T')[0];
+                        const dateKey = localDateStr(targetDate);
                         if (localStorage.getItem(`dismissed_${task.id}_${reminder}_${dateKey}`)) return;
 
                         expiredReminders.push({
@@ -4734,7 +4750,7 @@
                                 ${taskRemindersCount > 1 ? `
                                     <button class="btn btn-warning btn-small" onclick="completeAllRemindersForTask('${item.task.id}')" title="Completa tutti i ${taskRemindersCount} promemoria di questo task">✓✓ Completa Tutti</button>
                                 ` : ''}
-                                <button class="btn btn-secondary btn-small" onclick="dismissReminder('${item.task.id}', '${item.reminder}', '${item.targetDate.toISOString().split('T')[0]}')">✕ Nascondi</button>
+                                <button class="btn btn-secondary btn-small" onclick="dismissReminder('${item.task.id}', '${item.reminder}', '${localDateStr(item.targetDate)}')">✕ Nascondi</button>
                             </div>
                         </div>
                     </div>
@@ -6273,7 +6289,7 @@
                 type: taskType,
                 categories: selectedCategories,
                 priority_id: document.getElementById('taskPriority').value || null,
-                start_date: startDateValue || new Date().toISOString(),
+                start_date: startDateValue || localDateTimeStr(),
                 reminders: reminders,
                 success_points: parseInt(document.getElementById('successPoints').value),
                 failure_points: parseInt(document.getElementById('failurePoints').value),
@@ -6336,7 +6352,7 @@
                     alert('Un workflow deve avere almeno 2 step');
                     return;
                 }
-                const taskStartDate = startDateValue || new Date().toISOString();
+                const taskStartDate = startDateValue || localDateTimeStr();
                 
                 if (taskId) {
                     // UPDATE: preserva stato degli step già completati/falliti
@@ -6369,7 +6385,7 @@
                                 });
                                 if (allDepsDone) {
                                     step.status = step.status === 'locked' ? 'active' : (step.status || 'active');
-                                    step.start_date = step.start_date || new Date().toISOString();
+                                    step.start_date = step.start_date || localDateTimeStr();
                                 } else {
                                     step.start_date = null;
                                     step.status = 'locked';
@@ -6469,9 +6485,9 @@
                 const step = steps.find(s => s.id === stepId);
                 if (!step || step.status !== 'active') return;
                 
-                const now = new Date().toISOString();
+                const now = localDateTimeStr();
                 const wfPoints = task.workflow_points || { step_success: 5, step_failure: -3, task_success: 20, task_failure: -10 };
-                
+
                 // Segna come completato
                 step.status = 'completed';
                 step.completed_at = now;
@@ -6526,9 +6542,9 @@
                 const step = steps.find(s => s.id === stepId);
                 if (!step || step.status !== 'active') return;
                 
-                const now = new Date().toISOString();
+                const now = localDateTimeStr();
                 const wfPoints = task.workflow_points || { step_success: 5, step_failure: -3, task_success: 20, task_failure: -10 };
-                
+
                 // Segna come fallito (il workflow prosegue)
                 step.status = 'failed';
                 step.completed_at = now;
@@ -6882,8 +6898,8 @@
             if (!confirm('Segnare il workflow come completato?')) return;
             
             const wfPts = task.workflow_points || {};
-            const now = new Date().toISOString();
-            
+            const now = localDateTimeStr();
+
             await sb.from('ts_history').insert([{
                 task_id: taskId,
                 from_status: task.status,
@@ -6918,8 +6934,8 @@
             if (!task) return;
             
             const wfPts = task.workflow_points || {};
-            const now = new Date().toISOString();
-            
+            const now = localDateTimeStr();
+
             await sb.from('ts_history').insert([{
                 task_id: taskId,
                 from_status: task.status,
@@ -8889,7 +8905,7 @@ Per attivarle:
             
             // Test con data di oggi
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            const todayStr = localDateStr(today);
             console.log('Testing for today:', todayStr);
             
             // Controlla task con start_date

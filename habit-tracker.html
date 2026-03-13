@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.18</title>
+    <title>Habit Stack Tracker v9.3.19</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1603,7 +1603,7 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.18';
+        const APP_VERSION = 'v9.3.19';
         const BUILD_TIME  = '2026-03-13T23:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -2569,7 +2569,7 @@
                     const daysToAdd = dayNum === 0 ? 6 : dayNum - 1;
                     dayDate.setDate(checkWeekStart.getDate() + daysToAdd);
                     
-                    const dateStr = dayDate.toISOString().split('T')[0];
+                    const dateStr = localDateStr(dayDate);
                     
                     // Se il giorno è PRIMA della data inizio, consideralo completato automaticamente
                     if (dayDate < startDate) {
@@ -2620,7 +2620,7 @@
 
             // Non contare giorni prima della data inizio
             while (checkDate >= startDate) {
-                const dateStr = checkDate.toISOString().split('T')[0];
+                const dateStr = localDateStr(checkDate);
                 const completionsOnDay = completions.filter(c => c.completed_at.startsWith(dateStr));
                 
                 if (completionsOnDay.length >= requiredTimes) {
@@ -2654,7 +2654,7 @@
 
             // Non contare giorni prima della data inizio
             while (checkDate >= startDate) {
-                const dateStr = checkDate.toISOString().split('T')[0];
+                const dateStr = localDateStr(checkDate);
                 const completed = completions.some(c => c.completed_at.startsWith(dateStr));
                 
                 if (completed) {
@@ -2700,7 +2700,7 @@
             const results = [];
             for (const { habit, streak } of toComplete) {
                 try {
-                    const todayStr = new Date().toISOString().split('T')[0];
+                    const todayStr = localDateStr();
                     const pointsReward = habit.points_reward || 0;
                     const startDate = new Date(habit.started_at);
                     const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
@@ -2752,7 +2752,7 @@
                         max_failures: habit.max_failures,
                         points_reward: habit.points_reward,
                         points_penalty: habit.points_penalty,
-                        started_at: tomorrow.toISOString().split('T')[0],
+                        started_at: localDateStr(tomorrow),
                         status: 'active',
                         current_failures: 0
                     }]);
@@ -2832,7 +2832,7 @@
             }
 
             const dayCards = days.map((date) => {
-                const isToday = date.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+                const isToday = localDateStr(date) === localDateStr(today);
                 return renderDayCard(habit, date, isToday);
             }).join('');
 
@@ -2994,8 +2994,8 @@
                 date.setDate(weekStart.getDate() + daysToAdd);
                 date.setHours(12, 0, 0, 0); // Mezzogiorno per evitare problemi fuso orario // IMPORTANTE: normalizza a mezzanotte!
                 
-                const dateStr = date.toISOString().split('T')[0];
-                const completion = completions.find(c => 
+                const dateStr = localDateStr(date);
+                const completion = completions.find(c =>
                     c.habit_id === habit.id && c.completed_at.startsWith(dateStr)
                 );
                 
@@ -3075,7 +3075,7 @@
         }
 
         function renderDayCard(habit, date, isToday) {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = localDateStr(date);
             const dayOfWeek = date.getDay();
             const dayNames = ['DOM', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB'];
             const monthNames = ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
@@ -3726,7 +3726,7 @@
             if (!habit) return false;
 
             try {
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = localDateStr();
                 const currentStreak = computeHabitStreak(habit);
                 const startDate = new Date(habit.started_at);
                 const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
@@ -3898,8 +3898,8 @@
                 const habit = habits.find(h => h.id === habitId);
                 if (!habit) return;
                 
-                const todayStr = new Date().toISOString().split('T')[0];
-                
+                const todayStr = localDateStr();
+
                 // Calcola statistiche dello stack da archiviare
                 const startDate = new Date(habit.started_at);
                 const endDate = new Date();
@@ -4079,7 +4079,7 @@
                 habit.current_failures = prevFailures;
 
                 // Cancella l'ultima completion 'failed' di oggi per questo habit
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = localDateStr();
                 const todayFailed = completions
                     .filter(c => c.habit_id === habitId && c.status === 'failed' && c.completed_at.startsWith(todayStr))
                     .sort((a, b) => b.completed_at.localeCompare(a.completed_at));
@@ -4447,7 +4447,7 @@
             
             for (let i = 5; i >= 0; i--) {
                 const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthStr = date.toISOString().slice(0, 7);
+                const monthStr = localDateStr(date).slice(0, 7);
                 const count = completions.filter(c => c.completed_at.startsWith(monthStr)).length;
                 months.push({
                     label: date.toLocaleDateString('it-IT', { month: 'short' }),
@@ -4785,7 +4785,7 @@
             document.getElementById('editHabitMaxFailures').value = habit.max_failures || 3;
             document.getElementById('editHabitPointsReward').value = habit.points_reward || 0;
             document.getElementById('editHabitPointsPenalty').value = habit.points_penalty || 0;
-            document.getElementById('editHabitStartDate').value = habit.started_at || new Date().toISOString().split('T')[0];
+            document.getElementById('editHabitStartDate').value = habit.started_at || localDateStr();
             
             // Gestisci orari multipli
             editDailyTimes = habit.daily_times ? [...habit.daily_times] : [];
@@ -4947,7 +4947,7 @@
         function showAddHabitModal() {
             updateCategorySelects();
             // Imposta data di oggi come default
-            const today = new Date().toISOString().split('T')[0];
+            const today = localDateStr();
             document.getElementById('habitStartDate').value = today;
             // Reset reminder e mostra gruppo (default frequency = daily)
             document.getElementById('habitReminderTime').value = '';
@@ -5484,7 +5484,7 @@
             if (startedAt && goal) {
                 const d = new Date(startedAt);
                 d.setDate(d.getDate() + Number(goal));
-                endDate = d.toISOString().split('T')[0];
+                endDate = localDateStr(d);
             }
 
             // Blocco aggiuntivo per pulsante Fatto Telegram
@@ -5606,7 +5606,7 @@
         function checkHabitReminders() {
             if (!settings.notificationsEnabled || Notification.permission !== 'granted') return;
             const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
+            const todayStr = localDateStr(now);
 
             habits.filter(h => h.status === 'active').forEach(habit => {
                 const rule = habitNotificationRules[habit.id];

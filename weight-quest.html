@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.30</title>
+    <title>Weight Quest v3.5.31</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -999,12 +999,27 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.30';
+        var APP_VERSION = 'v3.5.31';
         var BUILD_TIME  = '2026-03-13T23:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            var dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        function localDateTimeStr(d) {
+            var dt = d || new Date();
+            return localDateStr(dt) + 'T' +
+                String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
+        }
 
         // Supabase client minimale senza CDN
         class SupabaseClient {
@@ -2244,7 +2259,7 @@
                 if (today < endDate) {
                     alert('Non puoi chiudere con SUCCESSO prima della data di fine obiettivo!\n\n' +
                           'Data fine: ' + userData.currentObjective.end_date + '\n' +
-                          'Oggi: ' + today.toISOString().split('T')[0] + '\n\n' +
+                          'Oggi: ' + localDateStr(today) + '\n\n' +
                           'Puoi solo chiudere come FALLITO prima della fine.');
                     return;
                 }
@@ -2532,7 +2547,7 @@
                     var date = new Date(timestamp);
 
                     weights.push({
-                        date: date.toISOString().split('T')[0],
+                        date: localDateStr(date),
                         time: date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                         timestamp: Math.floor(timestamp),
                         weight: parseFloat(weight.toFixed(2))
@@ -2631,7 +2646,7 @@
                 // Nessun obiettivo: ultimi 3 mesi
                 var d = new Date();
                 d.setMonth(d.getMonth() - 3);
-                return { from: d.toISOString().split('T')[0], to: null };
+                return { from: localDateStr(d), to: null };
             }
             var isClosed = obj.status === 'success' || obj.status === 'failed';
             if (isClosed) {
@@ -2641,7 +2656,7 @@
             // Aperto: start_date - 90 giorni (allineato alla finestra sync Fit) → end_date
             var startD = new Date(obj.start_date + 'T12:00:00');
             startD.setDate(startD.getDate() - 90);
-            return { from: startD.toISOString().split('T')[0], to: obj.end_date || null };
+            return { from: localDateStr(startD), to: obj.end_date || null };
         }
 
         function loadData() {
@@ -2785,7 +2800,7 @@
         // Restituisce il peso minimo registrato oggi; se nessuna pesata oggi, restituisce l'ultima pesata
         function getTodayMinWeight(data) {
             if (!data || data.length === 0) return null;
-            var today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
+            var today = localDateStr(); // YYYY-MM-DD ora locale
             var todayRecords = data.filter(function(r) { return r.date === today && r.weight != null; });
             if (todayRecords.length > 0) {
                 var minVal = Math.min.apply(null, todayRecords.map(function(r) { return r.weight; }));
@@ -2831,14 +2846,14 @@
                 });
             }
 
-            var todayStr  = new Date().toISOString().split('T')[0];
+            var todayStr  = localDateStr();
             var endLoop   = endDateStr < todayStr ? endDateStr : todayStr;
 
             // Individua giorni interpolati (nel range obiettivo, senza pesata reale)
             var interpolatedDays = {};
             var cursor = new Date(startDateStr);
             while (true) {
-                var dateStr = cursor.toISOString().split('T')[0];
+                var dateStr = localDateStr(cursor);
                 if (dateStr > endLoop) break;
                 if (!dayGroups[dateStr] && getInterpolatedTarget(dateStr) !== null) {
                     interpolatedDays[dateStr] = true;
@@ -2933,7 +2948,7 @@
             // Itera solo sui giorni dentro l'intervallo delle milestone
             var currentDate = new Date(milestoneStartDate);
             while (currentDate <= milestoneEndDate) {
-                var dateStr = currentDate.toISOString().split('T')[0];
+                var dateStr = localDateStr(currentDate);
                 
                 // Se non ci sono pesate per questo giorno, interpola
                 if (!filledGroups[dateStr]) {
@@ -3103,8 +3118,8 @@
             if (allDataDates.length === 0 && milestoneStartDate && milestoneEndDate) {
                 // Se non ci sono dati ma ci sono milestone, usa l'intervallo milestone
                 allDataDates = [
-                    milestoneStartDate.toISOString().split('T')[0],
-                    milestoneEndDate.toISOString().split('T')[0]
+                    localDateStr(milestoneStartDate),
+                    localDateStr(milestoneEndDate)
                 ];
             }
             
@@ -3139,7 +3154,7 @@
                 var allCalendarDates = [];
 
                 while (currentDate <= rangeEnd) {
-                    allCalendarDates.push(currentDate.toISOString().split('T')[0]);
+                    allCalendarDates.push(localDateStr(currentDate));
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
                 
@@ -3818,11 +3833,11 @@
             // Giorni dell'obiettivo senza pesate reali → mostra peso interpolato
             var interpolatedDays = {};
             if (obj && startDateStr && endDateStr) {
-                var todayStr = new Date().toISOString().split('T')[0];
+                var todayStr = localDateStr();
                 var d = new Date(startDateStr);
                 var endLoop = endDateStr < todayStr ? endDateStr : todayStr;
                 while (true) {
-                    var dateStr = d.toISOString().split('T')[0];
+                    var dateStr = localDateStr(d);
                     if (dateStr > endLoop) break;
                     if (!dayGroups[dateStr] && getInterpolatedTarget(dateStr) !== null) {
                         interpolatedDays[dateStr] = true;
@@ -3905,7 +3920,7 @@
             function shiftMonth(dateStr, months) {
                 var d = new Date(dateStr + 'T12:00:00');
                 d.setMonth(d.getMonth() + months);
-                return d.toISOString().split('T')[0];
+                return localDateStr(d);
             }
             return { from: shiftMonth(obj.start_date, -1), to: shiftMonth(obj.end_date, 1) };
         }

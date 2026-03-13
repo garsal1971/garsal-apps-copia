@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.4</title>
+    <title>Events Log v2.2.5</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -947,7 +947,7 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.4';
+    var APP_VERSION = 'v2.2.5';
     var BUILD_TIME  = '2026-03-13T23:30:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -1737,6 +1737,22 @@ function toLocalISO(date) {
     return local.toISOString().slice(0, 16);
 }
 
+// Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+function localDateStr(d) {
+    const dt = d || new Date();
+    return dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0');
+}
+// Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+function localDateTimeStr(d) {
+    const dt = d || new Date();
+    return localDateStr(dt) + 'T' +
+        String(dt.getHours()).padStart(2, '0') + ':' +
+        String(dt.getMinutes()).padStart(2, '0') + ':' +
+        String(dt.getSeconds()).padStart(2, '0');
+}
+
 function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1901,7 +1917,7 @@ async function quickConfirmLog() {
     document.getElementById('quickLogModal').classList.remove('active');
     const ev = events.find(e => e.id === pendingLogEventId);
     if (!ev) return;
-    await _saveLog(ev, null, new Date().toISOString());
+    await _saveLog(ev, null, localDateTimeStr());
     pendingLogEventId = null;
 }
 
@@ -1912,7 +1928,7 @@ async function confirmLog() {
 
     const note    = document.getElementById('logModalNote').value.trim();
     const dtValue = document.getElementById('logModalDateTime').value;
-    const loggedAt = dtValue ? new Date(dtValue).toISOString() : new Date().toISOString();
+    const loggedAt = dtValue ? new Date(dtValue).toISOString() : localDateTimeStr();
 
     await _saveLog(ev, note || null, loggedAt);
     closeLogModal();
@@ -2014,7 +2030,7 @@ async function checkDaSelectEvents() {
                     id:            crypto.randomUUID(),
                     event_id:      ev.id,
                     note:          `count:${currentVal}`,
-                    logged_at:     new Date().toISOString(),
+                    logged_at:     localDateTimeStr(),
                     points_at_log: totalScore,
                 };
                 const { error: insertError } = await sb.from('el_logs').insert([newLog]);
