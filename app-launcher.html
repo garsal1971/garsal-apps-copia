@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.15</title>
+<title>AppSphere v1.5.16</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -756,6 +756,18 @@
   }
   #code-entry.visible { display: flex; }
   #code-entry.active  { background: rgba(0,129,200,0.45); }
+  /* modalità nascosta attiva: nascondi caselle, mostra icona */
+  #code-entry.active:not(.capturing) .code-box,
+  #code-entry.active:not(.capturing) #code-confirm { display: none; }
+  #hidden-icon {
+    display: none;
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s, transform 0.2s;
+  }
+  #hidden-icon:hover { color: #fff; transform: scale(1.15); }
+  #code-entry.active:not(.capturing) #hidden-icon { display: flex; align-items: center; }
   .code-box {
     width: 18px;
     height: 18px;
@@ -831,6 +843,11 @@
   <div class="code-box" id="cb1"></div>
   <div class="code-box" id="cb2"></div>
   <button id="code-confirm" title="Verifica codice">›</button>
+  <span id="hidden-icon" title="Modalità nascosta attiva">
+    <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 0C5.5 0 1.7 2.8 0 7c1.7 4.2 5.5 7 10 7s8.3-2.8 10-7C18.3 2.8 14.5 0 10 0zm0 11.7A4.7 4.7 0 0 1 5.3 7 4.7 4.7 0 0 1 10 2.3 4.7 4.7 0 0 1 14.7 7 4.7 4.7 0 0 1 10 11.7zm0-7.5A2.8 2.8 0 0 0 7.2 7 2.8 2.8 0 0 0 10 9.8 2.8 2.8 0 0 0 12.8 7 2.8 2.8 0 0 0 10 4.2z" fill="currentColor"/>
+    </svg>
+  </span>
 </div>
 
 <!-- SCORE PANEL -->
@@ -925,8 +942,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.15';
-const BUILD_TIME  = '2026-03-14T19:15:00Z';
+const APP_VERSION = 'v1.5.16';
+const BUILD_TIME  = '2026-03-14T19:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1480,7 +1497,8 @@ function enterCaptureMode() {
   capturedColors = [];
   clearTimeout(captureTimeout);
   updateCodeBoxes();
-  document.getElementById('code-entry').classList.add('visible');
+  const el = document.getElementById('code-entry');
+  el.classList.add('visible', 'capturing');
   // Auto-chiusura dopo 15 secondi di inattività
   captureTimeout = setTimeout(exitCaptureMode, 15000);
 }
@@ -1490,7 +1508,9 @@ function exitCaptureMode() {
   capturedColors = [];
   clearTimeout(captureTimeout);
   updateCodeBoxes();
-  document.getElementById('code-entry').classList.remove('visible');
+  const el = document.getElementById('code-entry');
+  el.classList.remove('capturing');
+  if (!hiddenMode) el.classList.remove('visible');
 }
 
 function updateCodeBoxes() {
@@ -2028,6 +2048,12 @@ document.getElementById('code-entry').addEventListener('click', (e) => {
   if (!e.target.classList.contains('code-box')) return;
   if (capturedColors.length < hiddenSequence.length) return;
   checkSequence();
+});
+
+// Tap sull'icona occhio → rientra in capture mode per modificare la modalità
+document.getElementById('hidden-icon').addEventListener('click', () => {
+  if (!hiddenSequence.length) return;
+  enterCaptureMode();
 });
 
 // ── PWA Service Worker ───────────────────────────────────────────────────────
