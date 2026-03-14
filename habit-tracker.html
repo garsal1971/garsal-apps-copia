@@ -2344,6 +2344,7 @@
                         .insert([{
                             habit_id: habitId,
                             completed_at: localDateTimeStr(),
+                            status: 'completed',
                             period_key: key
                         }])
                         .select();
