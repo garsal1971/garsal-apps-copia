@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.6</title>
+<title>AppSphere v1.5.7</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -283,6 +283,34 @@
     border-radius: 50%;
     border: 2px solid #111;
     flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+  }
+  .bq-color-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .bq-color-input {
+    width: 38px;
+    height: 28px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 2px;
+    cursor: pointer;
+    background: none;
+  }
+  .bq-color-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 4px 8px;
+    width: 80px;
+    text-transform: uppercase;
   }
   .bq-title {
     font-size: 13px;
@@ -879,8 +907,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.6';
-const BUILD_TIME  = '2026-03-14T14:00:00Z';
+const APP_VERSION = 'v1.5.7';
+const BUILD_TIME  = '2026-03-14T15:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1554,17 +1582,25 @@ async function openBadgeSettings() {
     return;
   }
   _badgeRows = await res.json();
-  body.innerHTML = _badgeRows.map((row, i) => `
+  body.innerHTML = _badgeRows.map((row, i) => {
+    const color = (row.color || OLYMPIC[i % OLYMPIC.length]).trim();
+    return `
     <div class="bq-row" data-id="${row.id}">
       <div class="bq-label">
-        <div class="bq-dot" style="background:${row.color || OLYMPIC[i % OLYMPIC.length]}"></div>
+        <div class="bq-dot" id="bq-dot-${row.id}" style="background:${color}" onclick="document.getElementById('bq-colorpicker-${row.id}').click()"></div>
         <span class="bq-title">${row.title}</span>
         <span class="bq-status" id="bq-status-${row.id}"></span>
+      </div>
+      <div class="bq-color-wrap">
+        <input type="color" class="bq-color-input" id="bq-colorpicker-${row.id}" value="${color}"
+          oninput="document.getElementById('bq-dot-${row.id}').style.background=this.value; document.getElementById('bq-colorhex-${row.id}').value=this.value.toUpperCase()">
+        <input type="text" class="bq-color-hex" id="bq-colorhex-${row.id}" value="${color.toUpperCase()}" maxlength="7"
+          oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)){document.getElementById('bq-colorpicker-${row.id}').value=this.value;document.getElementById('bq-dot-${row.id}').style.background=this.value;}">
       </div>
       <textarea class="bq-textarea" id="bq-query-${row.id}" rows="2">${row.score_query || ''}</textarea>
       <button class="bq-save-btn" onclick="saveBadgeQuery('${row.id}')">Salva</button>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function closeBadgeSettings() {
@@ -1575,12 +1611,17 @@ async function saveBadgeQuery(id) {
   const token    = sessionStorage.getItem('sb_token');
   const textarea = document.getElementById('bq-query-' + id);
   const statusEl = document.getElementById('bq-status-' + id);
+  const colorEl  = document.getElementById('bq-colorpicker-' + id);
   const btn      = textarea.closest('.bq-row').querySelector('.bq-save-btn');
   const query    = textarea.value.trim();
+  const color    = colorEl ? colorEl.value : null;
 
   btn.disabled = true;
   statusEl.textContent = '';
   statusEl.style.display = 'none';
+
+  const patch = { score_query: query };
+  if (color) patch.color = color;
 
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/cm_apps?id=eq.${id}`,
@@ -1592,7 +1633,7 @@ async function saveBadgeQuery(id) {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       },
-      body: JSON.stringify({ score_query: query }),
+      body: JSON.stringify(patch),
     }
   );
 
