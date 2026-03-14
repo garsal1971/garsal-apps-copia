@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.18</title>
+<title>AppSphere v1.5.19</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -942,15 +942,15 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.18';
-const BUILD_TIME  = '2026-03-14T20:00:00Z';
+const APP_VERSION = 'v1.5.19';
+const BUILD_TIME  = '2026-03-14T20:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
 // ── MODALITÀ NASCOSTA ──
 let hiddenMode     = false;
-let hiddenSequence  = [];   // sequenza caricata dal DB (array di colori hex)
+let hiddenSeqLength = 0;    // solo la lunghezza della sequenza (i valori restano sul server)
 let captureMode     = false; // true quando il widget è aperto
 let capturedColors  = [];   // colori selezionati nelle caselle
 let captureTimeout  = null; // auto-chiusura dopo 15s
@@ -1285,7 +1285,7 @@ function makeDraggable(node) {
     if (captureMode) {
       // Cattura colore solo al touchstart reale, non al mousedown sintetico
       if (e.type === 'touchstart') {
-        if (capturedColors.length >= hiddenSequence.length) capturedColors = [];
+        if (capturedColors.length >= hiddenSeqLength) capturedColors = [];
         capturedColors.push(node.app.color);
         updateCodeBoxes();
       }
@@ -1479,16 +1479,14 @@ async function loadHiddenSequence() {
   if (!token) return;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/cm_settings?key=eq.hidden_mode_sequence&select=value&limit=1`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+      `${SUPABASE_URL}/functions/v1/check-hidden-sequence`,
+      { headers: { 'Authorization': 'Bearer ' + token } }
     );
     if (!res.ok) return;
-    const rows = await res.json();
-    if (rows.length && rows[0].value) {
-      hiddenSequence = JSON.parse(rows[0].value);
-    }
+    const { length } = await res.json();
+    hiddenSeqLength = length || 0;
   } catch(e) {
-    console.warn('Sequenza hidden mode non disponibile:', e);
+    console.warn('Lunghezza sequenza hidden mode non disponibile:', e);
   }
 }
 
@@ -1514,7 +1512,7 @@ function exitCaptureMode() {
 }
 
 function updateCodeBoxes() {
-  const n = hiddenSequence.length || 3;
+  const n = hiddenSeqLength || 3;
   for (let i = 0; i < n; i++) {
     const box = document.getElementById('cb' + i);
     if (!box) continue;
@@ -1528,15 +1526,30 @@ function updateCodeBoxes() {
   }
 }
 
-function checkSequence() {
-  const match = capturedColors.length === hiddenSequence.length &&
-    capturedColors.every((c, i) => c === hiddenSequence[i]);
+async function checkSequence() {
+  const colors = [...capturedColors];
   exitCaptureMode();
-  if (match) {
-    hiddenMode = !hiddenMode;
-    broadcastHiddenMode();
-    updateHiddenIndicator();
-    loadApps();
+  const token = sessionStorage.getItem('sb_token');
+  if (!token) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/check-hidden-sequence`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ colors })
+      }
+    );
+    if (!res.ok) return;
+    const { match } = await res.json();
+    if (match) {
+      hiddenMode = !hiddenMode;
+      broadcastHiddenMode();
+      updateHiddenIndicator();
+      loadApps();
+    }
+  } catch(e) {
+    console.warn('Verifica sequenza fallita:', e);
   }
 }
 
@@ -1560,7 +1573,7 @@ async function loadApps() {
   const token = sessionStorage.getItem('sb_token');
 
   // Carica anche la sequenza nascosta se non ancora disponibile
-  if (!hiddenSequence.length) await loadHiddenSequence();
+  if (!hiddenSeqLength) await loadHiddenSequence();
 
   // 1. Leggi le app: in modalità normale solo quelle attive e non riservate;
   //    in modalità nascosta anche quelle riservate
@@ -2035,21 +2048,21 @@ function addLongPressListener(el, handler) {
 // Long press sullo sfondo → apre il widget di inserimento codice
 addLongPressListener(document.getElementById('field'), (e) => {
   if (e.target && e.target.closest && e.target.closest('.cw')) return;
-  if (!hiddenSequence.length) return;
+  if (!hiddenSeqLength) return;
   enterCaptureMode();
 });
 
 // Tap sulla freccia → verifica il codice inserito
 document.getElementById('code-confirm').addEventListener('click', () => {
-  if (!hiddenSequence.length) return;
+  if (!hiddenSeqLength) return;
   checkSequence();
 });
 
 // Tap sulle caselle piene → sblocca la modalità nascosta
 document.getElementById('code-entry').addEventListener('click', (e) => {
-  if (!hiddenSequence.length) return;
+  if (!hiddenSeqLength) return;
   if (!e.target.classList.contains('code-box')) return;
-  if (capturedColors.length < hiddenSequence.length) return;
+  if (capturedColors.length < hiddenSeqLength) return;
   checkSequence();
 });
 
