@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.10</title>
+<title>AppSphere v1.5.11</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -738,30 +738,48 @@
   }
   .rw-btn-save:hover { opacity: 0.88; }
 
-  /* ── MODALITÀ NASCOSTA ── */
-  #hidden-indicator {
+  /* ── INSERIMENTO CODICE NASCOSTO ── */
+  #code-entry {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: rgba(0,0,0,0.65);
-    color: #fff;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: none;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    z-index: 300;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    gap: 6px;
+    background: rgba(0,0,0,0.50);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 7px 9px;
+    z-index: 200;
     user-select: none;
+    transition: background 0.3s;
   }
-  #hidden-indicator:hover { transform: scale(1.1); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-  #hidden-indicator.visible { display: flex; }
+  #code-entry.active { background: rgba(0,129,200,0.45); }
+  .code-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid rgba(255,255,255,0.35);
+    background: transparent;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .code-box.filled {
+    border-color: transparent;
+    transform: scale(1.1);
+  }
+  #code-confirm {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    margin-left: 2px;
+  }
+  #code-confirm:hover { color: #fff; }
 
-  /* feedback visivo durante cattura sequenza */
+  /* (legacy — non più usato) */
   #field.capture-mode {
     outline: 2px dashed rgba(0,129,200,0.4);
     outline-offset: -4px;
@@ -812,8 +830,13 @@
 
 <div id="field"></div>
 
-<!-- MODALITÀ NASCOSTA — indicatore visivo -->
-<div id="hidden-indicator" title="Modalità nascosta attiva — doppio click per disattivare">👁</div>
+<!-- INSERIMENTO CODICE NASCOSTO -->
+<div id="code-entry">
+  <div class="code-box" id="cb0"></div>
+  <div class="code-box" id="cb1"></div>
+  <div class="code-box" id="cb2"></div>
+  <button id="code-confirm" title="Verifica codice">›</button>
+</div>
 
 <!-- SCORE PANEL -->
 <div id="score-panel" onclick="openRewards()" title="Apri Catalogo Premi">
@@ -907,18 +930,16 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.10';
-const BUILD_TIME  = '2026-03-14T17:00:00Z';
+const APP_VERSION = 'v1.5.11';
+const BUILD_TIME  = '2026-03-14T17:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
 // ── MODALITÀ NASCOSTA ──
-let hiddenMode    = false;
+let hiddenMode     = false;
 let hiddenSequence = [];   // sequenza caricata dal DB (array di colori hex)
-let captureMode   = false; // true durante cattura sequenza
-let capturedColors = [];   // colori cliccati finora
-let captureTimeout = null; // timer di scadenza (10s)
+let capturedColors = [];   // colori selezionati nelle caselle
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
@@ -1246,14 +1267,11 @@ function makeDraggable(node) {
   }
 
   function onDown(e) {
-    // In capture mode: cattura il colore al touch (non al rilascio)
-    // e.type === 'touchstart' per ignorare i mousedown sintetici del browser
-    if (captureMode) {
-      if (e.type === 'touchstart') {
-        capturedColors.push(node.app.color);
-        if (capturedColors.length >= hiddenSequence.length) checkSequence();
-      }
-      return; // non registrare onUp → launchApp non può mai scattare
+    // Registra colore nella sequenza codice (solo touchstart = tocco reale)
+    if (e.type === 'touchstart' && hiddenSequence.length) {
+      if (capturedColors.length >= hiddenSequence.length) capturedColors = [];
+      capturedColors.push(node.app.color);
+      updateCodeBoxes();
     }
     const { x, y } = getXY(e);
     startX = x; startY = y;
@@ -1456,26 +1474,26 @@ async function loadHiddenSequence() {
   }
 }
 
-function enterCaptureMode() {
-  captureMode = true;
-  capturedColors = [];
-  clearTimeout(captureTimeout);
-  document.getElementById('field').classList.add('capture-mode');
-  // Timeout: annulla cattura dopo 10 secondi
-  captureTimeout = setTimeout(() => {
-    captureMode = false;
-    capturedColors = [];
-    document.getElementById('field').classList.remove('capture-mode');
-  }, 10000);
+function updateCodeBoxes() {
+  const n = hiddenSequence.length || 3;
+  for (let i = 0; i < n; i++) {
+    const box = document.getElementById('cb' + i);
+    if (!box) continue;
+    if (i < capturedColors.length) {
+      box.style.background = capturedColors[i];
+      box.classList.add('filled');
+    } else {
+      box.style.background = '';
+      box.classList.remove('filled');
+    }
+  }
 }
 
 function checkSequence() {
-  captureMode = false;
-  clearTimeout(captureTimeout);
-  document.getElementById('field').classList.remove('capture-mode');
   const match = capturedColors.length === hiddenSequence.length &&
     capturedColors.every((c, i) => c === hiddenSequence[i]);
   capturedColors = [];
+  updateCodeBoxes();
   if (match) {
     hiddenMode = !hiddenMode;
     broadcastHiddenMode();
@@ -1489,8 +1507,8 @@ function broadcastHiddenMode() {
 }
 
 function updateHiddenIndicator() {
-  const el = document.getElementById('hidden-indicator');
-  if (el) el.classList.toggle('visible', hiddenMode);
+  const el = document.getElementById('code-entry');
+  if (el) el.classList.toggle('active', hiddenMode);
 }
 
 // ── CARICA APP DA SUPABASE ──
@@ -1970,18 +1988,10 @@ function addLongPressListener(el, handler) {
   el.addEventListener('touchcancel',() => clearTimeout(timer), { passive: true });
 }
 
-// Long press sullo sfondo → avvia cattura sequenza nascosta
-addLongPressListener(document.getElementById('field'), (e) => {
-  if (e.target && e.target.closest && e.target.closest('.cw')) return;
+// Tap sulla freccia → verifica il codice inserito
+document.getElementById('code-confirm').addEventListener('click', () => {
   if (!hiddenSequence.length) return;
-  enterCaptureMode();
-});
-
-// Long press sull'indicatore 👁 → avvia cattura sequenza
-addLongPressListener(document.getElementById('hidden-indicator'), (e) => {
-  if (e.stopPropagation) e.stopPropagation();
-  if (!hiddenSequence.length) return;
-  enterCaptureMode();
+  checkSequence();
 });
 
 // ── PWA Service Worker ───────────────────────────────────────────────────────
