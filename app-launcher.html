@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.14</title>
+<title>AppSphere v1.5.15</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -925,8 +925,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.14';
-const BUILD_TIME  = '2026-03-14T19:00:00Z';
+const APP_VERSION = 'v1.5.15';
+const BUILD_TIME  = '2026-03-14T19:15:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2019,6 +2019,14 @@ addLongPressListener(document.getElementById('field'), (e) => {
 // Tap sulla freccia → verifica il codice inserito
 document.getElementById('code-confirm').addEventListener('click', () => {
   if (!hiddenSequence.length) return;
+  checkSequence();
+});
+
+// Tap sulle caselle piene → sblocca la modalità nascosta
+document.getElementById('code-entry').addEventListener('click', (e) => {
+  if (!hiddenSequence.length) return;
+  if (!e.target.classList.contains('code-box')) return;
+  if (capturedColors.length < hiddenSequence.length) return;
   checkSequence();
 });
 
