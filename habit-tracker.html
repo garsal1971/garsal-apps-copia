@@ -1614,8 +1614,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.23';
-        const BUILD_TIME  = '2026-03-14T03:00:00Z';
+        const APP_VERSION = 'v9.3.24';
+        const BUILD_TIME  = '2026-03-14T10:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2206,9 +2206,9 @@
             
             const completion = completions.find(c => {
                 if (c.habit_id !== habitId) return false;
+                if (c.period_key) return c.period_key === buildPeriodKey('daily_multiple', dateStr, time);
                 if (!c.completed_at.startsWith(dateStr)) return false;
-                const compTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return compTime === time;
+                return c.completed_at.substring(11, 16) === time;
             });
             
             const isCompleted = completion && completion.status === 'completed';
@@ -3122,15 +3122,16 @@
                 const isFuture = date > new Date(new Date().setHours(23, 59, 59, 999));
                 
                 const completedTimes = completionsOnDay.map(c => {
-                    return new Date(c.completed_at).toTimeString().substr(0, 5);
+                    if (c.period_key) return c.period_key.substring(11); // HH:MM from period_key
+                    return c.completed_at.substring(11, 16);
                 });
-                
+
                 const allCompleted = completedTimes.length >= times.length;
-                
+
                 const timeSlots = times.map(time => {
                     const completion = completionsOnDay.find(c => {
-                        const compTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                        return compTime === time;
+                        if (c.period_key) return c.period_key === buildPeriodKey('daily_multiple', dateStr, time);
+                        return c.completed_at.substring(11, 16) === time;
                     });
                     
                     const isCompleted = completion && completion.status === 'completed';
