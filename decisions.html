@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="1.7.2">
-    <title>DecisionKeeper v1.7.3</title>
+    <title>DecisionKeeper v1.7.4</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -68,7 +68,7 @@
         .app-container {
             display: grid;
             grid-template-columns: 250px 1fr;
-            min-height: 100vh;
+            height: 100vh;
             position: relative;
             z-index: 1;
         }
@@ -376,6 +376,7 @@
         /* Main Content */
         .main-content {
             flex: 1;
+            min-height: 0;
             padding: 2rem;
             overflow-y: auto;
         }
@@ -903,6 +904,7 @@
             .app-container {
                 display: flex;
                 flex-direction: column;
+                height: 100vh;
             }
 
             .sidebar {
@@ -1340,7 +1342,7 @@
         .focus-container {
             position: relative;
             width: 100%;
-            height: 100%;
+            height: calc(100vh - 4rem);
             overflow: hidden;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
@@ -1602,7 +1604,7 @@
 
         @media (max-width: 768px) {
             .focus-container {
-                height: calc(100vh - 4rem);
+                height: calc(100vh - 6rem); /* topbar ~4rem + padding 2rem */
             }
 
             .focus-quick-actions {
@@ -1697,20 +1699,20 @@
         <!-- Vertical Sidebar (Desktop) -->
         <aside class="sidebar">
             <ul class="sidebar-nav">
-                <li class="sidebar-item active" onclick="showPage('focus')" title="Focus">
+                <li class="sidebar-item active" onclick="showPage('focus',this)" title="Focus">
                     <span class="sidebar-icon">🔥</span>
                     <span class="sidebar-label">Focus</span>
                 </li>
-                <li class="sidebar-item" onclick="showPage('decisions')" title="Decisioni">
+                <li class="sidebar-item" onclick="showPage('decisions',this)" title="Decisioni">
                     <span class="sidebar-icon">🎯</span>
                     <span class="sidebar-label">Decisioni</span>
                     <span class="sidebar-badge" id="decisionsBadgeDesktop" style="display: none;">0</span>
                 </li>
-                <li class="sidebar-item" onclick="showPage('history')" title="Storico">
+                <li class="sidebar-item" onclick="showPage('history',this)" title="Storico">
                     <span class="sidebar-icon">📜</span>
                     <span class="sidebar-label">Storico</span>
                 </li>
-                <li class="sidebar-item" onclick="showPage('settings')" title="Impostazioni">
+                <li class="sidebar-item" onclick="showPage('settings',this)" title="Impostazioni">
                     <span class="sidebar-icon">⚙️</span>
                     <span class="sidebar-label">Impostazioni</span>
                 </li>
@@ -1720,17 +1722,17 @@
         <!-- Top Navigation Bar (Mobile) -->
         <nav class="topbar">
             <ul class="topbar-nav">
-                <li class="topbar-item active" onclick="showPage('focus')" title="Focus">
+                <li class="topbar-item active" onclick="showPage('focus',this)" title="Focus">
                     <span class="topbar-icon">🔥</span>
                 </li>
-                <li class="topbar-item" onclick="showPage('decisions')" title="Decisioni">
+                <li class="topbar-item" onclick="showPage('decisions',this)" title="Decisioni">
                     <span class="topbar-icon">🎯</span>
                     <span class="topbar-badge" id="decisionsBadge" style="display: none;">0</span>
                 </li>
-                <li class="topbar-item" onclick="showPage('history')" title="Storico">
+                <li class="topbar-item" onclick="showPage('history',this)" title="Storico">
                     <span class="topbar-icon">📜</span>
                 </li>
-                <li class="topbar-item" onclick="showPage('settings')" title="Impostazioni">
+                <li class="topbar-item" onclick="showPage('settings',this)" title="Impostazioni">
                     <span class="topbar-icon">⚙️</span>
                 </li>
             </ul>
@@ -2118,8 +2120,8 @@
         // ============================================
         // APPLICATION CODE
         // ============================================
-        const APP_VERSION = 'v1.7.3';
-        const BUILD_TIME  = '2026-03-14T14:10:00Z';
+        const APP_VERSION = 'v1.7.4';
+        const BUILD_TIME  = '2026-03-14T14:30:00Z';
         const VERSION_KEY = 'decisionKeeperVersion';
         console.log('%c DECISIONKEEPER ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#7B2FBE;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
@@ -2370,7 +2372,7 @@ ON CONFLICT (html_file) DO UPDATE SET
             }
         }
 
-        function showPage(pageName) {
+        function showPage(pageName, triggerEl) {
             const pages = document.querySelectorAll('.page');
             pages.forEach(page => page.style.display = 'none');
 
@@ -2379,15 +2381,16 @@ ON CONFLICT (html_file) DO UPDATE SET
             // Update both sidebar and topbar items
             const sidebarItems = document.querySelectorAll('.sidebar-item');
             const topbarItems = document.querySelectorAll('.topbar-item');
-            
+
             sidebarItems.forEach(item => item.classList.remove('active'));
             topbarItems.forEach(item => item.classList.remove('active'));
-            
-            if (event.target.closest('.sidebar-item')) {
-                event.target.closest('.sidebar-item').classList.add('active');
-            }
-            if (event.target.closest('.topbar-item')) {
-                event.target.closest('.topbar-item').classList.add('active');
+
+            const src = triggerEl || (typeof event !== 'undefined' && event?.target);
+            if (src) {
+                const si = src.closest('.sidebar-item');
+                const ti = src.closest('.topbar-item');
+                if (si) si.classList.add('active');
+                if (ti) ti.classList.add('active');
             }
 
             // Render focus mode when navigating to it
@@ -3196,13 +3199,13 @@ ON CONFLICT (html_file) DO UPDATE SET
                         
                         <!-- Quick Response Buttons -->
                         <div class="focus-quick-actions">
-                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 0)" title="No">
+                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 0, this)" title="No">
                                 ❌
                             </button>
-                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 1)" title="Forse">
+                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 1, this)" title="Forse">
                                 🤔
                             </button>
-                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 2)" title="Sì">
+                            <button class="focus-quick-btn" onclick="quickResponse('${decision.id}', 2, this)" title="Sì">
                                 ✅
                             </button>
                         </div>
@@ -3370,9 +3373,9 @@ ON CONFLICT (html_file) DO UPDATE SET
             }, 50);
         }
 
-        async function quickResponse(decisionId, optionIndex) {
+        async function quickResponse(decisionId, optionIndex, triggerEl) {
             console.log(`⚡ Quick response: decision=${decisionId}, option=${optionIndex}`);
-            
+
             const decision = decisions.find(d => d.id === decisionId);
             if (!decision) {
                 console.error('Decision not found');
@@ -3382,15 +3385,12 @@ ON CONFLICT (html_file) DO UPDATE SET
             // Get the option name
             const optionNames = ['no', 'maybe', 'yes'];
             const optionName = optionNames[optionIndex];
-            
+
             // Show visual feedback
-            const btn = event.target;
-            const originalContent = btn.textContent;
-            btn.style.transform = 'scale(1.2)';
+            const btn = triggerEl || (typeof event !== 'undefined' && event?.target);
+            if (btn) btn.style.transform = 'scale(1.2)';
             
-            setTimeout(() => {
-                btn.style.transform = '';
-            }, 200);
+            if (btn) setTimeout(() => { btn.style.transform = ''; }, 200);
 
             // Log the choice
             const log = {
@@ -3414,7 +3414,7 @@ ON CONFLICT (html_file) DO UPDATE SET
                             id: log.id,
                             decision_id: log.decision_id,
                             option_index: log.option_index,
-                            timestamp: log.timestamp,
+                            logged_at: log.timestamp,
                             points: log.points
                         }]);
 
