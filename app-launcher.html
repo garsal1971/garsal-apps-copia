@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.21</title>
+<title>AppSphere v1.5.22</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -942,15 +942,16 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.21';
-const BUILD_TIME  = '2026-03-14T21:15:00Z';
+const APP_VERSION = 'v1.5.22';
+const BUILD_TIME  = '2026-03-14T21:30:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
 // ── MODALITÀ NASCOSTA ──
-let hiddenMode     = false;
-let hiddenSeqLength = 0;    // solo la lunghezza della sequenza (i valori restano sul server)
+let hiddenMode      = false;
+let hiddenSequence  = [];   // sequenza colori da cm_settings
+let hiddenSeqLength = 0;
 let captureMode     = false; // true quando il widget è aperto
 let capturedColors  = [];   // colori selezionati nelle caselle
 let captureTimeout  = null; // auto-chiusura dopo 15s
@@ -1479,14 +1480,16 @@ async function loadHiddenSequence() {
   if (!token) return;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/check-hidden-sequence`,
-      { headers: { 'Authorization': 'Bearer ' + token } }
+      `${SUPABASE_URL}/rest/v1/cm_settings?key=eq.hidden_mode_sequence&select=value&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
     );
     if (!res.ok) return;
-    const { length } = await res.json();
-    hiddenSeqLength = length || 0;
+    const rows = await res.json();
+    if (!rows.length) return;
+    hiddenSequence = JSON.parse(rows[0].value);
+    hiddenSeqLength = hiddenSequence.length;
   } catch(e) {
-    console.warn('Lunghezza sequenza hidden mode non disponibile:', e);
+    console.warn('Sequenza hidden mode non disponibile:', e);
   }
 }
 
@@ -1526,30 +1529,18 @@ function updateCodeBoxes() {
   }
 }
 
-async function checkSequence() {
+function checkSequence() {
   const colors = [...capturedColors];
   exitCaptureMode();
-  const token = sessionStorage.getItem('sb_token');
-  if (!token) return;
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/check-hidden-sequence`,
-      {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ colors })
-      }
-    );
-    if (!res.ok) return;
-    const { match } = await res.json();
-    if (match) {
-      hiddenMode = !hiddenMode;
-      broadcastHiddenMode();
-      updateHiddenIndicator();
-      loadApps();
-    }
-  } catch(e) {
-    console.warn('Verifica sequenza fallita:', e);
+  if (!hiddenSequence.length) return;
+  const match =
+    colors.length === hiddenSequence.length &&
+    colors.every((c, i) => c === hiddenSequence[i]);
+  if (match) {
+    hiddenMode = !hiddenMode;
+    broadcastHiddenMode();
+    updateHiddenIndicator();
+    loadApps();
   }
 }
 
