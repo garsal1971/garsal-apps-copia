@@ -1603,8 +1603,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.19';
-        const BUILD_TIME  = '2026-03-13T23:30:00Z';
+        const APP_VERSION = 'v9.3.20';
+        const BUILD_TIME  = '2026-03-14T00:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1830,7 +1830,7 @@
             await loadCompletions();
             habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
-            await loadUserPoints(); // Carica punteggio totale
+            recalculateTotalScore();
             await loadHabitReminderPresets();    // Carica preset anticipi da cm_reminder_presets
             await loadHabitNotificationRules(); // Carica regole promemoria per abitudine
             loadSettings();
@@ -1921,9 +1921,6 @@
             }
         }
 
-        async function loadUserPoints() {
-            recalculateTotalScore();
-        }
 
         async function loadCompletions() {
             try {
@@ -2464,34 +2461,6 @@
                     reason: 'completato'
                 }]);
 
-            // Aggiorna punteggio totale
-            const { data: userPointsData } = await supabaseClient
-                .from('hb_user_points')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (userPointsData) {
-                const newTotal = (userPointsData.total_points || 0) + pointsReward;
-                await supabaseClient
-                    .from('hb_user_points')
-                    .update({ total_points: newTotal })
-                    .eq('id', userPointsData.id);
-
-                // Log transazione
-                await supabaseClient
-                    .from('hb_points_transactions')
-                    .insert([{
-                        habit_id: habitId,
-                        habit_name: habit.name,
-                        points_change: pointsReward,
-                        reason: 'stack_completed'
-                    }]);
-
-                // Aggiorna sidebar
-                recalculateTotalScore();
-            }
-
             // Marca vecchio stack come completato
             await supabaseClient
                 .from('hb_habits')
@@ -2725,18 +2694,6 @@
                         points_earned: pointsReward,
                         reason: 'completato'
                     }]);
-
-                    // Aggiorna punti
-                    const { data: userPointsData } = await supabaseClient.from('hb_user_points').select('*').limit(1).single();
-                    if (userPointsData) {
-                        await supabaseClient.from('hb_user_points')
-                            .update({ total_points: (userPointsData.total_points || 0) + pointsReward })
-                            .eq('id', userPointsData.id);
-                        await supabaseClient.from('hb_points_transactions').insert([{
-                            habit_id: habit.id, habit_name: habit.name,
-                            points_change: pointsReward, reason: 'stack_completed'
-                        }]);
-                    }
 
                     // Marca vecchio stack come completato
                     await supabaseClient.from('hb_habits').update({ status: 'completed' }).eq('id', habit.id);
@@ -3769,20 +3726,6 @@
                         .eq('id', archivedData[0].id);
                 }
 
-                const { data: userPointsData } = await supabaseClient
-                    .from('hb_user_points').select('*').limit(1).single();
-
-                if (userPointsData && penalty !== 0) {
-                    const newTotal = Math.max(0, (userPointsData.total_points || 0) + penalty);
-                    await supabaseClient
-                        .from('hb_user_points')
-                        .update({ total_points: newTotal })
-                        .eq('id', userPointsData.id);
-                    await supabaseClient
-                        .from('hb_points_transactions')
-                        .insert([{ habit_id: habitId, habit_name: habit.name, points_change: penalty, reason: 'stack_failed_auto' }]);
-                }
-
                 // Marca vecchio stack come fallito
                 await supabaseClient
                     .from('hb_habits')
@@ -3967,37 +3910,6 @@
                     .from('hb_archived_stacks')
                     .update({ points_earned: penalty })
                     .eq('id', archivedData[0].id);
-                
-                // Aggiorna punteggio totale utente (se esiste tabella user_points)
-                // Se non esiste ancora, salta questo step
-                const { data: userPointsData } = await supabaseClient
-                    .from('hb_user_points')
-                    .select('*')
-                    .limit(1)
-                    .single();
-                
-                if (userPointsData) {
-                    const newTotal = Math.max(0, (userPointsData.total_points || 0) + penalty);
-                    await supabaseClient
-                        .from('hb_user_points')
-                        .update({ total_points: newTotal })
-                        .eq('id', userPointsData.id);
-                    
-                    // Log transazione
-                    await supabaseClient
-                        .from('hb_points_transactions')
-                        .insert([{
-                            habit_id: habitId,
-                            habit_name: habit.name,
-                            points_change: penalty,
-                            reason: 'stack_failed'
-                        }]);
-                    
-                    console.log(`💰 Punteggio aggiornato`);
-
-                    // Aggiorna sidebar
-                    recalculateTotalScore();
-                }
                 
                 // STEP 2: Marca vecchio stack come fallito
                 const { error: failError } = await supabaseClient
