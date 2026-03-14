@@ -741,6 +741,11 @@
             border-color: #2196F3;
         }
 
+        .day-card.missed {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-color: #FF9800;
+        }
+
         .day-card.future {
             opacity: 0.6;
         }
@@ -878,6 +883,12 @@
         .simple-btn.btn-failed {
             background: #2196F3;
             border-color: #2196F3;
+            color: white;
+        }
+
+        .simple-btn.btn-missed {
+            background: #FF9800;
+            border-color: #FF9800;
             color: white;
         }
 
@@ -1603,8 +1614,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.22';
-        const BUILD_TIME  = '2026-03-14T02:00:00Z';
+        const APP_VERSION = 'v9.3.23';
+        const BUILD_TIME  = '2026-03-14T03:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2099,9 +2110,9 @@
                 if (newState === 'none') {
                     // Rimuovi
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [TIME] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [TIME] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -2158,7 +2169,7 @@
                     // Gestione jolly
                     console.log(`🃏 Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                     
-                    if (existing && existing.status === 'failed' && newState === 'completed') {
+                    if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
                         console.log('✅ Condizione RESTORE soddisfatta!');
                         await restoreJolly(habitId);
                     }
@@ -2988,8 +2999,9 @@
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
-                
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
+
                 // Usa oggi senza conversione UTC
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                 const isToday = dateStr === todayStr;
@@ -3013,6 +3025,7 @@
                     dayName: dayNames[dayNum],
                     isCompleted,
                     isFailed,
+                    btnFailClass,
                     isToday,
                     canComplete
                 };
@@ -3035,7 +3048,7 @@
                                     data-action="complete"
                                     ${!day.canComplete ? 'disabled' : ''}
                                     title="Fatto">✓</button>
-                            <button class="simple-btn ${day.isFailed ? 'btn-failed' : ''}" 
+                            <button class="simple-btn ${day.btnFailClass}"
                                     style="width: 35px; height: 35px; font-size: 1rem;"
                                     data-action="fail"
                                     ${!day.canComplete ? 'disabled' : ''}
@@ -3120,20 +3133,21 @@
                     });
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                    const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
                     const canComplete = isToday && !isBeforeStart; // Solo oggi E dopo started_at
-                    
+
                     return `
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.6rem 0.4rem; background: var(--input-bg); margin-bottom: 0.3rem; min-width: 80px;"
                              data-time="${time}">
                             <div class="time-text" style="margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">${time}</div>
                             <div class="state-buttons" style="gap: 0.3rem;">
-                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}" 
+                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}"
                                         style="width: 35px; height: 35px; font-size: 1rem;"
                                         data-action="complete"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
                                         title="Fatto">✓</button>
-                                <button class="simple-btn ${isFailed ? 'btn-failed' : ''}" 
+                                <button class="simple-btn ${btnFailClass}"
                                         style="width: 35px; height: 35px; font-size: 1rem;"
                                         data-action="fail"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
@@ -3165,11 +3179,13 @@
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                const cardStatusClass = completion?.status === 'missed' ? 'missed' : isFailed ? 'failed' : '';
+                const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
                 const canComplete = isToday && !isBeforeStart; // Solo oggi E dopo started_at
 
                 return `
-                    <div class="day-card ${isToday ? 'today' : ''} ${isCompleted ? 'completed' : ''} ${isFailed ? 'failed' : ''} ${isFuture ? 'future' : ''}"
+                    <div class="day-card ${isToday ? 'today' : ''} ${isCompleted ? 'completed' : ''} ${cardStatusClass} ${isFuture ? 'future' : ''}"
                          data-habit="${habit.id}" 
                          data-date="${dateStr}"
                          data-can-complete="${canComplete && !isFuture}">
@@ -3184,7 +3200,7 @@
                                         data-action="complete"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
                                         title="Fatto">✓</button>
-                                <button class="simple-btn ${isFailed ? 'btn-failed' : ''}" 
+                                <button class="simple-btn ${btnFailClass}"
                                         data-action="fail"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
                                         title="Saltato (Jolly)">✕</button>
@@ -3293,9 +3309,9 @@
             try {
                 if (newState === 'none') {
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [WEEKLY] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [WEEKLY] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -3358,7 +3374,7 @@
                 }
 
                 // Gestione jolly
-                if (existing && existing.status === 'failed' && newState === 'completed') {
+                if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
                     await restoreJolly(habitId);
                 }
                 else if (newState === 'failed') {
@@ -3392,9 +3408,9 @@
                 if (newState === 'none') {
                     // Rimuovi completamento se esiste
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [DAILY] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [DAILY] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -3466,8 +3482,8 @@
                 // Gestione jolly:
                 console.log(`🃏 [DAILY] Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                 
-                // Se cambia da "failed" a "completed" → Restituisci jolly
-                if (existing && existing.status === 'failed' && newState === 'completed') {
+                // Se cambia da "failed"/"missed" a "completed" → Restituisci jolly
+                if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
                     console.log('✅ [DAILY] Condizione RESTORE soddisfatta!');
                     await restoreJolly(habitId);
                 }
@@ -3582,7 +3598,7 @@
                                 .insert([{
                                     habit_id: habit.id,
                                     completed_at: `${slot.date}T12:00:00`,
-                                    status: 'failed',
+                                    status: 'missed',
                                     period_key: slot.key
                                 }]);
                         }
@@ -3729,7 +3745,7 @@
                     c.habit_id === habitId && c.status === 'completed' && new Date(c.completed_at) >= startDate
                 );
                 const stackFailures = completions.filter(c =>
-                    c.habit_id === habitId && c.status === 'failed' && new Date(c.completed_at) >= startDate
+                    c.habit_id === habitId && (c.status === 'failed' || c.status === 'missed') && new Date(c.completed_at) >= startDate
                 );
 
                 console.log(`💀 Auto-chiusura stack fallito: ${habit.name} (streak: ${currentStreak})`);
@@ -3891,9 +3907,9 @@
                     new Date(c.completed_at) >= startDate
                 );
                 
-                const stackFailures = completions.filter(c => 
-                    c.habit_id === habitId && 
-                    c.status === 'failed' &&
+                const stackFailures = completions.filter(c =>
+                    c.habit_id === habitId &&
+                    (c.status === 'failed' || c.status === 'missed') &&
                     new Date(c.completed_at) >= startDate
                 );
                 
@@ -4030,7 +4046,7 @@
                 // Cancella l'ultima completion 'failed' di oggi per questo habit
                 const todayStr = localDateStr();
                 const todayFailed = completions
-                    .filter(c => c.habit_id === habitId && c.status === 'failed' && c.completed_at.startsWith(todayStr))
+                    .filter(c => c.habit_id === habitId && (c.status === 'failed' || c.status === 'missed') && c.completed_at.startsWith(todayStr))
                     .sort((a, b) => b.completed_at.localeCompare(a.completed_at));
 
                 if (todayFailed.length > 0) {
@@ -4071,27 +4087,29 @@
             );
             
             const isCompleted = completion && completion.status === 'completed';
-            const isFailed = completion && completion.status === 'failed';
+            const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+            const cardStatusClass = completion?.status === 'missed' ? 'missed' : isFailed ? 'failed' : '';
+            const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
 
             console.log(`📊 Stato: isCompleted=${isCompleted}, isFailed=${isFailed}`);
 
             // Aggiorna classi card
-            card.classList.remove('completed', 'failed');
+            card.classList.remove('completed', 'failed', 'missed');
             if (isCompleted) card.classList.add('completed');
-            if (isFailed) card.classList.add('failed');
+            if (cardStatusClass) card.classList.add(cardStatusClass);
 
             // Aggiorna bottoni
             const btnComplete = card.querySelector('[data-action="complete"]');
             const btnSkip = card.querySelector('[data-action="fail"]');
-            
+
             if (btnComplete) {
                 btnComplete.classList.remove('btn-completed');
                 if (isCompleted) btnComplete.classList.add('btn-completed');
             }
-            
+
             if (btnSkip) {
-                btnSkip.classList.remove('btn-failed');
-                if (isFailed) btnSkip.classList.add('btn-failed');
+                btnSkip.classList.remove('btn-failed', 'btn-missed');
+                if (btnFailClass) btnSkip.classList.add(btnFailClass);
             }
 
             updateHabitHeader(habitId);
@@ -4114,22 +4132,23 @@
             );
             
             const isCompleted = completion && completion.status === 'completed';
-            const isFailed = completion && completion.status === 'failed';
+            const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+            const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
 
             console.log(`📊 Stato week-day: isCompleted=${isCompleted}, isFailed=${isFailed}`);
 
             // Aggiorna bottoni del week-day
             const btnComplete = weekDay.querySelector('[data-action="complete"]');
             const btnSkip = weekDay.querySelector('[data-action="fail"]');
-            
+
             if (btnComplete) {
                 btnComplete.classList.remove('btn-completed');
                 if (isCompleted) btnComplete.classList.add('btn-completed');
             }
-            
+
             if (btnSkip) {
-                btnSkip.classList.remove('btn-failed');
-                if (isFailed) btnSkip.classList.add('btn-failed');
+                btnSkip.classList.remove('btn-failed', 'btn-missed');
+                if (btnFailClass) btnSkip.classList.add(btnFailClass);
             }
 
             // Aggiorna lo stato della card settimana se tutti i giorni sono completati
@@ -5183,8 +5202,8 @@
                     });
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
-                    
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+
                     addDebugLog(`🕐 ${time}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
                     
                     if (action === 'complete') {
@@ -5207,8 +5226,8 @@
                     );
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
-                    
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+
                     addDebugLog(`📅 ${dateStr}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
                     
                     if (action === 'complete') {
@@ -5230,7 +5249,7 @@
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
 
                 addDebugLog(`🔘 ${dateStr}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
 
