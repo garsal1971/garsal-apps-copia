@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.16</title>
+<title>AppSphere v1.5.17</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -942,8 +942,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.16';
-const BUILD_TIME  = '2026-03-14T19:30:00Z';
+const APP_VERSION = 'v1.5.17';
+const BUILD_TIME  = '2026-03-14T19:45:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2050,10 +2050,12 @@ document.getElementById('code-entry').addEventListener('click', (e) => {
   checkSequence();
 });
 
-// Tap sull'icona occhio → rientra in capture mode per modificare la modalità
+// Tap sull'icona occhio → disattiva direttamente la modalità nascosta
 document.getElementById('hidden-icon').addEventListener('click', () => {
-  if (!hiddenSequence.length) return;
-  enterCaptureMode();
+  hiddenMode = false;
+  broadcastHiddenMode();
+  updateHiddenIndicator();
+  loadApps();
 });
 
 // ── PWA Service Worker ───────────────────────────────────────────────────────
