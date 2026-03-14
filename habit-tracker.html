@@ -1603,8 +1603,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.20';
-        const BUILD_TIME  = '2026-03-14T00:00:00Z';
+        const APP_VERSION = 'v9.3.21';
+        const BUILD_TIME  = '2026-03-14T01:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2084,13 +2084,9 @@
         async function setTimeState(habitId, time, dateStr, newState) {
             const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
-            
-            const existing = completions.find(c => {
-                if (c.habit_id !== habitId) return false;
-                if (!c.completed_at.startsWith(targetDate)) return false;
-                const completionTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return completionTime === time;
-            });
+            const key = buildPeriodKey('daily_multiple', targetDate, time);
+
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log(`🎯 setTimeState: habit=${habitId}, time=${time}, date=${targetDate}, newState=${newState}`);
             console.log(`📦 existing:`, existing);
@@ -2146,7 +2142,8 @@
                                 habit_id: habitId,
                                 completed_at: completionDateTime,
                                 status: newState,
-                                notes: `${newState} alle ${time}`
+                                notes: `${newState} alle ${time}`,
+                                period_key: key
                             }])
                             .select();
 
@@ -2154,7 +2151,7 @@
 
                         completions.push(data[0]);
                     }
-                    
+
                     // Gestione jolly
                     console.log(`🃏 Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                     
@@ -2236,13 +2233,9 @@
         async function toggleHabitTimeCompletion(habitId, time, dateStr = null) {
             const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
-            
-            const existing = completions.find(c => {
-                if (c.habit_id !== habitId) return false;
-                if (!c.completed_at.startsWith(targetDate)) return false;
-                const completionTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return completionTime === time;
-            });
+            const key = buildPeriodKey('daily_multiple', targetDate, time);
+
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log(`🔄 Toggle 3-state orario ${time} del ${targetDate}`);
 
@@ -2257,7 +2250,8 @@
                             habit_id: habitId,
                             completed_at: completionDateTime,
                             status: 'completed',
-                            notes: `Completato alle ${time}`
+                            notes: `Completato alle ${time}`,
+                            period_key: key
                         }])
                         .select();
 
@@ -2305,9 +2299,8 @@
 
         async function toggleHabitCompletion(habitId) {
             const today = localDateStr();
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(today)
-            );
+            const key = buildPeriodKey('daily', today);
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log('🔄 Toggle completamento per habit:', habitId);
 
@@ -2331,7 +2324,8 @@
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
-                            completed_at: localDateTimeStr()
+                            completed_at: localDateTimeStr(),
+                            period_key: key
                         }])
                         .select();
 
@@ -2368,6 +2362,32 @@
                 String(dt.getHours()).padStart(2, '0') + ':' +
                 String(dt.getMinutes()).padStart(2, '0') + ':' +
                 String(dt.getSeconds()).padStart(2, '0');
+        }
+
+        // Restituisce la data del lunedì della settimana contenente dateStr
+        function getMondayOfWeek(dateStr) {
+            const d = parseDateLocal(dateStr) || new Date();
+            const day = d.getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+            const diff = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diff);
+            return localDateStr(d);
+        }
+
+        // Costruisce la chiave univoca del periodo per un completion
+        // daily:          "yyyy-mm-dd"
+        // daily_multiple: "yyyy-mm-dd-hh:mm"
+        // weekly:         "yyyy-mm-dd-n"  (lunedì settimana + n=1Lun…7Dom)
+        function buildPeriodKey(frequency, dateStr, time = null) {
+            if (frequency === 'daily_multiple') {
+                return `${dateStr}-${time}`;
+            } else if (frequency === 'weekly') {
+                const monday = getMondayOfWeek(dateStr);
+                const d = parseDateLocal(dateStr) || new Date();
+                const n = d.getDay() === 0 ? 7 : d.getDay();
+                return `${monday}-${n}`;
+            } else {
+                return dateStr;
+            }
         }
 
         // Helper per parsare date come locale invece di UTC
@@ -3254,9 +3274,8 @@
         }
 
         async function setWeekDayState(habitId, dateStr, newState) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const key = buildPeriodKey('weekly', dateStr);
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log(`🎯 Imposta stato WEEK-DAY ${newState} per ${dateStr} - habit ${habitId}`);
             console.log(`📦 Existing prima:`, existing);
@@ -3311,13 +3330,14 @@
                     console.log(`✅ Record aggiornato a ${newState}`);
                 } else {
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: newState
+                            status: newState,
+                            period_key: key
                         }])
                         .select();
 
@@ -3326,7 +3346,7 @@
                     completions.push(data[0]);
                     console.log(`✅ Nuovo record creato con stato ${newState}`);
                 }
-                
+
                 // Gestione jolly
                 if (existing && existing.status === 'failed' && newState === 'completed') {
                     await restoreJolly(habitId);
@@ -3348,9 +3368,9 @@
         }
 
         async function setDayState(habitId, dateStr, newState) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const habit = habits.find(h => h.id === habitId);
+            const key = buildPeriodKey(habit?.frequency || 'daily', dateStr);
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log(`🎯 [DAILY] setDayState: habit=${habitId}, date=${dateStr}, newState=${newState}`);
             console.log(`📦 [DAILY] existing:`, existing);
@@ -3414,13 +3434,14 @@
                 } else {
                     // Crea nuovo completamento
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: newState
+                            status: newState,
+                            period_key: key
                         }])
                         .select();
 
@@ -3429,7 +3450,7 @@
                     completions.push(data[0]);
                     console.log(`✅ Nuovo record creato con stato ${newState}`);
                 }
-                
+
                 // Gestione jolly:
                 console.log(`🃏 [DAILY] Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                 
@@ -3485,7 +3506,7 @@
                     }
 
                     let missedCount = 0;
-                    let autoFailedDates = [];
+                    let autoFailedSlots = []; // { date, key }
 
                     // Controlla ogni giorno tra started_at e ieri
                     const currentDate = new Date(startDate);
@@ -3504,31 +3525,27 @@
 
                         if (shouldHaveCompleted) {
                             if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
-                                const requiredTimes = habit.daily_times.length;
-                                const doneCount = completions.filter(c =>
-                                    c.habit_id === habit.id &&
-                                    c.completed_at.startsWith(dateStr) &&
-                                    c.status !== 'failed'
-                                ).length;
-                                const existingFailed = completions.filter(c =>
-                                    c.habit_id === habit.id &&
-                                    c.completed_at.startsWith(dateStr) &&
-                                    c.status === 'failed'
-                                ).length;
-                                const newMissed = Math.max(0, requiredTimes - doneCount - existingFailed);
-                                if (newMissed > 0) {
-                                    missedCount += newMissed;
-                                    for (let i = 0; i < newMissed; i++) autoFailedDates.push(dateStr);
-                                    console.log(`❌ ${dateStr} per ${habit.name}: ${newMissed} orari mancanti`);
+                                for (const timeSlot of habit.daily_times) {
+                                    const slotKey = buildPeriodKey('daily_multiple', dateStr, timeSlot);
+                                    const alreadyExists = completions.some(c =>
+                                        c.habit_id === habit.id && c.period_key === slotKey
+                                    );
+                                    if (!alreadyExists) {
+                                        missedCount++;
+                                        autoFailedSlots.push({ date: dateStr, key: slotKey });
+                                        console.log(`❌ ${dateStr} ${timeSlot} per ${habit.name}: orario mancante`);
+                                    }
                                 }
                             } else {
+                                const periodKey = habit.frequency === 'weekly'
+                                    ? buildPeriodKey('weekly', dateStr)
+                                    : buildPeriodKey('daily', dateStr);
                                 const hasCompletion = completions.some(c =>
-                                    c.habit_id === habit.id &&
-                                    c.completed_at.startsWith(dateStr)
+                                    c.habit_id === habit.id && c.period_key === periodKey
                                 );
                                 if (!hasCompletion) {
                                     missedCount++;
-                                    autoFailedDates.push(dateStr);
+                                    autoFailedSlots.push({ date: dateStr, key: periodKey });
                                     console.log(`❌ Giorno mancato: ${dateStr} per ${habit.name}`);
                                 }
                             }
@@ -3542,14 +3559,15 @@
 
                         console.log(`⚠️ ${habit.name}: ${missedCount} giorni mancati, totale: ${newFailures}/${maxFailures}`);
 
-                        // Registra i giorni mancati come failed
-                        for (const missedDate of autoFailedDates) {
+                        // Registra i periodi mancati come failed
+                        for (const slot of autoFailedSlots) {
                             await supabaseClient
                                 .from('hb_completions')
                                 .insert([{
                                     habit_id: habit.id,
-                                    completed_at: `${missedDate}T12:00:00`,
-                                    status: 'failed'
+                                    completed_at: `${slot.date}T12:00:00`,
+                                    status: 'failed',
+                                    period_key: slot.key
                                 }]);
                         }
 
@@ -4162,9 +4180,9 @@
         }
 
         async function toggleDayCompletion(habitId, dateStr) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const habit = habits.find(h => h.id === habitId);
+            const key = buildPeriodKey(habit?.frequency || 'daily', dateStr);
+            const existing = completions.find(c => c.habit_id === habitId && c.period_key === key);
 
             console.log(`🔄 Toggle 3-state per ${dateStr} - habit ${habitId}`);
 
@@ -4172,13 +4190,14 @@
                 if (!existing) {
                     // Stato 0 → Stato 1: NON FATTO → FATTO (verde)
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: 'completed'
+                            status: 'completed',
+                            period_key: key
                         }])
                         .select();
 
