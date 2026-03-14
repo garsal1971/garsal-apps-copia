@@ -1614,8 +1614,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.24';
-        const BUILD_TIME  = '2026-03-14T10:00:00Z';
+        const APP_VERSION = 'v9.3.25';
+        const BUILD_TIME  = '2026-03-14T11:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3778,10 +3778,10 @@
                         .eq('id', archivedData[0].id);
                 }
 
-                // Marca vecchio stack come fallito
+                // Elimina vecchio stack fallito da hb_habits
                 await supabaseClient
                     .from('hb_habits')
-                    .update({ status: 'failed' })
+                    .delete()
                     .eq('id', habitId);
 
                 // Crea nuovo stack attivo dal giorno dopo
@@ -3806,7 +3806,7 @@
                         current_failures: 0
                     }]);
 
-                console.log(`✅ Stack "${habit.name}" → failed. Nuovo stack attivo dal ${tomorrowStr}`);
+                console.log(`✅ Stack "${habit.name}" → eliminato e archiviato. Nuovo stack dal ${tomorrowStr}`);
 
                 // Accoda al game over (senza undo, già processato)
                 window.gameOverQueue = window.gameOverQueue || [];
@@ -3963,18 +3963,18 @@
                     .update({ points_earned: penalty })
                     .eq('id', archivedData[0].id);
                 
-                // STEP 2: Marca vecchio stack come fallito
+                // STEP 2: Elimina vecchio stack da hb_habits
                 const { error: failError } = await supabaseClient
                     .from('hb_habits')
-                    .update({ status: 'failed' })
+                    .delete()
                     .eq('id', habitId);
 
                 if (failError) {
-                    console.error('❌ Errore aggiornamento status failed:', failError);
-                    showToast('Errore aggiornamento stack');
+                    console.error('❌ Errore eliminazione stack:', failError);
+                    showToast('Errore eliminazione stack');
                     return;
                 }
-                console.log('✅ Stack marcato come failed');
+                console.log('✅ Stack vecchio eliminato');
 
                 // STEP 3: Crea nuovo stack attivo dal giorno dopo
                 const tomorrow = new Date();
@@ -4018,7 +4018,7 @@
                 renderDashboard();
                 renderHabits();
 
-                showToast('📦 Stack archiviato! Nuovo stack attivo da domani.');
+                showToast('📦 Stack archiviato! Nuovo stack dal giorno dopo.');
                 showNextGameOver();
                 
             } catch (error) {
