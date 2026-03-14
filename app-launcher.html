@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.1</title>
+<title>AppSphere v1.5.2</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -879,8 +879,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.1';
-const BUILD_TIME  = '2026-03-13T23:15:00Z';
+const APP_VERSION = 'v1.5.2';
+const BUILD_TIME  = '2026-03-14T00:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1262,14 +1262,12 @@ function makeDraggable(node) {
     window.removeEventListener('touchmove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchend', onUp);
-    if (!moved) {
-      if (captureMode) {
-        // Cattura colore del cerchio cliccato per la sequenza
-        capturedColors.push(node.app.color);
-        if (capturedColors.length >= hiddenSequence.length) checkSequence();
-      } else {
-        launchApp(node.app);
-      }
+    if (captureMode) {
+      // In capture mode cattura il colore anche con leggero movimento
+      capturedColors.push(node.app.color);
+      if (capturedColors.length >= hiddenSequence.length) checkSequence();
+    } else if (!moved) {
+      launchApp(node.app);
     }
   }
 
