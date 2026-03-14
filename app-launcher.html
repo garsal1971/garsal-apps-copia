@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.4</title>
+<title>AppSphere v1.5.5</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -879,8 +879,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.4';
-const BUILD_TIME  = '2026-03-14T12:00:00Z';
+const APP_VERSION = 'v1.5.5';
+const BUILD_TIME  = '2026-03-14T13:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1894,32 +1894,47 @@ init();
 
 window.addEventListener('resize', () => { if (CURRENT_APPS.length) render(); });
 
-// ── DOUBLE-TAP / DOUBLE-CLICK helper ─────────────────────────────────────────
-// Funziona su desktop (dblclick) e su mobile (touch double-tap entro 350ms)
-function addDoubleTapListener(el, handler) {
-  // Desktop
+// ── LONG PRESS / LONG CLICK helper ───────────────────────────────────────────
+// Mobile: tap tenuto per LONG_MS ms → trigger
+// Desktop: dblclick conservato come alternativa
+const LONG_MS = 600;
+
+function addLongPressListener(el, handler) {
+  // Desktop — dblclick come alternativa
   el.addEventListener('dblclick', handler);
-  // Mobile — rileva due tocchi rapidi sullo stesso elemento
-  let lastTap = 0;
-  el.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if (now - lastTap < 350) {
-      e.preventDefault(); // evita zoom su iOS/Android
-      handler(e);
-    }
-    lastTap = now;
+
+  // Mobile — long press
+  let timer = null;
+  let moved  = false;
+
+  el.addEventListener('touchstart', (e) => {
+    moved = false;
+    timer = setTimeout(() => {
+      if (!moved) {
+        e.preventDefault();
+        handler(e);
+      }
+    }, LONG_MS);
   }, { passive: false });
+
+  el.addEventListener('touchmove', () => {
+    moved = true; // se l'utente trascina, annulla
+    clearTimeout(timer);
+  }, { passive: true });
+
+  el.addEventListener('touchend',   () => clearTimeout(timer), { passive: true });
+  el.addEventListener('touchcancel',() => clearTimeout(timer), { passive: true });
 }
 
-// Doppio click/tap sullo sfondo bianco → avvia cattura sequenza nascosta
-addDoubleTapListener(document.getElementById('field'), (e) => {
+// Long press sullo sfondo → avvia cattura sequenza nascosta
+addLongPressListener(document.getElementById('field'), (e) => {
   if (e.target && e.target.closest && e.target.closest('.cw')) return;
   if (!hiddenSequence.length) return;
   enterCaptureMode();
 });
 
-// Doppio click/tap sull'indicatore 👁 → avvia cattura sequenza
-addDoubleTapListener(document.getElementById('hidden-indicator'), (e) => {
+// Long press sull'indicatore 👁 → avvia cattura sequenza
+addLongPressListener(document.getElementById('hidden-indicator'), (e) => {
   if (e.stopPropagation) e.stopPropagation();
   if (!hiddenSequence.length) return;
   enterCaptureMode();
