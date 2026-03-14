@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.11</title>
+<title>AppSphere v1.5.12</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,10 +743,10 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    display: flex;
+    display: none;
     align-items: center;
     gap: 6px;
-    background: rgba(0,0,0,0.50);
+    background: rgba(0,0,0,0.55);
     backdrop-filter: blur(8px);
     border-radius: 10px;
     padding: 7px 9px;
@@ -754,7 +754,8 @@
     user-select: none;
     transition: background 0.3s;
   }
-  #code-entry.active { background: rgba(0,129,200,0.45); }
+  #code-entry.visible { display: flex; }
+  #code-entry.active  { background: rgba(0,129,200,0.45); }
   .code-box {
     width: 18px;
     height: 18px;
@@ -778,12 +779,6 @@
     margin-left: 2px;
   }
   #code-confirm:hover { color: #fff; }
-
-  /* (legacy — non più usato) */
-  #field.capture-mode {
-    outline: 2px dashed rgba(0,129,200,0.4);
-    outline-offset: -4px;
-  }
 
 </style>
 </head>
@@ -930,16 +925,18 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.11';
-const BUILD_TIME  = '2026-03-14T17:30:00Z';
+const APP_VERSION = 'v1.5.12';
+const BUILD_TIME  = '2026-03-14T18:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
 // ── MODALITÀ NASCOSTA ──
 let hiddenMode     = false;
-let hiddenSequence = [];   // sequenza caricata dal DB (array di colori hex)
-let capturedColors = [];   // colori selezionati nelle caselle
+let hiddenSequence  = [];   // sequenza caricata dal DB (array di colori hex)
+let captureMode     = false; // true quando il widget è aperto
+let capturedColors  = [];   // colori selezionati nelle caselle
+let captureTimeout  = null; // auto-chiusura dopo 15s
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
@@ -1267,8 +1264,8 @@ function makeDraggable(node) {
   }
 
   function onDown(e) {
-    // Registra colore nella sequenza codice (solo touchstart = tocco reale)
-    if (e.type === 'touchstart' && hiddenSequence.length) {
+    // Capture mode attiva: registra colore nella casella successiva
+    if (captureMode && e.type === 'touchstart') {
       if (capturedColors.length >= hiddenSequence.length) capturedColors = [];
       capturedColors.push(node.app.color);
       updateCodeBoxes();
@@ -1474,6 +1471,24 @@ async function loadHiddenSequence() {
   }
 }
 
+function enterCaptureMode() {
+  captureMode    = true;
+  capturedColors = [];
+  clearTimeout(captureTimeout);
+  updateCodeBoxes();
+  document.getElementById('code-entry').classList.add('visible');
+  // Auto-chiusura dopo 15 secondi di inattività
+  captureTimeout = setTimeout(exitCaptureMode, 15000);
+}
+
+function exitCaptureMode() {
+  captureMode    = false;
+  capturedColors = [];
+  clearTimeout(captureTimeout);
+  updateCodeBoxes();
+  document.getElementById('code-entry').classList.remove('visible');
+}
+
 function updateCodeBoxes() {
   const n = hiddenSequence.length || 3;
   for (let i = 0; i < n; i++) {
@@ -1492,8 +1507,7 @@ function updateCodeBoxes() {
 function checkSequence() {
   const match = capturedColors.length === hiddenSequence.length &&
     capturedColors.every((c, i) => c === hiddenSequence[i]);
-  capturedColors = [];
-  updateCodeBoxes();
+  exitCaptureMode();
   if (match) {
     hiddenMode = !hiddenMode;
     broadcastHiddenMode();
@@ -1508,7 +1522,10 @@ function broadcastHiddenMode() {
 
 function updateHiddenIndicator() {
   const el = document.getElementById('code-entry');
-  if (el) el.classList.toggle('active', hiddenMode);
+  if (!el) return;
+  el.classList.toggle('active', hiddenMode);
+  // Se la modalità è attiva, tieni il widget visibile come indicatore
+  if (hiddenMode) el.classList.add('visible');
 }
 
 // ── CARICA APP DA SUPABASE ──
@@ -1987,6 +2004,13 @@ function addLongPressListener(el, handler) {
   el.addEventListener('touchend',   () => clearTimeout(timer), { passive: true });
   el.addEventListener('touchcancel',() => clearTimeout(timer), { passive: true });
 }
+
+// Long press sullo sfondo → apre il widget di inserimento codice
+addLongPressListener(document.getElementById('field'), (e) => {
+  if (e.target && e.target.closest && e.target.closest('.cw')) return;
+  if (!hiddenSequence.length) return;
+  enterCaptureMode();
+});
 
 // Tap sulla freccia → verifica il codice inserito
 document.getElementById('code-confirm').addEventListener('click', () => {
