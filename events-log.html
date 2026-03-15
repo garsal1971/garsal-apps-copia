@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.15</title>
+    <title>Events Log v2.2.16</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.15';
-    var BUILD_TIME  = '2026-03-15T16:45:00Z';
+    var APP_VERSION = 'v2.2.16';
+    var BUILD_TIME  = '2026-03-15T17:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1084,7 +1084,7 @@ function showPage(pageId, navEl) {
     if (navEl) navEl.classList.add('active');
 
     if (pageId === 'logPage')      { renderLogPage(); }
-    if (pageId === 'historyPage')  { renderHistory(); }
+    if (pageId === 'historyPage')  { histActiveGroup = activeGroupTab; renderHistory(); }
     if (pageId === 'mgmtPage')     { renderMgmt(); }
     if (pageId === 'statsPage')    { renderStats(); }
     if (pageId === 'settingsPage') { renderSettingsPage(); }
@@ -1482,7 +1482,9 @@ function renderMgmt() {
         return;
     }
 
-    list.innerHTML = groups.map(g => {
+    const visibleGroups = activeGroupTab ? groups.filter(g => g.id === activeGroupTab) : groups;
+
+    list.innerHTML = visibleGroups.map(g => {
         const groupEvents = events.filter(e => e.groupId === g.id);
         return `
             <div class="mgmt-group-card">
@@ -1641,14 +1643,21 @@ function closeEventModal() {
 // ==========================================
 // STATS PAGE
 // ==========================================
+function getGroupFilteredLogs() {
+    if (!activeGroupTab) return logs;
+    const groupEventIds = new Set(events.filter(e => e.groupId === activeGroupTab).map(e => e.id));
+    return logs.filter(l => groupEventIds.has(l.eventId));
+}
+
 function renderStats() {
-    const total = logs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
-    const days = new Set(logs.map(l => new Date(l.loggedAt).toDateString())).size || 1;
+    const filtLogs = getGroupFilteredLogs();
+    const total = filtLogs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    const days = new Set(filtLogs.map(l => new Date(l.loggedAt).toDateString())).size || 1;
     const avg = Math.round(total / days);
 
     document.getElementById('stTotPts').textContent = (total >= 0 ? '+' : '') + total;
     document.getElementById('stAvgDay').textContent = (avg >= 0 ? '+' : '') + avg;
-    document.getElementById('stTotCount').textContent = logs.length;
+    document.getElementById('stTotCount').textContent = filtLogs.length;
 
     renderStatsChart();
     renderStatsTopEvents();
@@ -1658,13 +1667,14 @@ function renderStats() {
 function renderStatsChart() {
     const el = document.getElementById('statsChart');
     const today = new Date();
+    const filtLogs = getGroupFilteredLogs();
     const data = [];
 
     for (let i = 13; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
         const key = d.toDateString();
-        const pts = logs.filter(l => new Date(l.loggedAt).toDateString() === key).reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+        const pts = filtLogs.filter(l => new Date(l.loggedAt).toDateString() === key).reduce((s, l) => s + (l.pointsAtLog || 0), 0);
         data.push({ label: d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }), pts });
     }
 
@@ -1686,10 +1696,11 @@ function renderStatsChart() {
 
 function renderStatsTopEvents() {
     const el = document.getElementById('statsTopEvents');
+    const filtLogs = getGroupFilteredLogs();
 
     const counts = {};
     const totPts = {};
-    logs.forEach(l => {
+    filtLogs.forEach(l => {
         counts[l.eventId] = (counts[l.eventId] || 0) + 1;
         totPts[l.eventId] = (totPts[l.eventId] || 0) + (l.pointsAtLog || 0);
     });
@@ -1775,21 +1786,22 @@ function calcScoreFromLogs(filteredLogs) {
 }
 
 function updateAllStats() {
-    const total = calcScoreFromLogs(logs);
+    const filtLogs = getGroupFilteredLogs();
+    const total = calcScoreFromLogs(filtLogs);
     document.getElementById('totalScore').textContent = (total >= 0 ? '+' : '') + total;
 
     const today = new Date().toDateString();
-    const todayLogs = logs.filter(l => new Date(l.loggedAt).toDateString() === today);
+    const todayLogs = filtLogs.filter(l => new Date(l.loggedAt).toDateString() === today);
     const todayPts = calcScoreFromLogs(todayLogs);
 
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekLogs = logs.filter(l => new Date(l.loggedAt) >= weekAgo);
+    const weekLogs = filtLogs.filter(l => new Date(l.loggedAt) >= weekAgo);
     const weekPts = calcScoreFromLogs(weekLogs);
 
     document.getElementById('sPtsOggi').textContent = (todayPts >= 0 ? '+' : '') + todayPts;
     document.getElementById('sLogOggi').textContent = todayLogs.length;
     document.getElementById('sPtsSettimana').textContent = (weekPts >= 0 ? '+' : '') + weekPts;
-    document.getElementById('sTotLogs').textContent = logs.length;
+    document.getElementById('sTotLogs').textContent = filtLogs.length;
 }
 
 // ==========================================
