@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.14</title>
+    <title>Events Log v2.2.15</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.14';
-    var BUILD_TIME  = '2026-03-15T16:30:00Z';
+    var APP_VERSION = 'v2.2.15';
+    var BUILD_TIME  = '2026-03-15T16:45:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1133,6 +1133,7 @@ function selectGroupTab(groupId) {
     activeGroupTab = groupId;
     renderGroupTabs();
     renderEventsGrid();
+    renderRecentLogs();
 }
 
 // ==========================================
@@ -1252,7 +1253,8 @@ function renderEventsGrid() {
 
 function renderRecentLogs() {
     const el = document.getElementById('recentLogs');
-    const recent = logs.slice(0, 8);
+    const groupEventIds = new Set(events.filter(e => e.groupId === activeGroupTab).map(e => e.id));
+    const recent = logs.filter(l => groupEventIds.has(l.eventId)).slice(0, 8);
 
     if (!recent.length) {
         el.innerHTML = '<div class="empty-state" style="padding:1.5rem;"><p>Nessun log registrato</p></div>';
