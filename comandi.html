@@ -440,6 +440,59 @@ SELECT * FROM cm_settings WHERE key = 'hidden_mode_sequence';</pre>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════
+       TASK 7 — rimuovi CASCADE FK hb_completions/hb_archived_stacks → hb_habits
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-7">
+    <div class="task-header">
+      <div class="task-num">#007</div>
+      <div class="task-info">
+        <div class="task-title">SQL — rimuovi CASCADE FK <code>hb_completions</code> e <code>hb_archived_stacks</code> → <code>hb_habits</code></div>
+        <div class="task-desc">
+          Entrambe le tabelle hanno <code>ON DELETE CASCADE</code> verso <code>hb_habits</code>.<br>
+          Questo causa la cancellazione in cascata di storico completamenti e archivi stack quando un habit viene eliminato.<br>
+          Dopo questa migration il DELETE su <code>hb_habits</code> non propaga ai record collegati.
+        </div>
+        <div class="task-meta">
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-7">
+      <button class="copy-btn" onclick="copyCode('cb-7', this)">Copia</button>
+      <pre>DO $$
+DECLARE
+  v_constraint text;
+BEGIN
+  -- Drop FK hb_completions → hb_habits
+  SELECT conname INTO v_constraint
+  FROM pg_constraint
+  WHERE conrelid  = 'hb_completions'::regclass
+    AND confrelid = 'hb_habits'::regclass
+    AND contype   = 'f';
+  IF v_constraint IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE hb_completions DROP CONSTRAINT %I', v_constraint);
+    RAISE NOTICE 'Rimosso: %', v_constraint;
+  END IF;
+
+  -- Drop FK hb_archived_stacks → hb_habits
+  SELECT conname INTO v_constraint
+  FROM pg_constraint
+  WHERE conrelid  = 'hb_archived_stacks'::regclass
+    AND confrelid = 'hb_habits'::regclass
+    AND contype   = 'f';
+  IF v_constraint IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE hb_archived_stacks DROP CONSTRAINT %I', v_constraint);
+    RAISE NOTICE 'Rimosso: %', v_constraint;
+  END IF;
+END;
+$$;</pre>
+    </div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+  </div>
+
   <!-- Aggiungi nuovi task sopra questo commento -->
 
   <footer>garsal-apps · comandi.html · aggiornato automaticamente da Claude</footer>
