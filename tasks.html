@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.20</title>
+    <title>Tasks v19.18.21</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2047,7 +2047,7 @@
                 </div>
 
                 <!-- NASCOSTO -->
-                <div class="form-group" style="margin-top: 0.5rem;">
+                <div class="form-group" id="riservatoGroup" style="margin-top: 0.5rem; display:none;">
                     <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; user-select:none;">
                         <input type="checkbox" id="taskRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
                         <span class="form-label" style="margin:0;">Task nascosto (riservato)</span>
@@ -2176,8 +2176,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.20';
-        const BUILD_TIME  = '2026-03-15T19:00:00Z';
+        const APP_VERSION = 'v19.18.21';
+        const BUILD_TIME  = '2026-03-15T19:15:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2253,6 +2253,13 @@
             }
             // FAB visibile solo in modalità nascosta
             fab.style.display = hiddenMode ? 'flex' : 'none';
+        }
+
+        function updateRiservatoVisibility() {
+            const group = document.getElementById('riservatoGroup');
+            if (!group) return;
+            group.style.display = hiddenMode ? 'block' : 'none';
+            if (!hiddenMode) document.getElementById('taskRiservato').checked = false;
         }
 
         function toggleHiddenMode() {
@@ -5479,7 +5486,8 @@
             const deadlineDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
             fpDeadline.setDate(deadlineDate, false);
             
-            // In modalità nascosta, pre-seleziona "riservato" per default
+            // Campo riservato: visibile e pre-selezionato solo in modalità nascosta
+            updateRiservatoVisibility();
             document.getElementById('taskRiservato').checked = hiddenMode;
 
             updateTaskFields();
@@ -5563,8 +5571,9 @@
             reminders = task.reminders || [];
             telegramCompleteButton = true; // default true; l'utente può cambiarlo nel form
             
-            // Nascosto
-            document.getElementById('taskRiservato').checked = !!task.riservato;
+            // Nascosto: visibile solo in modalità nascosta
+            updateRiservatoVisibility();
+            document.getElementById('taskRiservato').checked = hiddenMode && !!task.riservato;
 
             // Punti
             document.getElementById('successPoints').value = task.success_points;
@@ -6428,7 +6437,7 @@
                 failure_points: parseInt(document.getElementById('failurePoints').value),
                 skip_points: parseInt(document.getElementById('skipPoints').value),
                 late_points: parseInt(document.getElementById('latePoints').value) || 0,
-                riservato: document.getElementById('taskRiservato').checked || false,
+                riservato: hiddenMode && document.getElementById('taskRiservato').checked,
                 status: 'started'
             };
 
@@ -9934,6 +9943,7 @@ Per attivarle:
                 riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
                 console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
+                updateRiservatoVisibility();
                 if (sb) loadTasks().then(() => {
                     const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
                     if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
@@ -9967,6 +9977,7 @@ Per attivarle:
                 riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
                 console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
+                updateRiservatoVisibility();
                 if (sb) loadTasks().then(() => {
                     const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
                     if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
