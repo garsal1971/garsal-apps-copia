@@ -1640,6 +1640,17 @@
                 </div>
                 
                 <div class="card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                        <h3 style="margin:0;">🐛 Console Debug</h3>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-accent" onclick="document.getElementById('debugLog').innerHTML=''" style="font-size:0.8rem; padding:0.3rem 0.7rem;">🗑 Svuota</button>
+                            <button class="btn btn-primary" onclick="toggleDebugEnabled()" id="debugEnabledBtn" style="font-size:0.8rem; padding:0.3rem 0.7rem;">● Attiva</button>
+                        </div>
+                    </div>
+                    <div id="debugLog" style="background:#0a0a0a; color:#0f0; font-family:monospace; font-size:11px; padding:0.6rem; border-radius:4px; max-height:300px; overflow-y:auto; border:1px solid #333; white-space:pre-wrap; word-break:break-all;"></div>
+                </div>
+
+                <div class="card">
                     <h3 style="margin-bottom: 1rem;">Informazioni Sistema</h3>
                     <div class="task-detail-row">
                         <span class="task-detail-label">Versione:</span>
@@ -1668,17 +1679,6 @@
         </main>
     </div>
 
-    <!-- Debug Console (mobile) - TOP -->
-    <div id="debugConsole" style="position: fixed; top: 0; left: 0; right: 0; background: #000; color: #0f0; font-family: monospace; font-size: 11px; max-height: 250px; overflow-y: auto; padding: 0.25rem; display: none; z-index: 10000; border-bottom: 2px solid #0f0;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <strong>🔍 DEBUG CONSOLE</strong>
-            <button onclick="toggleDebugConsole()" style="background: #f00; color: #fff; border: none; padding: 0.1rem 0.25rem; cursor: pointer;">Nascondi</button>
-        </div>
-        <div id="debugLog" style="max-height: 180px; overflow-y: auto;"></div>
-    </div>
-    
-    <!-- Debug Toggle Button (fixed bottom right) -->
-    <button id="debugToggle" onclick="toggleDebugConsole()" style="position: fixed; bottom: 20px; right: 20px; z-index: 10001; background: #0f0; color: #000; border: none; padding: 0.25rem; border-radius: 0; width: 50px; height: 50px; font-size: 20px; cursor: pointer; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">🐛</button>
 
     <!-- Snooze Modal -->
     <div id="snoozeModal" class="modal" onclick="if(event.target===this)closeSnoozeModal()">
@@ -2132,8 +2132,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.9';
-        const BUILD_TIME  = '2026-03-15T10:00:00Z';
+        const APP_VERSION = 'v19.18.10';
+        const BUILD_TIME  = '2026-03-15T10:30:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2142,20 +2142,18 @@
         console.log('Script started');
         console.log('window.supabase:', window.supabase);
         
-        // DEBUG CONSOLE FOR MOBILE
+        // DEBUG CONSOLE
         let debugEnabled = true;
-        
+
+        function toggleDebugEnabled() {
+            debugEnabled = !debugEnabled;
+            const btn = document.getElementById('debugEnabledBtn');
+            if (btn) btn.textContent = debugEnabled ? '● Attiva' : '○ Disattiva';
+        }
+
         function toggleDebugConsole() {
-            const debugConsole = document.getElementById('debugConsole');
-            const debugToggle = document.getElementById('debugToggle');
-            
-            if (debugConsole.style.display === 'none') {
-                debugConsole.style.display = 'block';
-                debugToggle.innerHTML = '🐛';
-            } else {
-                debugConsole.style.display = 'none';
-                debugToggle.innerHTML = '🐛';
-            }
+            // mantenuto per compatibilità con eventuali chiamate esistenti
+            toggleDebugEnabled();
         }
         
         function debugLog(...args) {
@@ -2163,14 +2161,8 @@
             if (!debugEnabled) return;
             
             setTimeout(() => {
-                const debugConsole = document.getElementById('debugConsole');
                 const debugLogDiv = document.getElementById('debugLog');
-                const debugToggle = document.getElementById('debugToggle');
-                
-                if (debugConsole && debugLogDiv) {
-                    // Mostra il pulsante toggle al primo log
-                    if (debugToggle) debugToggle.style.display = 'block';
-                    
+                if (debugLogDiv) {
                     const msg = args.map(a => {
                         if (typeof a === 'object') {
                             try { return JSON.stringify(a, null, 2); }
@@ -2301,9 +2293,7 @@
             // Banner versione nel debug console in-app
             setTimeout(() => {
                 const debugLogDiv = document.getElementById('debugLog');
-                const debugToggle = document.getElementById('debugToggle');
                 if (debugLogDiv) {
-                    if (debugToggle) debugToggle.style.display = 'block';
                     debugLogDiv.innerHTML =
                         `<div style="margin:0 0 0.4rem;padding:0.3rem 0.6rem;background:#1a0010;border-left:4px solid #FF3366;color:#FF3366;font-weight:bold;letter-spacing:.04em;">` +
                         `● Tasks ${APP_VERSION} ` +
