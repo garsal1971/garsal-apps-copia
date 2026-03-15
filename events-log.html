@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.16</title>
+    <title>Events Log v2.2.17</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.16';
-    var BUILD_TIME  = '2026-03-15T17:00:00Z';
+    var APP_VERSION = 'v2.2.17';
+    var BUILD_TIME  = '2026-03-15T17:15:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1084,7 +1084,7 @@ function showPage(pageId, navEl) {
     if (navEl) navEl.classList.add('active');
 
     if (pageId === 'logPage')      { renderLogPage(); }
-    if (pageId === 'historyPage')  { histActiveGroup = activeGroupTab; renderHistory(); }
+    if (pageId === 'historyPage')  { renderHistory(); }
     if (pageId === 'mgmtPage')     { renderMgmt(); }
     if (pageId === 'statsPage')    { renderStats(); }
     if (pageId === 'settingsPage') { renderSettingsPage(); }
@@ -1331,6 +1331,13 @@ function renderHistory() {
 
     let filtered = [...logs];
 
+    // Riservato filter (modalità nascosta + FAB attivo)
+    if (riservatoFilter) {
+        const riservatiGroupIds = new Set(groups.filter(g => g.riservato).map(g => g.id));
+        const riservatiEventIds = new Set(events.filter(e => riservatiGroupIds.has(e.groupId)).map(e => e.id));
+        filtered = filtered.filter(l => riservatiEventIds.has(l.eventId));
+    }
+
     // Date filter
     if (daysVal) {
         const cutoff = new Date();
@@ -1338,7 +1345,7 @@ function renderHistory() {
         filtered = filtered.filter(l => new Date(l.loggedAt) >= cutoff);
     }
 
-    // Group filter
+    // Group filter (chip manuale)
     if (histActiveGroup) {
         const groupEventIds = events.filter(e => e.groupId === histActiveGroup).map(e => e.id);
         filtered = filtered.filter(l => groupEventIds.includes(l.eventId));
