@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.18</title>
+    <title>Events Log v2.2.19</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.18';
-    var BUILD_TIME  = '2026-03-15T17:30:00Z';
+    var APP_VERSION = 'v2.2.19';
+    var BUILD_TIME  = '2026-03-15T17:45:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1026,7 +1026,7 @@
         riservatoFilter = !riservatoFilter;
         sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
         updateHiddenModeFab();
-        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderLogPage(); });
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
     }
 
     function initWithToken(token) {
@@ -1088,6 +1088,17 @@ function showPage(pageId, navEl) {
     if (pageId === 'mgmtPage')     { renderMgmt(); }
     if (pageId === 'statsPage')    { renderStats(); }
     if (pageId === 'settingsPage') { renderSettingsPage(); }
+}
+
+function renderActivePage() {
+    const activePage = document.querySelector('.page.active');
+    if (!activePage) { renderLogPage(); return; }
+    switch (activePage.id) {
+        case 'logPage':      renderLogPage(); break;
+        case 'historyPage':  renderHistory(); break;
+        case 'mgmtPage':     renderMgmt();    break;
+        case 'statsPage':    renderStats();   break;
+    }
 }
 
 // ==========================================
@@ -1331,17 +1342,15 @@ function renderHistory() {
 
     let filtered = [...logs];
 
-    // Filtro riservato basato su hiddenMode
-    // groups e events sono già filtrati da loadGroups/filterEventsByVisibleGroups
-    // quindi in modalità normale contengono solo non-riservati,
-    // in modalità nascosta contengono tutti (riservati + non)
-    if (hiddenMode) {
-        // solo log di gruppi riservati
+    // Filtro riservato — 3 stati (come il resto dell'app)
+    // events è già filtrato da filterEventsByVisibleGroups in base al modo
+    if (riservatoFilter) {
+        // hidden mode + FAB: solo log di gruppi riservati
         const riservatiGroupIds = new Set(groups.filter(g => g.riservato).map(g => g.id));
         const riservatiEventIds = new Set(events.filter(e => riservatiGroupIds.has(e.groupId)).map(e => e.id));
         filtered = filtered.filter(l => riservatiEventIds.has(l.eventId));
     } else {
-        // solo log degli eventi visibili (gruppi non riservati)
+        // normale o hidden mode senza FAB: filtra per eventi visibili
         const visibleEventIds = new Set(events.map(e => e.id));
         filtered = filtered.filter(l => visibleEventIds.has(l.eventId));
     }
@@ -2234,7 +2243,7 @@ window.addEventListener('message', (e) => {
         riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0');
         console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
         updateHiddenModeFab();
-        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderLogPage(); });
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
     }
 });
 
@@ -2264,7 +2273,7 @@ _authChannel.onmessage = (e) => {
         riservatoFilter = false;
         console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
         updateHiddenModeFab();
-        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderLogPage(); });
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
     }
 };
 
