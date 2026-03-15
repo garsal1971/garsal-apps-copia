@@ -922,50 +922,7 @@
             color: white;
         }
 
-        /* Debug Console */
-        .debug-toggle {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 3000;
-            background: var(--dark);
-            color: white;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .debug-toggle:hover {
-            transform: scale(1.1);
-            background: var(--accent);
-        }
-
-        .debug-console {
-            position: fixed;
-            bottom: 80px;
-            right: 1rem;
-            width: 400px;
-            max-width: calc(100vw - 2rem);
-            max-height: 500px;
-            background: #1a1a1a;
-            color: #0f0;
-            border: 2px solid var(--accent);
-            z-index: 2999;
-            display: none;
-            flex-direction: column;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .debug-console.active {
-            display: flex;
-        }
+        /* Debug Console (nella pagina Impostazioni) */
 
         .debug-header {
             background: var(--accent);
@@ -1128,24 +1085,6 @@
         </div>
     </nav>
 
-    <!-- Debug Toggle -->
-    <button class="debug-toggle" onclick="toggleDebug()" title="Debug Console">🐛</button>
-
-    <!-- Debug Console -->
-    <div id="debugConsole" class="debug-console">
-        <div class="debug-header">
-            <span>🐛 Debug Console</span>
-            <div class="debug-controls">
-                <button class="debug-btn" onclick="refreshDebugStats()">🔄</button>
-                <button class="debug-btn" onclick="clearDebugLogs()">🗑️</button>
-                <button class="debug-btn" onclick="toggleDebug()">✕</button>
-            </div>
-        </div>
-        <div class="debug-content">
-            <div id="debugStats" class="debug-stats"></div>
-            <div id="debugLogs"></div>
-        </div>
-    </div>
 
     <div class="app-container">
         <!-- Hidden Mode FAB -->
@@ -1264,6 +1203,18 @@
                     <p style="opacity:0.7;font-size:0.85rem;margin-top:0.5rem;">
                         L'orario del promemoria si configura per ogni singola abitudine nel modal di creazione/modifica.
                     </p>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                        <h2 style="margin:0;">🐛 Console Debug</h2>
+                        <div style="display:flex;gap:0.5rem;">
+                            <button class="btn btn-secondary" onclick="refreshDebugStats()" style="font-size:0.8rem;padding:0.3rem 0.7rem;">🔄 Aggiorna</button>
+                            <button class="btn btn-accent" onclick="clearDebugLogs()" style="font-size:0.8rem;padding:0.3rem 0.7rem;">🗑 Svuota</button>
+                        </div>
+                    </div>
+                    <div id="debugStats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0.5rem;margin-bottom:0.75rem;"></div>
+                    <div id="debugLogs" style="background:#0a0a0a;color:#0f0;font-family:monospace;font-size:11px;padding:0.6rem;border-radius:4px;max-height:300px;overflow-y:auto;border:1px solid #333;white-space:pre-wrap;word-break:break-all;"></div>
                 </div>
             </div>
         </main>
@@ -1666,8 +1617,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.32';
-        const BUILD_TIME  = '2026-03-15T13:00:00Z';
+        const APP_VERSION = 'v9.3.33';
+        const BUILD_TIME  = '2026-03-15T13:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1758,12 +1709,9 @@
 
         // Debug Functions
         function toggleDebug() {
-            const debugConsole = document.getElementById('debugConsole');
-            debugConsole.classList.toggle('active');
-            debugEnabled = debugConsole.classList.contains('active');
-            if (debugEnabled) {
-                refreshDebugStats();
-            }
+            // naviga alla pagina impostazioni per mostrare il debug
+            showPage('settings');
+            refreshDebugStats();
         }
 
         function clearDebugLogs() {
@@ -1782,15 +1730,13 @@
                 debugLogs = debugLogs.slice(-100);
             }
             
-            // Update display if console is open
-            if (debugEnabled) {
-                const logsContainer = document.getElementById('debugLogs');
+            // Aggiorna sempre il log nel DOM (è nella pagina impostazioni)
+            const logsContainer = document.getElementById('debugLogs');
+            if (logsContainer) {
                 const logDiv = document.createElement('div');
                 logDiv.className = `debug-log ${type}`;
-                logDiv.innerHTML = `<span class="debug-timestamp">[${timestamp}]</span>${message}`;
+                logDiv.innerHTML = `<span style="color:#888;">[${timestamp}]</span> ${message}`;
                 logsContainer.appendChild(logDiv);
-                
-                // Auto scroll to bottom
                 logsContainer.scrollTop = logsContainer.scrollHeight;
             }
         }
