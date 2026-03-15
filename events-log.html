@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.20</title>
+    <title>Events Log v2.2.21</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.20';
-    var BUILD_TIME  = '2026-03-15T18:00:00Z';
+    var APP_VERSION = 'v2.2.21';
+    var BUILD_TIME  = '2026-03-15T18:15:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1497,9 +1497,7 @@ function renderMgmt() {
         return;
     }
 
-    const visibleGroups = activeGroupTab ? groups.filter(g => g.id === activeGroupTab) : groups;
-
-    list.innerHTML = visibleGroups.map(g => {
+    list.innerHTML = groups.map(g => {
         const groupEvents = events.filter(e => e.groupId === g.id);
         return `
             <div class="mgmt-group-card">
