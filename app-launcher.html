@@ -25,7 +25,10 @@
   }
   #field {
     position: fixed;
-    inset: 0;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow: hidden;
   }
   .cw {
@@ -205,43 +208,78 @@
   /* ── NOME UTENTE IN ALTO ── */
   #user-bar {
     position: fixed;
-    top: 16px;
-    right: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
     display: none;
     align-items: center;
+    padding: 0 16px;
     gap: 10px;
     z-index: 500;
+    background: #1a73e8;
     font-family: 'DM Mono', monospace;
     font-size: 12px;
-    color: #888;
+    color: #fff;
   }
   #user-bar.visible { display: flex; }
+  #user-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+  #user-bar-brand-icon {
+    width: 22px;
+    height: 22px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+  }
+  #user-bar-brand-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.2px;
+  }
+  #user-name {
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+  }
   #logout-btn {
     padding: 5px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255,255,255,0.4);
     border-radius: 6px;
-    background: #fff;
+    background: transparent;
     font-family: 'DM Mono', monospace;
     font-size: 11px;
-    color: #888;
+    color: #fff;
     cursor: pointer;
-    transition: border-color 0.2s;
+    transition: background 0.2s;
   }
-  #logout-btn:hover { border-color: #aaa; color: #111; }
+  #logout-btn:hover { background: rgba(255,255,255,0.15); }
 
   /* ── SETTINGS BTN ── */
   #settings-btn {
     padding: 5px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255,255,255,0.4);
     border-radius: 6px;
-    background: #fff;
+    background: transparent;
     font-family: 'DM Mono', monospace;
     font-size: 11px;
-    color: #888;
+    color: #fff;
     cursor: pointer;
-    transition: border-color 0.2s;
+    transition: background 0.2s;
   }
-  #settings-btn:hover { border-color: #aaa; color: #111; }
+  #settings-btn:hover { background: rgba(255,255,255,0.15); }
 
   /* ── BADGE SETTINGS MODAL ── */
   #badge-modal-overlay {
@@ -849,8 +887,12 @@
   </div>
 </div>
 
-<!-- UTENTE BAR -->
+<!-- UTENTE BAR / TOP BAR -->
 <div id="user-bar">
+  <div id="user-bar-brand">
+    <div id="user-bar-brand-icon">G</div>
+    <div id="user-bar-brand-text">Garsal Apps</div>
+  </div>
   <span id="user-name"></span>
   <button id="settings-btn" onclick="openBadgeSettings()">⚙ Badge</button>
   <button id="logout-btn" onclick="logout()">Esci</button>
@@ -978,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.27';
-const BUILD_TIME  = '2026-03-15T17:45:00Z';
+const APP_VERSION = 'v1.5.28';
+const BUILD_TIME  = '2026-03-15T18:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
