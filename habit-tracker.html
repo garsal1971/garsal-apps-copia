@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.19</title>
+    <title>Habit Stack Tracker v9.3.36</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1617,8 +1617,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.35';
-        const BUILD_TIME  = '2026-03-15T14:30:00Z';
+        const APP_VERSION = 'v9.3.36';
+        const BUILD_TIME  = '2026-03-15T18:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1654,7 +1654,7 @@
             riservatoFilter = !riservatoFilter;
             sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
             updateHiddenModeFab();
-            if (supabaseClient) loadHabits().then(() => renderDashboard());
+            if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
         }
 
         function initWithToken(token) {
@@ -1987,11 +1987,17 @@
                 archivedStacks = data || [];
                 console.log(`✅ ${archivedStacks.length} stack archiviati caricati`);
 
-                const { data: inactiveData, error: inactiveError } = await supabaseClient
+                let inactiveQuery = supabaseClient
                     .from("hb_habits")
                     .select("*")
                     .neq("status", "active")
                     .order("updated_at", { ascending: false });
+                if (riservatoFilter) {
+                    inactiveQuery = inactiveQuery.eq('riservato', true);
+                } else if (!hiddenMode) {
+                    inactiveQuery = inactiveQuery.or('riservato.eq.false,riservato.is.null');
+                }
+                const { data: inactiveData, error: inactiveError } = await inactiveQuery;
 
                 if (inactiveError) throw inactiveError;
                 inactiveHabits = inactiveData || [];
@@ -4577,6 +4583,24 @@
         }
 
         // UI Functions
+        function renderActivePage() {
+            const pages = ['dashboard', 'habits', 'archive', 'stats', 'categories', 'calendar', 'settings'];
+            for (const p of pages) {
+                const el = document.getElementById('page-' + p);
+                if (el && el.style.display !== 'none') {
+                    switch (p) {
+                        case 'dashboard':  renderDashboard();  break;
+                        case 'habits':     renderHabits();     break;
+                        case 'archive':    renderArchive();    break;
+                        case 'stats':      renderStats();      break;
+                        case 'categories': renderCategories(); break;
+                    }
+                    return;
+                }
+            }
+            renderDashboard();
+        }
+
         function showPage(pageName) {
             // Hide all pages
             document.querySelectorAll('.page').forEach(page => {
@@ -5813,7 +5837,7 @@
                 riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0');
                 console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
-                if (supabaseClient) loadHabits().then(() => renderDashboard());
+                if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
             }
         });
 
@@ -5843,7 +5867,7 @@
                 riservatoFilter = false;
                 console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
-                if (supabaseClient) loadHabits().then(() => renderDashboard());
+                if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
             }
         };
 
