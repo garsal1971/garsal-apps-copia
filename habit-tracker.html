@@ -1061,6 +1061,39 @@
                 left: 1rem;
             }
         }
+
+        /* Hidden Mode FAB */
+        .hidden-mode-fab {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: var(--muted, #6B7280);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+        .hidden-mode-fab:hover { transform: scale(1.1); }
+        .hidden-mode-fab:active { transform: scale(0.95); }
+        .hidden-mode-fab.active {
+            background: var(--secondary, #6C5CE7);
+            box-shadow: 0 4px 20px rgba(108,92,231,0.5);
+            animation: pulse-hidden 2s infinite;
+        }
+        @keyframes pulse-hidden {
+            0%   { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+            50%  { box-shadow: 0 4px 28px rgba(108,92,231,0.8); }
+            100% { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+        }
     </style>
 </head>
 <body>
@@ -1112,6 +1145,9 @@
     </div>
 
     <div class="app-container">
+        <!-- Hidden Mode FAB -->
+        <button class="hidden-mode-fab" id="hiddenModeFab" onclick="toggleHiddenMode()" title="Mostra solo riservati">🙈</button>
+
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <nav class="nav-menu">
@@ -1614,8 +1650,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.29';
-        const BUILD_TIME  = '2026-03-15T11:30:00Z';
+        const APP_VERSION = 'v9.3.30';
+        const BUILD_TIME  = '2026-03-15T12:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1628,7 +1664,30 @@
 
         let supabaseClient = null; // inizializzato in initWithToken()
         let sbAccessToken  = null;
-        let hiddenMode     = false; // modalità nascosta: mostra oggetti riservati
+        let hiddenMode      = false; // modalità nascosta: attivata dal launcher
+        let riservatoFilter = false; // filtro FAB: mostra solo riservati
+
+        function updateHiddenModeFab() {
+            const fab = document.getElementById('hiddenModeFab');
+            if (!fab) return;
+            if (riservatoFilter) {
+                fab.classList.add('active');
+                fab.title = 'Solo riservati — clicca per mostrare tutti';
+                fab.textContent = '👁';
+            } else {
+                fab.classList.remove('active');
+                fab.title = 'Mostra solo riservati';
+                fab.textContent = '🙈';
+            }
+            fab.style.display = hiddenMode ? 'flex' : 'none';
+        }
+
+        function toggleHiddenMode() {
+            if (!hiddenMode) return;
+            riservatoFilter = !riservatoFilter;
+            updateHiddenModeFab();
+            if (supabaseClient) loadHabits().then(() => renderDashboard());
+        }
 
         function initWithToken(token) {
             if (supabaseClient) return; // già inizializzato
@@ -1862,7 +1921,11 @@
                     .select('*')
                     .in('status', ['active', 'stopped'])
                     .order('created_at', { ascending: false });
-                if (!hiddenMode) habitsQuery = habitsQuery.or('riservato.eq.false,riservato.is.null');
+                if (riservatoFilter) {
+                    habitsQuery = habitsQuery.eq('riservato', true);
+                } else if (!hiddenMode) {
+                    habitsQuery = habitsQuery.or('riservato.eq.false,riservato.is.null');
+                }
                 const { data, error } = await habitsQuery;
                 
                 if (error) throw error;
@@ -5778,7 +5841,9 @@
                 initWithToken(e.data.token);
             } else if (e.data.type === 'HIDDEN_MODE') {
                 hiddenMode = !!e.data.active;
+                riservatoFilter = false;
                 console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
                 if (supabaseClient) loadHabits().then(() => renderDashboard());
             }
         });
@@ -5806,7 +5871,9 @@
                 console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
             } else if (e.data.type === 'HIDDEN_MODE') {
                 hiddenMode = !!e.data.active;
+                riservatoFilter = false;
                 console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
                 if (supabaseClient) loadHabits().then(() => renderDashboard());
             }
         };
@@ -5816,6 +5883,8 @@
             const storedHidden = sessionStorage.getItem('hidden_mode');
             if (storedHidden !== null) {
                 hiddenMode = storedHidden === '1';
+                riservatoFilter = false;
+                updateHiddenModeFab();
             }
 
             const stored = sessionStorage.getItem('sb_token');
