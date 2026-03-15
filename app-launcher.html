@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.22</title>
+<title>AppSphere v1.5.23</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -942,8 +942,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.22';
-const BUILD_TIME  = '2026-03-14T21:30:00Z';
+const APP_VERSION = 'v1.5.23';
+const BUILD_TIME  = '2026-03-15T00:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -955,6 +955,7 @@ let hiddenSeqLength = 0;
 let captureMode     = false; // true quando il widget è aperto
 let capturedColors  = [];   // colori selezionati nelle caselle
 let captureTimeout  = null; // auto-chiusura dopo 15s
+let lastCaptureTouch = 0;   // evita double-fire touch+mousedown
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
@@ -1284,8 +1285,14 @@ function makeDraggable(node) {
   function onDown(e) {
     // Capture mode attiva: registra colore nella casella successiva
     if (captureMode) {
-      // Cattura colore solo al touchstart reale, non al mousedown sintetico
+      const now = Date.now();
       if (e.type === 'touchstart') {
+        lastCaptureTouch = now;
+        if (capturedColors.length >= (hiddenSeqLength || 3)) capturedColors = [];
+        capturedColors.push(node.app.color);
+        updateCodeBoxes();
+      } else if (e.type === 'mousedown' && now - lastCaptureTouch > 300) {
+        // desktop click reale (non il mousedown sintetico generato da touch)
         if (capturedColors.length >= (hiddenSeqLength || 3)) capturedColors = [];
         capturedColors.push(node.app.color);
         updateCodeBoxes();
