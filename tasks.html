@@ -2133,8 +2133,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.15';
-        const BUILD_TIME  = '2026-03-15T14:00:00Z';
+        const APP_VERSION = 'v19.18.16';
+        const BUILD_TIME  = '2026-03-15T14:30:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2216,6 +2216,7 @@
             // Toggling del filtro riservati (FAB): funziona solo se hiddenMode è attivo
             if (!hiddenMode) return;
             riservatoFilter = !riservatoFilter;
+            sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
             console.log('👁 Filtro riservati:', riservatoFilter ? 'SOLO RISERVATI' : 'TUTTI');
             updateHiddenModeFab();
             if (sb) loadTasks().then(() => {
@@ -9887,7 +9888,7 @@ Per attivarle:
                 initWithToken(e.data.token);
             } else if (e.data.type === 'HIDDEN_MODE') {
                 hiddenMode = !!e.data.active;
-                riservatoFilter = false; // reset filtro al cambio di modalità
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
                 console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
                 if (sb) loadTasks().then(() => {
@@ -9920,7 +9921,7 @@ Per attivarle:
                 console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
             } else if (e.data.type === 'HIDDEN_MODE') {
                 hiddenMode = !!e.data.active;
-                riservatoFilter = false; // reset filtro al cambio di modalità
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
                 console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
                 if (sb) loadTasks().then(() => {
@@ -9935,7 +9936,7 @@ Per attivarle:
             const storedHidden = sessionStorage.getItem('hidden_mode');
             if (storedHidden !== null) {
                 hiddenMode = storedHidden === '1';
-                riservatoFilter = false;
+                riservatoFilter = hiddenMode && sessionStorage.getItem('riservato_filter') === '1';
                 updateHiddenModeFab();
             }
 

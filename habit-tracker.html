@@ -1617,8 +1617,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.34';
-        const BUILD_TIME  = '2026-03-15T14:00:00Z';
+        const APP_VERSION = 'v9.3.35';
+        const BUILD_TIME  = '2026-03-15T14:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1652,6 +1652,7 @@
         function toggleHiddenMode() {
             if (!hiddenMode) return;
             riservatoFilter = !riservatoFilter;
+            sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
             updateHiddenModeFab();
             if (supabaseClient) loadHabits().then(() => renderDashboard());
         }
@@ -5809,7 +5810,7 @@
                 initWithToken(e.data.token);
             } else if (e.data.type === 'HIDDEN_MODE') {
                 hiddenMode = !!e.data.active;
-                riservatoFilter = false;
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0');
                 console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
                 updateHiddenModeFab();
                 if (supabaseClient) loadHabits().then(() => renderDashboard());
@@ -5851,7 +5852,7 @@
             const storedHidden = sessionStorage.getItem('hidden_mode');
             if (storedHidden !== null) {
                 hiddenMode = storedHidden === '1';
-                riservatoFilter = false;
+                riservatoFilter = hiddenMode && sessionStorage.getItem('riservato_filter') === '1';
                 updateHiddenModeFab();
             }
 
