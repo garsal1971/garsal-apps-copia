@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.5</title>
+    <title>Events Log v2.2.12</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -990,8 +990,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.11';
-    var BUILD_TIME  = '2026-03-15T14:30:00Z';
+    var APP_VERSION = 'v2.2.12';
+    var BUILD_TIME  = '2026-03-15T16:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1835,7 +1835,13 @@ function showToast(msg, isError = false) {
 // SUPABASE: LOAD
 // ==========================================
 async function loadGroups() {
-    const { data, error } = await sb.from('el_groups').select('*').order('sort_order', { ascending: true }).order('name');
+    let groupsQuery = sb.from('el_groups').select('*').order('sort_order', { ascending: true }).order('name');
+    if (riservatoFilter) {
+        groupsQuery = groupsQuery.eq('riservato', true);
+    } else if (!hiddenMode) {
+        groupsQuery = groupsQuery.or('riservato.eq.false,riservato.is.null');
+    }
+    const { data, error } = await groupsQuery;
     if (error) { console.error('loadGroups', error); return; }
     groups = (data || []).map(g => ({ ...g, groupId: g.group_id }));
 }
