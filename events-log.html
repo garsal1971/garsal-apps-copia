@@ -603,6 +603,39 @@
             .event-btn .ev-icon { font-size: 1.8rem; }
             .event-btn .ev-name { font-size: var(--badge-smart-name); }
         }
+
+        /* Hidden Mode FAB */
+        .hidden-mode-fab {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: var(--muted, #6B7280);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+        .hidden-mode-fab:hover { transform: scale(1.1); }
+        .hidden-mode-fab:active { transform: scale(0.95); }
+        .hidden-mode-fab.active {
+            background: var(--secondary, #6C5CE7);
+            box-shadow: 0 4px 20px rgba(108,92,231,0.5);
+            animation: pulse-hidden 2s infinite;
+        }
+        @keyframes pulse-hidden {
+            0%   { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+            50%  { box-shadow: 0 4px 28px rgba(108,92,231,0.8); }
+            100% { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+        }
     </style>
 </head>
 <body>
@@ -616,6 +649,9 @@
     </div>
 
 <div class="app-container">
+
+    <!-- Hidden Mode FAB -->
+    <button class="hidden-mode-fab" id="hiddenModeFab" onclick="toggleHiddenMode()" title="Mostra solo riservati">🙈</button>
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -947,8 +983,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.6';
-    var BUILD_TIME  = '2026-03-15T11:30:00Z';
+    var APP_VERSION = 'v2.2.7';
+    var BUILD_TIME  = '2026-03-15T12:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -960,7 +996,30 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
     let sb             = null; // inizializzato in initWithToken()
     let sbAccessToken  = null;
-    let hiddenMode     = false; // modalità nascosta: mostra oggetti riservati
+    let hiddenMode      = false; // modalità nascosta: attivata dal launcher
+    let riservatoFilter = false; // filtro FAB: mostra solo riservati
+
+    function updateHiddenModeFab() {
+        const fab = document.getElementById('hiddenModeFab');
+        if (!fab) return;
+        if (riservatoFilter) {
+            fab.classList.add('active');
+            fab.title = 'Solo riservati — clicca per mostrare tutti';
+            fab.textContent = '👁';
+        } else {
+            fab.classList.remove('active');
+            fab.title = 'Mostra solo riservati';
+            fab.textContent = '🙈';
+        }
+        fab.style.display = hiddenMode ? 'flex' : 'none';
+    }
+
+    function toggleHiddenMode() {
+        if (!hiddenMode) return;
+        riservatoFilter = !riservatoFilter;
+        updateHiddenModeFab();
+        if (sb) loadEvents().then(() => renderLogPage());
+    }
 
     function initWithToken(token) {
         if (sb) return; // già inizializzato
@@ -1773,7 +1832,11 @@ async function loadGroups() {
 
 async function loadEvents() {
     let eventsQuery = sb.from('el_events').select('*').order('sort_order', { ascending: true }).order('name');
-    if (!hiddenMode) eventsQuery = eventsQuery.or('riservato.eq.false,riservato.is.null');
+    if (riservatoFilter) {
+        eventsQuery = eventsQuery.eq('riservato', true);
+    } else if (!hiddenMode) {
+        eventsQuery = eventsQuery.or('riservato.eq.false,riservato.is.null');
+    }
     const { data, error } = await eventsQuery;
     if (error) { console.error('loadEvents', error); return; }
     events = (data || []).map(e => ({ ...e, groupId: e.group_id }));
@@ -2122,7 +2185,9 @@ window.addEventListener('message', (e) => {
         initWithToken(e.data.token);
     } else if (e.data.type === 'HIDDEN_MODE') {
         hiddenMode = !!e.data.active;
+        riservatoFilter = false;
         console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        updateHiddenModeFab();
         if (sb) loadEvents().then(() => renderLogPage());
     }
 });
@@ -2150,7 +2215,9 @@ _authChannel.onmessage = (e) => {
         console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
     } else if (e.data.type === 'HIDDEN_MODE') {
         hiddenMode = !!e.data.active;
+        riservatoFilter = false;
         console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        updateHiddenModeFab();
         if (sb) loadEvents().then(() => renderLogPage());
     }
 };
@@ -2160,6 +2227,8 @@ window.addEventListener('load', () => {
     const storedHidden = sessionStorage.getItem('hidden_mode');
     if (storedHidden !== null) {
         hiddenMode = storedHidden === '1';
+        riservatoFilter = false;
+        updateHiddenModeFab();
     }
 
     const stored = sessionStorage.getItem('sb_token');
