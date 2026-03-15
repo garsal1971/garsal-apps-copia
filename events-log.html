@@ -874,6 +874,12 @@
                 <label class="form-label">Descrizione</label>
                 <textarea class="form-textarea" id="groupDescription" placeholder="Descrizione del gruppo (opzionale)..." style="min-height:60px;"></textarea>
             </div>
+            <div class="form-group" style="margin-top:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;user-select:none;">
+                    <input type="checkbox" id="groupRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
+                    <span class="form-label" style="margin:0;">Gruppo nascosto (riservato)</span>
+                </label>
+            </div>
             <button type="submit" class="btn btn-primary" style="width:100%;">Salva Gruppo</button>
         </form>
     </div>
@@ -983,8 +989,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.7';
-    var BUILD_TIME  = '2026-03-15T12:00:00Z';
+    var APP_VERSION = 'v2.2.8';
+    var BUILD_TIME  = '2026-03-15T12:30:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1550,11 +1556,13 @@ function openGroupModal(groupId = null) {
         document.getElementById('groupIcon').value        = g.icon || '';
         document.getElementById('groupColor').value       = g.color || '#2563EB';
         document.getElementById('groupDescription').value = g.description || '';
+        document.getElementById('groupRiservato').checked  = !!g.riservato;
     } else {
         document.getElementById('groupName').value        = '';
         document.getElementById('groupIcon').value        = '';
         document.getElementById('groupColor').value       = '#2563EB';
         document.getElementById('groupDescription').value = '';
+        document.getElementById('groupRiservato').checked  = false;
     }
 
     document.getElementById('groupModal').classList.add('active');
@@ -1868,6 +1876,7 @@ async function saveGroup(e) {
         color:       document.getElementById('groupColor').value,
         description: document.getElementById('groupDescription').value.trim() || null,
         sort_order:  editId ? (groups.find(g => g.id === editId)?.sort_order ?? 0) : groups.length,
+        riservato:   document.getElementById('groupRiservato').checked || false,
     };
 
     setLoading(true);
