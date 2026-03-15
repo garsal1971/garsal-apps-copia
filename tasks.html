@@ -2132,8 +2132,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.12';
-        const BUILD_TIME  = '2026-03-15T11:30:00Z';
+        const APP_VERSION = 'v19.18.13';
+        const BUILD_TIME  = '2026-03-15T11:45:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2208,8 +2208,7 @@
                 fab.textContent = '🙈';
             }
             // FAB visibile solo in modalità nascosta
-            fab.style.opacity = hiddenMode ? '1' : '0.35';
-            fab.style.pointerEvents = hiddenMode ? 'auto' : 'none';
+            fab.style.display = hiddenMode ? 'flex' : 'none';
         }
 
         function toggleHiddenMode() {
