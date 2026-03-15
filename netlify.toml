@@ -6,3 +6,9 @@
   from = "/"
   to = "/app-launcher.html"
   status = 200
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"

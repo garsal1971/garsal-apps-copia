@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.netlify.garsal.twa",
+    "sha256_cert_fingerprints": ["39:77:68:55:8B:D7:E1:55:58:F0:F0:E1:19:EF:A4:C0:E2:96:C1:15:D1:9D:F1:6D:22:23:5B:2B:A3:2A:CB:49"]
+  }
+}]
