@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.32</title>
+<title>AppSphere v1.5.33</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1020,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.32';
-const BUILD_TIME  = '2026-03-16T10:00:00Z';
+const APP_VERSION = 'v1.5.33';
+const BUILD_TIME  = '2026-03-16T18:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1442,7 +1442,12 @@ const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
 
 function loginWithGoogle() {
-  const redirect = window.location.href.split('#')[0].split('?')[0];
+  // Se l'app gira nel WebView Android, usa il custom scheme come redirect_to
+  // in modo che il deep link torni direttamente all'app dopo il login Google.
+  const isAndroidApp = (typeof window.AndroidBridge !== 'undefined') && window.AndroidBridge.isNativeApp();
+  const redirect = isAndroidApp
+    ? 'garsalapps://oauth'
+    : window.location.href.split('#')[0].split('?')[0];
   const scopes = [
     'email',
     'profile',
