@@ -59,9 +59,10 @@ class MainActivity : AppCompatActivity() {
      * Caso normale: app in background, Chrome Custom Tabs completa l'OAuth.
      * Android chiama onNewIntent con garsalapps://oauth#access_token=...
      */
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val fragment = intent?.data?.oauthFragment() ?: return
+        setIntent(intent) // aggiorna getIntent() per future chiamate
+        val fragment = intent.data?.oauthFragment() ?: return
         saveTokensToPending(fragment)
         // Ricarica la pagina: onPageFinished inietterà i token
         webView.loadUrl(APP_URL)
@@ -187,36 +188,48 @@ class MainActivity : AppCompatActivity() {
 
     private fun showBiometricPrompt() {
         val biometricManager = BiometricManager.from(this)
-        val canAuthenticate = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
 
-        if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
-            val executor = ContextCompat.getMainExecutor(this)
-            val callback = object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    showApp()
-                }
+        // BIOMETRIC_STRONG | DEVICE_CREDENTIAL lancia IllegalArgumentException su API < 30
+        // (Android 9 e 10). Usiamo solo BIOMETRIC_STRONG sulle versioni precedenti.
+        val authenticators = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            BIOMETRIC_STRONG or DEVICE_CREDENTIAL
+        } else {
+            BIOMETRIC_STRONG
+        }
 
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    finish()
-                }
+        if (biometricManager.canAuthenticate(authenticators) != BiometricManager.BIOMETRIC_SUCCESS) {
+            showApp()
+            return
+        }
 
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                }
+        val executor = ContextCompat.getMainExecutor(this)
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                super.onAuthenticationSucceeded(result)
+                showApp()
             }
 
-            val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("AppSphere")
-                .setSubtitle("Sblocca con impronta digitale o PIN")
-                .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-                .build()
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                super.onAuthenticationError(errorCode, errString)
+                finish()
+            }
 
-            BiometricPrompt(this, executor, callback).authenticate(promptInfo)
-        } else {
-            showApp()
+            override fun onAuthenticationFailed() {
+                super.onAuthenticationFailed()
+            }
         }
+
+        val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("AppSphere")
+            .setSubtitle("Sblocca con impronta digitale o PIN")
+            .setAllowedAuthenticators(authenticators)
+
+        // Su API < 30, senza DEVICE_CREDENTIAL è obbligatorio impostare un pulsante negativo
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            promptInfoBuilder.setNegativeButtonText("Annulla")
+        }
+
+        BiometricPrompt(this, executor, callback).authenticate(promptInfoBuilder.build())
     }
 
     private fun showApp() {
