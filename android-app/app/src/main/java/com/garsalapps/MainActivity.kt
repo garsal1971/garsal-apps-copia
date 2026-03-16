@@ -28,12 +28,16 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
-    // ⬇️ Cambia qui con la tua URL Netlify
     private val APP_URL = "https://garsal.netlify.app/"
 
-    // Custom scheme usato come redirect_to dopo Google OAuth
     private val OAUTH_CALLBACK_SCHEME = "garsalapps"
     private val OAUTH_CALLBACK_HOST   = "oauth"
+
+    /**
+     * Fragment OAuth salvato quando il callback arriva prima che il WebView
+     * sia pronto (app uccisa da Android mentre Chrome Custom Tabs era aperto).
+     */
+    private var pendingOAuthFragment: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +46,11 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webView)
         setupWebView()
         scheduleNotifications()
+
+        // Caso: app uccisa da Android mentre Chrome Custom Tabs era aperto.
+        // Il deep link torna via onCreate invece di onNewIntent.
+        intent?.data?.oauthFragment()?.let { pendingOAuthFragment = it }
+
         showBiometricPrompt()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -53,17 +62,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Gestisce il ritorno del deep link OAuth (garsalapps://oauth#access_token=...)
-     * Lanciato da Android quando Chrome Custom Tabs completa il login Google.
+     * Caso normale: app in background, Chrome Custom Tabs completa l'OAuth.
+     * Android chiama onNewIntent con garsalapps://oauth#access_token=...
      */
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        val data = intent?.data ?: return
-        if (data.scheme == OAUTH_CALLBACK_SCHEME && data.host == OAUTH_CALLBACK_HOST) {
-            // Ricostruisce l'URL completo per far parsare il token al JS di Supabase
-            val fragment = data.toString().substringAfter('#', "")
-            val callbackUrl = if (fragment.isNotEmpty()) "${APP_URL}#$fragment" else APP_URL
-            webView.loadUrl(callbackUrl)
+        val fragment = intent?.data?.oauthFragment() ?: return
+        if (webView.visibility == View.VISIBLE) {
+            injectTokensAndReload(fragment)
+        } else {
+            // Biometria ancora in corso — salva per dopo
+            pendingOAuthFragment = fragment
         }
     }
 
@@ -72,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         webView.apply {
             settings.apply {
                 javaScriptEnabled = true
-                domStorageEnabled = true          // localStorage persiste tra sessioni
+                domStorageEnabled = true
                 databaseEnabled = true
                 cacheMode = WebSettings.LOAD_DEFAULT
                 setSupportZoom(false)
@@ -83,15 +92,18 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    // Inietta i token OAuth salvati nel localStorage non appena la pagina è pronta
+                    val fragment = pendingOAuthFragment ?: return
+                    if (url?.contains("garsal.netlify.app") == true) {
+                        pendingOAuthFragment = null
+                        injectTokensAndReload(fragment)
+                    }
                 }
 
                 /**
                  * Intercetta la navigazione verso l'endpoint OAuth di Supabase
-                 * e la apre in Chrome Custom Tabs, sostituendo il redirect_to
-                 * con il custom scheme dell'app (garsalapps://oauth).
-                 *
-                 * Questo evita l'errore "Accesso bloccato" di Google che blocca
-                 * i flussi OAuth all'interno di WebView.
+                 * e la apre in Chrome Custom Tabs, cambiando redirect_to
+                 * con il custom scheme garsalapps://oauth.
                  */
                 override fun shouldOverrideUrlLoading(
                     view: WebView?,
@@ -103,7 +115,6 @@ class MainActivity : AppCompatActivity() {
                         url.contains("provider=google")
                     ) {
                         val original = request.url
-                        // Sostituisce redirect_to con il custom scheme
                         val modified = original.buildUpon()
                             .clearQuery()
                             .apply {
@@ -129,13 +140,49 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        // Cookie persistenti → Supabase ricorda il login
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, true)
             flush()
         }
     }
+
+    /**
+     * Inietta i token OAuth direttamente nel localStorage del WebView
+     * tramite JavaScript, poi ricarica la pagina in modo che init() li trovi.
+     * Più affidabile del passaggio via URL hash.
+     */
+    private fun injectTokensAndReload(fragment: String) {
+        val params = fragment.split("&").associate { kv ->
+            val eq = kv.indexOf('=')
+            if (eq > 0) kv.substring(0, eq) to Uri.decode(kv.substring(eq + 1)) else kv to ""
+        }
+
+        val accessToken   = params["access_token"]   ?: return
+        val refreshToken  = params["refresh_token"]  ?: ""
+        val providerToken = params["provider_token"] ?: ""
+
+        val js = buildString {
+            append("localStorage.setItem('sb_token','${accessToken.jsEscape()}');")
+            if (refreshToken.isNotEmpty())
+                append("localStorage.setItem('refresh_token','${refreshToken.jsEscape()}');")
+            if (providerToken.isNotEmpty())
+                append("localStorage.setItem('google_token','${providerToken.jsEscape()}');")
+            append("window.location.reload();")
+        }
+
+        webView.evaluateJavascript(js, null)
+    }
+
+    /** Ritorna il fragment OAuth dalla Uri se schema e host corrispondono, altrimenti null. */
+    private fun Uri.oauthFragment(): String? {
+        if (scheme != OAUTH_CALLBACK_SCHEME || host != OAUTH_CALLBACK_HOST) return null
+        val frag = fragment ?: toString().substringAfter('#', "")
+        return frag.ifEmpty { null }
+    }
+
+    /** Escapa i single quote per uso sicuro in stringa JS. */
+    private fun String.jsEscape() = replace("\\", "\\\\").replace("'", "\\'")
 
     private fun showBiometricPrompt() {
         val biometricManager = BiometricManager.from(this)
@@ -151,13 +198,11 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    // Utente ha annullato o errore → chiudi app
                     finish()
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    // Tentativo fallito, il prompt rimane aperto automaticamente
                 }
             }
 
@@ -169,7 +214,6 @@ class MainActivity : AppCompatActivity() {
 
             BiometricPrompt(this, executor, callback).authenticate(promptInfo)
         } else {
-            // Biometria non disponibile → apri direttamente
             showApp()
         }
     }
@@ -182,7 +226,6 @@ class MainActivity : AppCompatActivity() {
     private fun scheduleNotifications() {
         val wm = WorkManager.getInstance(this)
 
-        // Reminder abitudini ogni giorno alle 20:00
         val habitWork = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
             .setInputData(workDataOf(
                 "type" to "habit",
@@ -192,7 +235,6 @@ class MainActivity : AppCompatActivity() {
             .setInitialDelay(delayUntil(hour = 20, minute = 0), TimeUnit.MILLISECONDS)
             .build()
 
-        // Reminder task ogni giorno alle 09:00
         val taskWork = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
             .setInputData(workDataOf(
                 "type" to "task",
@@ -202,7 +244,6 @@ class MainActivity : AppCompatActivity() {
             .setInitialDelay(delayUntil(hour = 9, minute = 0), TimeUnit.MILLISECONDS)
             .build()
 
-        // Reminder peso ogni settimana
         val weightWork = PeriodicWorkRequestBuilder<NotificationWorker>(7, TimeUnit.DAYS)
             .setInputData(workDataOf(
                 "type" to "weight",
@@ -217,7 +258,6 @@ class MainActivity : AppCompatActivity() {
         wm.enqueueUniquePeriodicWork("weight_reminder", ExistingPeriodicWorkPolicy.KEEP, weightWork)
     }
 
-    /** Calcola i millisecondi mancanti alla prossima occorrenza dell'orario specificato */
     private fun delayUntil(hour: Int, minute: Int): Long {
         val now = Calendar.getInstance()
         val target = Calendar.getInstance().apply {
@@ -229,5 +269,4 @@ class MainActivity : AppCompatActivity() {
         if (target.before(now)) target.add(Calendar.DAY_OF_MONTH, 1)
         return target.timeInMillis - now.timeInMillis
     }
-
 }
