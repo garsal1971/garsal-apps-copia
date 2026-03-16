@@ -43,24 +43,37 @@ jobs:
 
           git push origin master
 
-      - name: Check functions changed
-        id: check_fn
+      - name: Check what changed
+        id: check_changes
         run: |
-          CHANGED=$(git diff HEAD~1 HEAD --name-only | grep '^supabase/functions/' || true)
-          if [ -n "$CHANGED" ]; then
-            echo "deploy=true" >> $GITHUB_OUTPUT
+          FILES=$(git diff HEAD~1 HEAD --name-only)
+          if echo "$FILES" | grep -q '^supabase/functions/'; then
+            echo "functions=true" >> $GITHUB_OUTPUT
           else
-            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "functions=false" >> $GITHUB_OUTPUT
+          fi
+          if echo "$FILES" | grep -q '^supabase/migrations/'; then
+            echo "migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "migrations=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup Supabase CLI
-        if: steps.check_fn.outputs.deploy == 'true'
+        if: steps.check_changes.outputs.functions == 'true' || steps.check_changes.outputs.migrations == 'true'
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
+      - name: Apply Supabase migrations
+        if: steps.check_changes.outputs.migrations == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "▶ Applying database migrations..."
+          supabase db push --project-ref jajlmmdsjlvzgcxiiypk
+
       - name: Deploy Supabase Edge Functions
-        if: steps.check_fn.outputs.deploy == 'true'
+        if: steps.check_changes.outputs.functions == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
