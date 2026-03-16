@@ -20,28 +20,29 @@
     border-bottom: 1px solid #1E293B;
     padding-bottom: 20px;
   }
-  header h1 {
-    font-size: 22px;
+  header h1 { font-size: 22px; font-weight: 700; color: #F1F5F9; letter-spacing: -0.3px; }
+  header p  { font-size: 13px; color: #64748B; margin-top: 6px; font-family: 'Courier New', monospace; }
+
+  .section-label {
+    font-size: 10px;
     font-weight: 700;
-    color: #F1F5F9;
-    letter-spacing: -0.3px;
-  }
-  header p {
-    font-size: 13px;
-    color: #64748B;
-    margin-top: 6px;
-    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #475569;
+    margin: 28px 0 10px;
+    font-family: monospace;
   }
 
   .task {
     background: #1E293B;
     border: 1px solid #334155;
     border-radius: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     overflow: hidden;
   }
-  .task.done { opacity: 0.45; }
+  .task.done { opacity: 0.4; }
   .task.done .task-status { background: #064E3B; color: #34D399; border-color: #065F46; }
+  .task.urgent { border-color: #EF4444; }
 
   .task-header {
     display: flex;
@@ -50,70 +51,34 @@
     padding: 16px 20px;
     border-bottom: 1px solid #334155;
   }
-  .task-num {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94A3B8;
-    font-family: monospace;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
+  .task.done .task-header { border-bottom-color: #1E293B; }
+  .task-num { font-size: 11px; font-weight: 700; color: #94A3B8; font-family: monospace; flex-shrink: 0; margin-top: 1px; }
   .task-info { flex: 1; }
-  .task-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #F1F5F9;
-  }
-  .task-desc {
-    font-size: 13px;
-    color: #94A3B8;
-    margin-top: 4px;
-    line-height: 1.5;
-  }
-  .task-meta {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-  }
-  .task-status {
+  .task-title { font-size: 15px; font-weight: 600; color: #F1F5F9; }
+  .task-desc  { font-size: 13px; color: #94A3B8; margin-top: 4px; line-height: 1.5; }
+  .task-meta  { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  .badge {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
     padding: 3px 8px;
     border-radius: 4px;
-    background: #7C3AED22;
-    color: #A78BFA;
-    border: 1px solid #7C3AED44;
   }
-  .task-tag {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: #1E40AF22;
-    color: #93C5FD;
-    border: 1px solid #1E40AF44;
-  }
-  .task-tag.sql  { background: #78350F22; color: #FCD34D; border-color: #78350F44; }
-  .task-tag.bash { background: #064E3B22; color: #6EE7B7; border-color: #064E3B44; }
-  .task-tag.order {
-    background: #1E293B;
-    color: #F97316;
-    border: 1px solid #F9731644;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
-  }
+  .badge.status-todo   { background: #7C3AED22; color: #A78BFA; border: 1px solid #7C3AED44; }
+  .badge.status-done   { background: #064E3B; color: #34D399; border: 1px solid #065F46; }
+  .badge.status-urgent { background: #7F1D1D; color: #FCA5A5; border: 1px solid #EF444444; }
+  .badge.status-auto   { background: #1E3A5F; color: #60A5FA; border: 1px solid #1E40AF44; }
+  .badge.sql  { background: #78350F22; color: #FCD34D; border: 1px solid #78350F44; }
+  .badge.bash { background: #064E3B22; color: #6EE7B7; border: 1px solid #064E3B44; }
+  .badge.info { background: #1E293B;   color: #94A3B8;  border: 1px solid #334155; }
 
   .code-block {
     position: relative;
     padding: 16px 20px;
   }
+  .task.done .code-block { display: none; }
   .code-block pre {
     font-family: 'Courier New', 'Fira Code', monospace;
     font-size: 13px;
@@ -167,151 +132,150 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// fix bottone "✅ Fatto" Telegram per i task · 2026-03-16T12:00:00Z</p>
+    <p>// fix bottone "✅ Fatto" Telegram · history_action_check · 2026-03-16</p>
   </header>
 
-  <!-- ═══════════════════════════════════════════════════
-       TASK 1 — applica migration GRANT service_role
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-1">
+  <!-- ══════════════════════════════════════════
+       DA FARE ORA
+       ══════════════════════════════════════════ -->
+  <div class="section-label">▶ da fare ora</div>
+
+  <!-- TASK 1 — history_action_check constraint fix -->
+  <div class="task urgent" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">Bash — applica la migration <code>20260316120000_task_complete_grant_service_role</code></div>
+        <div class="task-title">SQL — aggiorna la constraint <code>history_action_check</code></div>
         <div class="task-desc">
-          Il webhook Telegram usa <code>service_role</code> per chiamare la RPC <code>task_complete</code>.<br>
-          La funzione aveva solo <code>GRANT EXECUTE TO authenticated</code>: se Supabase ha revocato il PUBLIC EXECUTE,
-          <code>service_role</code> non riesce a invocarla e il bottone "✅ Fatto" fallisce.<br>
-          Questa migration aggiunge <code>GRANT EXECUTE TO service_role</code> per <code>task_complete</code>
-          e <code>habit_post_completion</code>.
+          La constraint su <code>ts_history.action</code> non include <code>'completed_late'</code> (task completati in ritardo)
+          né <code>'rollback'</code> (storno punti). Ogni completamento di task late genera errore <code>23514</code>.<br>
+          Il fix è già nella migration <code>20260316130000</code> che verrà applicata automaticamente dal workflow,
+          ma nel frattempo applica subito da SQL Editor.
         </div>
         <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag bash">Bash</span>
-          <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">1° — dopo il merge su master</span>
+          <span class="badge status-urgent">🔴 urgente</span>
+          <span class="badge sql">SQL</span>
+          <span class="badge info">Supabase SQL Editor</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-1">
       <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>supabase db push --project-ref jajlmmdsjlvzgcxiiypk</pre>
+      <pre>ALTER TABLE ts_history
+  DROP CONSTRAINT IF EXISTS history_action_check;
+
+ALTER TABLE ts_history
+  ADD CONSTRAINT history_action_check
+    CHECK (action IN (
+      'completed',
+      'completed_late',
+      'failed',
+      'terminated',
+      'archived',
+      'skipped',
+      'reactivated',
+      'rollback'
+    ));</pre>
     </div>
-    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
+    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       TASK 2 — oppure: applica solo la migration via SQL Editor
-       ══════════════════════════════════════════════════ -->
+  <!-- TASK 2 — verifica constraint applicata -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">SQL — alternativa a <code>supabase db push</code>: applica il GRANT manualmente</div>
+        <div class="task-title">SQL — verifica che la constraint sia aggiornata</div>
         <div class="task-desc">
-          Se non hai la CLI disponibile, incolla direttamente nel SQL Editor di Supabase.
+          Dopo il fix, controlla che tutti e 8 i valori siano presenti nella definizione della constraint.
         </div>
         <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">alternativa al #001</span>
+          <span class="badge status-todo">⏳ dopo #001</span>
+          <span class="badge sql">SQL</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-2">
       <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>GRANT EXECUTE ON FUNCTION task_complete(uuid, date) TO service_role;
-GRANT EXECUTE ON FUNCTION habit_post_completion(uuid, date) TO service_role;
-
--- Verifica: le funzioni devono essere visibili al ruolo service_role
-SELECT routine_name, grantee, privilege_type
-FROM information_schema.routine_privileges
-WHERE routine_name IN ('task_complete', 'habit_post_completion')
-  AND grantee IN ('authenticated', 'service_role', 'PUBLIC')
-ORDER BY routine_name, grantee;</pre>
+      <pre>SELECT conname, pg_get_constraintdef(oid) AS definizione
+FROM pg_constraint
+WHERE conrelid = 'ts_history'::regclass
+  AND conname = 'history_action_check';</pre>
     </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════
-       TASK 3 — deploy Edge Function telegram-webhook
-       ══════════════════════════════════════════════════ -->
+  <!-- TASK 3 — verifica completamento task -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">Bash — rideploya la Edge Function <code>telegram-webhook</code></div>
+        <div class="task-title">SQL — verifica completamento task via Telegram</div>
         <div class="task-desc">
-          Il webhook è stato aggiornato (fix log stale <code>task_complete_via_telegram</code> → <code>task_complete</code>).<br>
-          Le Edge Functions non si deployano automaticamente con GitHub Actions: richiedono il comando Supabase CLI.
+          Dopo aver cliccato "✅ Fatto" su un task in Telegram, verifica che:<br>
+          • il task abbia <code>status = 'terminated'</code><br>
+          • la regola di notifica sia stata eliminata da <code>cm_notification_rules</code><br>
+          • la coda abbia <code>status = 'completed'</code>
         </div>
         <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag bash">Bash</span>
-          <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">2° — dopo il #001</span>
+          <span class="badge status-todo">⏳ test finale</span>
+          <span class="badge sql">SQL</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>supabase functions deploy telegram-webhook --project-ref jajlmmdsjlvzgcxiiypk</pre>
-    </div>
-    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 4 — verifica dopo aver cliccato "✅ Fatto" su un task singolo
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-4">
-    <div class="task-header">
-      <div class="task-num">#004</div>
-      <div class="task-info">
-        <div class="task-title">SQL — verifica che il task singolo risulti <code>terminated</code> dopo il click su Telegram</div>
-        <div class="task-desc">
-          Dopo aver cliccato "✅ Fatto" su un task singolo in Telegram:<br>
-          • Il task deve avere <code>status = 'terminated'</code> in <code>ts_tasks</code><br>
-          • La regola di notifica deve essere eliminata da <code>cm_notification_rules</code><br>
-          • Il row della coda deve avere <code>status = 'completed'</code>
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">3° — test finale</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-4">
-      <button class="copy-btn" onclick="copyCode('cb-4', this)">Copia</button>
-      <pre>-- Ultimi task completati via Telegram (terminati di recente)
+      <pre>-- Ultimi task completati (ultimi 30 minuti)
 SELECT id, title, type, status, last_completed_date
 FROM ts_tasks
-WHERE status = 'terminated'
+WHERE status IN ('terminated', 'completed')
   AND last_completed_date >= now() - interval '30 minutes'
 ORDER BY last_completed_date DESC
 LIMIT 10;
 
--- Verifica che la regola di notifica sia stata eliminata
--- (sostituisci &lt;TASK_ID&gt; con l'UUID del task appena completato)
-SELECT COUNT(*) AS regole_rimaste
-FROM cm_notification_rules
-WHERE entity_id = '&lt;TASK_ID&gt;'
-  AND app = 'tasks';
-
--- Stato della queue per quel task
-SELECT id, status, fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome
-FROM cm_notification_queue
-WHERE entity_id = '&lt;TASK_ID&gt;'
-ORDER BY fire_at DESC;</pre>
+-- Ultimi record in ts_history (verifica action)
+SELECT task_id, from_status, to_status, action, points, timestamp
+FROM ts_history
+ORDER BY timestamp DESC
+LIMIT 10;</pre>
     </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
 
-  <!-- Aggiungi nuovi task sopra questo commento -->
+  <!-- ══════════════════════════════════════════
+       AUTOMATIZZATO — non serve più fare a mano
+       ══════════════════════════════════════════ -->
+  <div class="section-label">✓ automatizzato (GitHub Actions)</div>
 
-  <footer>garsal-apps · comandi.html · aggiornato automaticamente da Claude</footer>
+  <div class="task done" id="task-old-1">
+    <div class="task-header">
+      <div class="task-num">#—</div>
+      <div class="task-info">
+        <div class="task-title">supabase db push — applica le migrations</div>
+        <div class="task-desc">Il workflow GitHub Actions ora esegue <code>supabase db push</code> automaticamente ad ogni push su <code>claude/**</code> quando ci sono file in <code>supabase/migrations/</code>.</div>
+        <div class="task-meta">
+          <span class="badge status-auto">✓ automatico</span>
+          <span class="badge bash">Bash</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="task done" id="task-old-2">
+    <div class="task-header">
+      <div class="task-num">#—</div>
+      <div class="task-info">
+        <div class="task-title">supabase functions deploy telegram-webhook</div>
+        <div class="task-desc">Il workflow GitHub Actions deploya automaticamente le Edge Functions modificate ad ogni push su <code>claude/**</code>.</div>
+        <div class="task-meta">
+          <span class="badge status-auto">✓ automatico</span>
+          <span class="badge bash">Bash</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>garsal-apps · comandi.html · aggiornato 2026-03-16</footer>
 
 </div>
 
@@ -325,10 +289,7 @@ function copyCode(blockId, btn) {
   navigator.clipboard.writeText(text).then(() => {
     btn.textContent = '✓ Copiato';
     btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'Copia';
-      btn.classList.remove('copied');
-    }, 2000);
+    setTimeout(() => { btn.textContent = 'Copia'; btn.classList.remove('copied'); }, 2000);
   });
 }
 </script>
