@@ -6,6 +6,7 @@ import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -34,6 +35,13 @@ class MainActivity : AppCompatActivity() {
         setupWebView()
         scheduleNotifications()
         showBiometricPrompt()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webView.canGoBack()) webView.goBack()
+                else finish()
+            }
+        })
     }
 
     private fun setupWebView() {
@@ -155,8 +163,4 @@ class MainActivity : AppCompatActivity() {
         return target.timeInMillis - now.timeInMillis
     }
 
-    override fun onBackPressed() {
-        if (webView.canGoBack()) webView.goBack()
-        else super.onBackPressed()
-    }
 }
