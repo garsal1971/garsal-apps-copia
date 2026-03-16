@@ -223,8 +223,27 @@ Deno.serve(async (_req) => {
         if (isHabit) {
           const hrp = rp as HabitReminderPresets
           if (hrp.telegram_complete_button && hrp.completion_update) {
+            // Clone per non mutare l'originale dal DB
+            const cu = JSON.parse(JSON.stringify(hrp.completion_update)) as {
+              app?: string
+              operations?: Array<{ op: string; table: string; fields?: Record<string, unknown> }>
+            }
+
+            // Backward-compat: regole create prima del 2026-03-15 mancano di period_key.
+            // Lo iniettiamo in base alla frequency (rule.entity_type) così il webhook
+            // non tenta mai di inserire in hb_completions senza period_key.
+            const hbOp = cu.operations?.find(o => o.op === 'insert' && o.table === 'hb_completions')
+            if (hbOp?.fields && !hbOp.fields.period_key) {
+              const freq = rule.entity_type
+              hbOp.fields.period_key = freq === 'daily_multiple'
+                ? '{{fire_date_local}}-{{slot_time}}'
+                : freq === 'weekly'
+                  ? '{{monday_of_week}}-{{day_of_week_n}}'
+                  : '{{fire_date_local}}'
+            }
+
             entryMetadata = {
-              completion_update: hrp.completion_update,
+              completion_update: cu,
               slot_time: entry.time,   // es. "08:00" — orario del slot habit
             }
           }
