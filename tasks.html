@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.21</title>
+    <title>Tasks v19.18.22</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2176,8 +2176,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.21';
-        const BUILD_TIME  = '2026-03-15T19:15:00Z';
+        const APP_VERSION = 'v19.18.22';
+        const BUILD_TIME  = '2026-03-16T14:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -3284,13 +3284,13 @@
                 String(dt.getMonth() + 1).padStart(2, '0') + '-' +
                 String(dt.getDate()).padStart(2, '0');
         }
-        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        // Restituisce ISO UTC "YYYY-MM-DDTHH:MM:SS.sssZ" per il salvataggio su DB.
+        // Usare sempre questa funzione per valori destinati a Supabase: PostgreSQL
+        // interpreta stringhe senza offset come UTC, quindi inviare esplicitamente
+        // l'orario UTC evita lo shift di +1h (CET) nei calcoli della Edge Function.
         function localDateTimeStr(d) {
             const dt = d || new Date();
-            return localDateStr(dt) + 'T' +
-                String(dt.getHours()).padStart(2, '0') + ':' +
-                String(dt.getMinutes()).padStart(2, '0') + ':' +
-                String(dt.getSeconds()).padStart(2, '0');
+            return dt.toISOString();
         }
 
         // Formatta data in formato GG-MM-AAAA HH:MM (orario italiano)
