@@ -167,359 +167,144 @@
 
   <header>
     <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// semplificazione send-notifications: finestra ±5 min, no retry, snooze via INSERT · 2026-03-13T14:00:00Z</p>
+    <p>// fix bottone "✅ Fatto" Telegram per i task · 2026-03-16T12:00:00Z</p>
   </header>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 1 — migrazione cleanup stati dismessi
+       TASK 1 — applica migration GRANT service_role
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">SQL — pulizia stati <code>sending</code> e <code>snoozed</code> dismessi</div>
+        <div class="task-title">Bash — applica la migration <code>20260316120000_task_complete_grant_service_role</code></div>
         <div class="task-desc">
-          Gli stati <code>sending</code> e <code>snoozed</code> non vengono più usati dopo il refactoring.<br>
-          • <code>sending</code> — eliminato: nessun retry, status passa direttamente <code>pending → sent/failed</code><br>
-          • <code>snoozed</code> — eliminato: sostituito da INSERT di un nuovo row <code>pending</code> con nuovo <code>fire_at</code><br>
-          Row recenti (fire_at &lt; 1 ora fa) → riportati a <code>pending</code> per la nuova finestra ±5 min.<br>
-          Row più vecchi → marcati <code>failed</code>.
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">1° — eseguire per primo</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-1">
-      <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>-- Riporta a 'pending' i row recenti con stati dismessi
-UPDATE cm_notification_queue
-SET status = 'pending'
-WHERE status IN ('sending', 'snoozed')
-  AND fire_at >= now() - interval '1 hour';
-
--- Marca come 'failed' i row più vecchi con stati dismessi
-UPDATE cm_notification_queue
-SET status = 'failed'
-WHERE status IN ('sending', 'snoozed')
-  AND fire_at &lt; now() - interval '1 hour';
-
--- Verifica: devono risultare 0 righe con stati dismessi
-SELECT COUNT(*), status
-FROM cm_notification_queue
-WHERE status IN ('sending', 'snoozed')
-GROUP BY status;</pre>
-    </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 2 — invoca manualmente send-notifications
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-2">
-    <div class="task-header">
-      <div class="task-num">#002</div>
-      <div class="task-info">
-        <div class="task-title">Invoca <code>send-notifications</code> manualmente</div>
-        <div class="task-desc">
-          Dopo che il deploy da git è live, invoca subito la funzione per testare la nuova logica.<br>
-          Invia le notifiche con <code>fire_at</code> nella finestra <code>[now−5min, now+5min]</code> → status <code>sent</code> o <code>failed</code>.<br>
-          Nessun retry. Nessun digest.
+          Il webhook Telegram usa <code>service_role</code> per chiamare la RPC <code>task_complete</code>.<br>
+          La funzione aveva solo <code>GRANT EXECUTE TO authenticated</code>: se Supabase ha revocato il PUBLIC EXECUTE,
+          <code>service_role</code> non riesce a invocarla e il bottone "✅ Fatto" fallisce.<br>
+          Questa migration aggiunge <code>GRANT EXECUTE TO service_role</code> per <code>task_complete</code>
+          e <code>habit_post_completion</code>.
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
           <span class="task-tag bash">Bash</span>
           <span class="task-tag">Supabase CLI</span>
-          <span class="task-tag order">2° — dopo il deploy git</span>
+          <span class="task-tag order">1° — dopo il merge su master</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-2">
-      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>supabase functions invoke send-notifications --project-ref jajlmmdsjlvzgcxiiypk</pre>
+    <div class="code-block" id="cb-1">
+      <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
+      <pre>supabase db push --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
     <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 3 — verifica coda
+       TASK 2 — oppure: applica solo la migration via SQL Editor
+       ══════════════════════════════════════════════════ -->
+  <div class="task" id="task-2">
+    <div class="task-header">
+      <div class="task-num">#002</div>
+      <div class="task-info">
+        <div class="task-title">SQL — alternativa a <code>supabase db push</code>: applica il GRANT manualmente</div>
+        <div class="task-desc">
+          Se non hai la CLI disponibile, incolla direttamente nel SQL Editor di Supabase.
+        </div>
+        <div class="task-meta">
+          <span class="task-status">⏳ da fare</span>
+          <span class="task-tag sql">SQL</span>
+          <span class="task-tag">Supabase</span>
+          <span class="task-tag order">alternativa al #001</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-2">
+      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
+      <pre>GRANT EXECUTE ON FUNCTION task_complete(uuid, date) TO service_role;
+GRANT EXECUTE ON FUNCTION habit_post_completion(uuid, date) TO service_role;
+
+-- Verifica: le funzioni devono essere visibili al ruolo service_role
+SELECT routine_name, grantee, privilege_type
+FROM information_schema.routine_privileges
+WHERE routine_name IN ('task_complete', 'habit_post_completion')
+  AND grantee IN ('authenticated', 'service_role', 'PUBLIC')
+ORDER BY routine_name, grantee;</pre>
+    </div>
+    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TASK 3 — deploy Edge Function telegram-webhook
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">SQL — verifica stato della coda dopo il run</div>
+        <div class="task-title">Bash — rideploya la Edge Function <code>telegram-webhook</code></div>
         <div class="task-desc">
-          Controlla che:<br>
-          • row con <code>fire_at</code> nella finestra ±5 min abbiano status <code>sent</code> o <code>failed</code><br>
-          • row fuori finestra rimangano <code>pending</code><br>
-          • nessun row abbia status <code>sending</code> o <code>snoozed</code><br>
-          • lo snooze da Telegram inserisca un nuovo row <code>pending</code> con il nuovo <code>fire_at</code>
+          Il webhook è stato aggiornato (fix log stale <code>task_complete_via_telegram</code> → <code>task_complete</code>).<br>
+          Le Edge Functions non si deployano automaticamente con GitHub Actions: richiedono il comando Supabase CLI.
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">3° — verifica finale</span>
+          <span class="task-tag bash">Bash</span>
+          <span class="task-tag">Supabase CLI</span>
+          <span class="task-tag order">2° — dopo il #001</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>-- Distribuzione degli stati attuali
-SELECT status, COUNT(*) AS n
-FROM cm_notification_queue
-GROUP BY status
-ORDER BY n DESC;
-
--- Ultime 20 notifiche inviate
-SELECT
-  app,
-  occurrence_id,
-  fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome,
-  title,
-  body,
-  status,
-  telegram_message_id
-FROM cm_notification_queue
-WHERE status IN ('sent', 'failed')
-ORDER BY fire_at DESC
-LIMIT 20;
-
--- Verifica: nessun stato dismesso
-SELECT COUNT(*) AS stati_dismessi
-FROM cm_notification_queue
-WHERE status IN ('sending', 'snoozed');</pre>
+      <pre>supabase functions deploy telegram-webhook --project-ref jajlmmdsjlvzgcxiiypk</pre>
     </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Dove: terminale locale, dalla radice di garsal-apps · Supabase CLI già configurato</div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════
-       TASK 4 — migration: aggiungi stato 'completed' al CHECK constraint
+       TASK 4 — verifica dopo aver cliccato "✅ Fatto" su un task singolo
        ══════════════════════════════════════════════════ -->
   <div class="task" id="task-4">
     <div class="task-header">
       <div class="task-num">#004</div>
       <div class="task-info">
-        <div class="task-title">SQL — aggiungi <code>'completed'</code> al CHECK constraint di <code>status</code></div>
+        <div class="task-title">SQL — verifica che il task singolo risulti <code>terminated</code> dopo il click su Telegram</div>
         <div class="task-desc">
-          La colonna <code>status</code> ha un CHECK constraint che ammette solo <code>pending | sent | failed | cancelled</code>.<br>
-          Il webhook Telegram imposta <code>status = 'completed'</code> quando l'utente clicca "✅ Fatto".<br>
-          Senza questa migration, l'UPDATE fallisce silenziosamente (constraint violation) e lo status rimane <code>sent</code>.<br>
-          File: <code>supabase/migrations/20260313160000_notification_queue_completed_status.sql</code>
+          Dopo aver cliccato "✅ Fatto" su un task singolo in Telegram:<br>
+          • Il task deve avere <code>status = 'terminated'</code> in <code>ts_tasks</code><br>
+          • La regola di notifica deve essere eliminata da <code>cm_notification_rules</code><br>
+          • Il row della coda deve avere <code>status = 'completed'</code>
         </div>
         <div class="task-meta">
           <span class="task-status">⏳ da fare</span>
           <span class="task-tag sql">SQL</span>
           <span class="task-tag">Supabase</span>
-          <span class="task-tag order">1° — eseguire prima di testare "Fatto"</span>
+          <span class="task-tag order">3° — test finale</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-4">
       <button class="copy-btn" onclick="copyCode('cb-4', this)">Copia</button>
-      <pre>ALTER TABLE cm_notification_queue
-  DROP CONSTRAINT IF EXISTS cm_notification_queue_status_check;
+      <pre>-- Ultimi task completati via Telegram (terminati di recente)
+SELECT id, title, type, status, last_completed_date
+FROM ts_tasks
+WHERE status = 'terminated'
+  AND last_completed_date >= now() - interval '30 minutes'
+ORDER BY last_completed_date DESC
+LIMIT 10;
 
-ALTER TABLE cm_notification_queue
-  ADD CONSTRAINT cm_notification_queue_status_check
-    CHECK (status IN ('pending', 'sent', 'failed', 'cancelled', 'completed'));
+-- Verifica che la regola di notifica sia stata eliminata
+-- (sostituisci &lt;TASK_ID&gt; con l'UUID del task appena completato)
+SELECT COUNT(*) AS regole_rimaste
+FROM cm_notification_rules
+WHERE entity_id = '&lt;TASK_ID&gt;'
+  AND app = 'tasks';
 
--- Verifica: il constraint deve includere 'completed'
-SELECT conname, pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'cm_notification_queue'::regclass
-  AND conname = 'cm_notification_queue_status_check';</pre>
-    </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 5 — verifica comportamento "Fatto" e "Annulla"
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-5">
-    <div class="task-header">
-      <div class="task-num">#005</div>
-      <div class="task-info">
-        <div class="task-title">SQL — verifica dopo aver cliccato "✅ Fatto" o "❌ Annulla" su Telegram</div>
-        <div class="task-desc">
-          Dopo aver cliccato un bottone su Telegram, verifica che:<br>
-          • "✅ Fatto" → row cliccato ha <code>status = 'completed'</code>, tutti i sibling hanno <code>status = 'cancelled'</code><br>
-          • "❌ Annulla" → row cliccato + tutti i sibling hanno <code>status = 'cancelled'</code> (qualsiasi stato precedente)<br>
-          • I messaggi Telegram corrispondenti siano stati eliminati dalla chat<br>
-          • Nessun sibling rimanga con <code>status = 'sent'</code> dopo l'azione
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">2° — dopo il click su Telegram</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-5">
-      <button class="copy-btn" onclick="copyCode('cb-5', this)">Copia</button>
-      <pre>-- Ultime 10 occorrenze con i loro sibling — controlla status e telegram_message_id
-SELECT
-  occurrence_id,
-  id,
-  fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome,
-  status,
-  telegram_message_id,
-  title
+-- Stato della queue per quel task
+SELECT id, status, fire_at AT TIME ZONE 'Europe/Rome' AS fire_at_rome
 FROM cm_notification_queue
-WHERE occurrence_id IN (
-  -- prende le ultime 5 occurrence_id distinte toccate
-  SELECT DISTINCT occurrence_id
-  FROM cm_notification_queue
-  WHERE status IN ('completed', 'cancelled')
-    AND created_at >= now() - interval '30 minutes'
-  LIMIT 5
-)
-ORDER BY occurrence_id, fire_at;
-
--- Distribuzione stati aggiornata
-SELECT status, COUNT(*) AS n
-FROM cm_notification_queue
-GROUP BY status
-ORDER BY n DESC;</pre>
-    </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 6 — migrazione hidden mode (riservato + cm_settings)
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-6">
-    <div class="task-header">
-      <div class="task-num">#006</div>
-      <div class="task-info">
-        <div class="task-title">SQL — migrazione Hidden Mode: colonna <code>riservato</code> + tabella <code>cm_settings</code></div>
-        <div class="task-desc">
-          La modalità nascosta (Hidden Mode) richiede:<br>
-          • Tabella <code>cm_settings</code> per memorizzare la sequenza segreta<br>
-          • Colonna <code>riservato BOOLEAN</code> in <code>cm_apps</code> per nascondere le app riservate<br>
-          Senza questa migrazione il launcher mostra una pagina bianca (query 400 per colonna mancante).
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-          <span class="task-tag order">prerequisito hidden mode</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-6">
-      <button class="copy-btn" onclick="copyCode('cb-6', this)">Copia</button>
-      <pre>-- 1. Crea la tabella cm_settings (sequenza hidden mode)
-CREATE TABLE IF NOT EXISTS cm_settings (
-  key   TEXT PRIMARY KEY,
-  value TEXT
-);
-
--- 2. Aggiungi la colonna riservato a cm_apps
-ALTER TABLE cm_apps
-  ADD COLUMN IF NOT EXISTS riservato BOOLEAN DEFAULT FALSE;
-
--- 3. (Opzionale) Inserisci una sequenza segreta
---    Sostituisci i colori con quelli dei cerchi delle tue app
-INSERT INTO cm_settings (key, value)
-VALUES ('hidden_mode_sequence', '["#0081C8","#FCB131","#00A651"]')
-ON CONFLICT (key) DO NOTHING;
-
--- Verifica
-SELECT column_name, data_type
-FROM information_schema.columns
-WHERE table_name = 'cm_apps' AND column_name = 'riservato';
-
-SELECT * FROM cm_settings WHERE key = 'hidden_mode_sequence';</pre>
-    </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 7 — rimuovi CASCADE FK hb_completions/hb_archived_stacks → hb_habits
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-7">
-    <div class="task-header">
-      <div class="task-num">#007</div>
-      <div class="task-info">
-        <div class="task-title">SQL — rimuovi CASCADE FK <code>hb_completions</code> e <code>hb_archived_stacks</code> → <code>hb_habits</code></div>
-        <div class="task-desc">
-          Entrambe le tabelle hanno <code>ON DELETE CASCADE</code> verso <code>hb_habits</code>.<br>
-          Questo causa la cancellazione in cascata di storico completamenti e archivi stack quando un habit viene eliminato.<br>
-          Dopo questa migration il DELETE su <code>hb_habits</code> non propaga ai record collegati.
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-7">
-      <button class="copy-btn" onclick="copyCode('cb-7', this)">Copia</button>
-      <pre>DO $$
-DECLARE
-  v_constraint text;
-BEGIN
-  -- Drop FK hb_completions → hb_habits
-  SELECT conname INTO v_constraint
-  FROM pg_constraint
-  WHERE conrelid  = 'hb_completions'::regclass
-    AND confrelid = 'hb_habits'::regclass
-    AND contype   = 'f';
-  IF v_constraint IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE hb_completions DROP CONSTRAINT %I', v_constraint);
-    RAISE NOTICE 'Rimosso: %', v_constraint;
-  END IF;
-
-  -- Drop FK hb_archived_stacks → hb_habits
-  SELECT conname INTO v_constraint
-  FROM pg_constraint
-  WHERE conrelid  = 'hb_archived_stacks'::regclass
-    AND confrelid = 'hb_habits'::regclass
-    AND contype   = 'f';
-  IF v_constraint IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE hb_archived_stacks DROP CONSTRAINT %I', v_constraint);
-    RAISE NOTICE 'Rimosso: %', v_constraint;
-  END IF;
-END;
-$$;</pre>
-    </div>
-    <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════
-       TASK 8 — setta completed tutti i record hb_completions
-       ══════════════════════════════════════════════════ -->
-  <div class="task" id="task-8">
-    <div class="task-header">
-      <div class="task-num">#008</div>
-      <div class="task-info">
-        <div class="task-title">SQL — setta <code>status = 'completed'</code> su tutti i record di <code>hb_completions</code></div>
-        <div class="task-desc">
-          Aggiorna in massa tutti i record presenti nella tabella <code>hb_completions</code> impostando <code>status = 'completed'</code>.
-        </div>
-        <div class="task-meta">
-          <span class="task-status">⏳ da fare</span>
-          <span class="task-tag sql">SQL</span>
-          <span class="task-tag">Supabase</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-8">
-      <button class="copy-btn" onclick="copyCode('cb-8', this)">Copia</button>
-      <pre>UPDATE hb_completions
-SET status = 'completed';
-
--- Verifica
-SELECT status, COUNT(*) AS n
-FROM hb_completions
-GROUP BY status;</pre>
+WHERE entity_id = '&lt;TASK_ID&gt;'
+ORDER BY fire_at DESC;</pre>
     </div>
     <div class="platform-note">📍 Dove: Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
   </div>
