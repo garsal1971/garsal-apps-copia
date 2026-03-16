@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.33</title>
+<title>AppSphere v1.5.34</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1020,8 +1020,21 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.33';
-const BUILD_TIME  = '2026-03-16T18:00:00Z';
+const APP_VERSION = 'v1.5.34';
+const BUILD_TIME  = '2026-03-16T20:00:00Z';
+
+// ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function deleteCookie(name) {
+  document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+}
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1468,7 +1481,7 @@ let _refreshInterval = null;
 // Rinnova il JWT tramite refresh_token senza richiedere un nuovo login.
 // In caso di errore fa logout forzato. Distribuisce il nuovo token a tutte le app figlie.
 async function refreshSession() {
-  const refreshToken = localStorage.getItem('refresh_token');
+  const refreshToken = localStorage.getItem('refresh_token') || getCookie('sb_refresh_token');
   if (!refreshToken) return;
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
@@ -1483,7 +1496,10 @@ async function refreshSession() {
     }
     const data = await res.json();
     localStorage.setItem('sb_token', data.access_token);
-    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+      setCookie('sb_refresh_token', data.refresh_token, 30);
+    }
     // Notifica tutte le app figlie: aggiornare il token senza ricaricare la pagina
     _authChannel.postMessage({ type: 'TOKEN_REFRESH', sbToken: data.access_token });
     console.log('🔄 Token rinnovato silenziosamente (' + APP_VERSION + ')');
@@ -1509,6 +1525,7 @@ async function logout() {
   localStorage.removeItem('sb_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('google_token');
+  deleteCookie('sb_refresh_token');
   if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
 
   // Notifica tutte le app figlie aperte: devono invalidare il token
@@ -1528,7 +1545,10 @@ function parseHash() {
     // provider_token = token Google reale, usabile con Google Fit API
     if (p.provider_token) localStorage.setItem('google_token', p.provider_token);
     // refresh_token = usato per rinnovare il JWT senza re-login
-    if (p.refresh_token) localStorage.setItem('refresh_token', p.refresh_token);
+    if (p.refresh_token) {
+      localStorage.setItem('refresh_token', p.refresh_token);
+      setCookie('sb_refresh_token', p.refresh_token, 30); // 30 giorni
+    }
     history.replaceState(null, '', window.location.pathname);
     return p.access_token;
   }
@@ -2099,6 +2119,15 @@ async function init() {
     }
     if (user) { showApp(user); startTokenRefresh(); return; }
     localStorage.removeItem('sb_token');
+  }
+  // Nessun token in localStorage — prova dal cookie (mobile svuota localStorage)
+  if (!token && getCookie('sb_refresh_token')) {
+    await refreshSession();
+    token = localStorage.getItem('sb_token');
+    if (token) {
+      const user = await getUserInfo(token);
+      if (user) { showApp(user); startTokenRefresh(); return; }
+    }
   }
   // show login
 }
