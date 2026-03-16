@@ -35,14 +35,14 @@ android {
 dependencies {
     // UI base
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     // Biometric (impronta digitale + PIN fallback)
     implementation 'androidx.biometric:biometric:1.1.0'
 
-    // WorkManager (notifiche schedulate)
-    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    // WorkManager (notifiche schedulate) — 2.8.1 = ultima versione che supporta compileSdk 33
+    implementation 'androidx.work:work-runtime-ktx:2.8.1'
 
     // Kotlin coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
