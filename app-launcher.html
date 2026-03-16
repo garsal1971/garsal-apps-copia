@@ -1020,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.36';
-const BUILD_TIME  = '2026-03-16T21:00:00Z';
+const APP_VERSION = 'v1.5.37';
+const BUILD_TIME  = '2026-03-16T21:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1525,6 +1525,7 @@ async function logout() {
   localStorage.removeItem('sb_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('google_token');
+  localStorage.removeItem('was_authenticated');
   deleteCookie('sb_refresh_token');
   if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
 
@@ -1563,6 +1564,7 @@ async function getUserInfo(token) {
 }
 
 function showApp(user) {
+  localStorage.setItem('was_authenticated', '1'); // flag per auto-login al riavvio
   const name = user?.user_metadata?.full_name || user?.email || 'Utente';
   document.getElementById('user-name').textContent = name.split(' ')[0];
   document.getElementById('user-bar').classList.add('visible');
@@ -2136,7 +2138,13 @@ async function init() {
       if (user) { showApp(user); startTokenRefresh(); return; }
     }
   }
-  // show login
+  // Nessun token valido — se l'utente era già autenticato, avvia OAuth silenzioso
+  // (Supabase/Google riconosce la sessione attiva e torna senza mostrare la pagina Google)
+  if (localStorage.getItem('was_authenticated') === '1') {
+    loginWithGoogle();
+    return;
+  }
+  // show login (primo accesso)
 }
 init();
 
