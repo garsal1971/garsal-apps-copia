@@ -1020,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.38';
-const BUILD_TIME  = '2026-03-16T22:00:00Z';
+const APP_VERSION = 'v1.5.39';
+const BUILD_TIME  = '2026-03-16T22:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1538,6 +1538,21 @@ async function logout() {
 
   // Torna alla pagina di login con redirect pulito
   window.location.href = 'app-launcher.html';
+}
+
+// Chiamata dall'APK Android via evaluateJavascript dopo OAuth con deep link garsalapps://oauth
+// params è un oggetto JSON: { access_token, refresh_token, provider_token, ... }
+function handleNativeOAuthCallback(params) {
+  if (!params || !params.access_token) return;
+  localStorage.setItem('sb_token', params.access_token);
+  if (params.provider_token) localStorage.setItem('google_token', params.provider_token);
+  if (params.refresh_token) {
+    localStorage.setItem('refresh_token', params.refresh_token);
+    setCookie('sb_refresh_token', params.refresh_token, 30);
+  }
+  getUserInfo(params.access_token).then(user => {
+    if (user) { showApp(user); startTokenRefresh(); }
+  });
 }
 
 function parseHash() {
