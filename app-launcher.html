@@ -1020,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.40';
-const BUILD_TIME  = '2026-03-16T23:00:00Z';
+const APP_VERSION = 'v1.5.41';
+const BUILD_TIME  = '2026-03-16T23:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1491,7 +1491,7 @@ async function refreshSession() {
     });
     if (!res.ok) {
       // Token non valido: pulisce i token scaduti ma NON chiama logout()
-      // (logout cancellerebbe was_authenticated e impedirebbe l'auto-login)
+      // (non chiama logout per non mostrare la schermata login con animazione)
       console.warn('🔒 Refresh token non valido — pulizia silenziosa');
       localStorage.removeItem('sb_token');
       localStorage.removeItem('refresh_token');
@@ -1588,7 +1588,7 @@ async function getUserInfo(token) {
 }
 
 function showApp(user) {
-  localStorage.setItem('was_authenticated', '1'); // flag per auto-login al riavvio
+  localStorage.setItem('was_authenticated', '1'); // flag storico, non più usato per auto-login
   const name = user?.user_metadata?.full_name || user?.email || 'Utente';
   document.getElementById('user-name').textContent = name.split(' ')[0];
   document.getElementById('user-bar').classList.add('visible');
@@ -2162,17 +2162,10 @@ async function init() {
       if (user) { showApp(user); startTokenRefresh(); return; }
     }
   }
-  // Nessun token valido — se l'utente era già autenticato, avvia OAuth silenzioso
-  // SOLO nel browser web: il redirect avviene nella stessa finestra e Google
-  // riconosce la sessione senza mostrare la pagina di autenticazione.
-  // In APK Android: l'OAuth aprirebbe una Chrome Custom Tab visibile all'utente,
-  // quindi mostriamo solo il pulsante login e aspettiamo un tap esplicito.
-  const isAndroidApp = (typeof window.AndroidBridge !== 'undefined') && window.AndroidBridge.isNativeApp();
-  if (localStorage.getItem('was_authenticated') === '1' && !isAndroidApp) {
-    loginWithGoogle();
-    return;
-  }
-  // show login (primo accesso)
+  // Nessun token valido — mostra il pulsante login.
+  // L'auto-login silenzioso è stato rimosso: apriva automaticamente la pagina
+  // Google ad ogni lancio dell'APK quando il JWT era scaduto.
+  // show login
 }
 init();
 
