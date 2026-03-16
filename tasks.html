@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.22</title>
+    <title>Tasks v19.18.23</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2176,8 +2176,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.22';
-        const BUILD_TIME  = '2026-03-16T14:00:00Z';
+        const APP_VERSION = 'v19.18.23';
+        const BUILD_TIME  = '2026-03-16T15:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -8416,8 +8416,9 @@ Per attivarle:
         }
 
         async function deleteCategory(id) {
-            const cat = categories.find(c => c.id === id);
-            const taskCount = tasks.filter(t => t.categories?.includes(id)).length;
+            const cat = categories.find(c => c.id == id);
+            if (!cat) return;
+            const taskCount = tasks.filter(t => t.categories?.some(cid => cid == id)).length;
             
             if (taskCount > 0) {
                 alert('Impossibile eliminare: ci sono ancora task associati a questa categoria');
