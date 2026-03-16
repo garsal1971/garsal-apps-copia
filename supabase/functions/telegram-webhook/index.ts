@@ -338,7 +338,7 @@ Deno.serve(async (req) => {
           p_today:   localDateStr,
         })
         if (rpcErr) {
-          console.error('[telegram-webhook] errore task_complete_via_telegram:', rpcErr)
+          console.error('[telegram-webhook] errore task_complete:', rpcErr)
           const errMsg = (rpcErr as { message?: string }).message ?? String(rpcErr)
           const shortErr = errMsg.length > 150 ? errMsg.slice(0, 147) + '…' : errMsg
           await answerCallbackQuery(callbackQueryId, `❌ ${shortErr}`)
@@ -347,12 +347,12 @@ Deno.serve(async (req) => {
         // RPC può restituire { ok: false } senza errore Postgres
         const rpcData = rpcResult as { ok?: boolean; error?: string } | null
         if (rpcData?.ok === false) {
-          console.warn('[telegram-webhook] task_complete_via_telegram ok=false:', rpcData)
+          console.warn('[telegram-webhook] task_complete ok=false:', rpcData)
           const shortErr = (rpcData.error ?? 'completamento non riuscito').slice(0, 150)
           await answerCallbackQuery(callbackQueryId, `❌ ${shortErr}`)
           return json({ ok: false, error: rpcData.error })
         }
-        console.log('[telegram-webhook] task_complete_via_telegram:', JSON.stringify(rpcResult))
+        console.log('[telegram-webhook] task_complete:', JSON.stringify(rpcResult))
       }
     }
 
