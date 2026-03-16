@@ -140,6 +140,56 @@
        ══════════════════════════════════════════ -->
   <div class="section-label">▶ da fare ora</div>
 
+  <!-- TASK 0 — fix task esistenti con orario UTC errato -->
+  <div class="task urgent" id="task-0">
+    <div class="task-header">
+      <div class="task-num">#000</div>
+      <div class="task-info">
+        <div class="task-title">SQL — correggi i task esistenti con orario salvato senza timezone (+1h errato)</div>
+        <div class="task-desc">
+          I task salvati prima del fix <code>v19.18.22</code> hanno <code>start_date</code> e <code>next_occurrence_date</code>
+          senza offset UTC (es. <code>2026-03-16T14:30:00</code> invece di <code>2026-03-16T13:30:00Z</code>).<br>
+          PostgreSQL/Edge Function li interpreta come UTC+0 → 1 ora avanti rispetto all'intenzione (CET = UTC+1).<br>
+          Questo SQL sottrae 1 ora ai task attivi che hanno l'ora &gt; 00:00 (non mezzanotte, che è spesso un default).
+        </div>
+        <div class="task-meta">
+          <span class="badge status-urgent">🔴 urgente</span>
+          <span class="badge sql">SQL</span>
+          <span class="badge info">Supabase SQL Editor</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-0">
+      <button class="copy-btn" onclick="copyCode('cb-0', this)">Copia</button>
+      <pre>-- Verifica prima: vedi quanti task sarebbero modificati
+SELECT id, title, type, status,
+       start_date,
+       start_date - INTERVAL '1 hour' AS start_date_corretto
+FROM ts_tasks
+WHERE status NOT IN ('terminated', 'archived')
+  AND start_date IS NOT NULL
+  AND EXTRACT(HOUR FROM start_date) != 0
+ORDER BY start_date DESC
+LIMIT 20;
+
+-- Se i valori sembrano corretti, applica la correzione:
+-- (decommenta le righe UPDATE dopo aver verificato la SELECT)
+
+-- UPDATE ts_tasks
+-- SET start_date = start_date - INTERVAL '1 hour'
+-- WHERE status NOT IN ('terminated', 'archived')
+--   AND start_date IS NOT NULL
+--   AND EXTRACT(HOUR FROM start_date) != 0;
+
+-- UPDATE ts_tasks
+-- SET next_occurrence_date = next_occurrence_date - INTERVAL '1 hour'
+-- WHERE status NOT IN ('terminated', 'archived')
+--   AND next_occurrence_date IS NOT NULL
+--   AND EXTRACT(HOUR FROM next_occurrence_date) != 0;</pre>
+    </div>
+    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → esegui prima la SELECT, poi decommenta gli UPDATE se ok</div>
+  </div>
+
   <!-- TASK 1 — history_action_check constraint fix -->
   <div class="task urgent" id="task-1">
     <div class="task-header">
