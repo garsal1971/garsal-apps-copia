@@ -87,6 +87,15 @@ class MainActivity : AppCompatActivity() {
             .apply()
     }
 
+    /**
+     * Interfaccia JavaScript esposta al WebView come window.AndroidBridge.
+     * Permette al JS di rilevare in modo affidabile che sta girando nell'app Android.
+     */
+    inner class AndroidBridge {
+        @android.webkit.JavascriptInterface
+        fun isNativeApp(): Boolean = true
+    }
+
     private fun setupWebView() {
         webView.visibility = View.GONE
         webView.apply {
@@ -99,6 +108,8 @@ class MainActivity : AppCompatActivity() {
                 useWideViewPort = true
                 loadWithOverviewMode = true
             }
+            // Espone window.AndroidBridge al JavaScript della pagina
+            addJavascriptInterface(AndroidBridge(), "AndroidBridge")
             webViewClient = object : WebViewClient() {
 
                 /**
@@ -133,8 +144,9 @@ class MainActivity : AppCompatActivity() {
 
                 /**
                  * Intercetta la navigazione verso l'endpoint OAuth di Supabase
-                 * e la apre in Chrome Custom Tabs, cambiando redirect_to
-                 * con il custom scheme garsalapps://oauth.
+                 * e la apre in Chrome Custom Tabs.
+                 * Il redirect_to=garsalapps://oauth è già impostato dal JS
+                 * tramite window.AndroidBridge.isNativeApp().
                  */
                 override fun shouldOverrideUrlLoading(
                     view: WebView?,
@@ -145,25 +157,10 @@ class MainActivity : AppCompatActivity() {
                     if (url.contains("supabase.co/auth/v1/authorize") &&
                         url.contains("provider=google")
                     ) {
-                        val original = request.url
-                        val modified = original.buildUpon()
-                            .clearQuery()
-                            .apply {
-                                original.queryParameterNames.forEach { param ->
-                                    val value = if (param == "redirect_to") {
-                                        "$OAUTH_CALLBACK_SCHEME://$OAUTH_CALLBACK_HOST"
-                                    } else {
-                                        original.getQueryParameter(param)
-                                    }
-                                    appendQueryParameter(param, value)
-                                }
-                            }
-                            .build()
-
                         CustomTabsIntent.Builder()
                             .setShowTitle(true)
                             .build()
-                            .launchUrl(this@MainActivity, modified)
+                            .launchUrl(this@MainActivity, request.url)
                         return true
                     }
 
