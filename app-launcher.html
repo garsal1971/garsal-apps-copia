@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.31</title>
+<title>AppSphere v1.5.32</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1020,8 +1020,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.31';
-const BUILD_TIME  = '2026-03-15T19:00:00Z';
+const APP_VERSION = 'v1.5.32';
+const BUILD_TIME  = '2026-03-16T10:00:00Z';
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2083,9 +2083,15 @@ document.getElementById('rw-form-overlay').addEventListener('click', function(e)
 });
 
 async function init() {
-  const token = parseHash() || localStorage.getItem('sb_token');
+  let token = parseHash() || localStorage.getItem('sb_token');
   if (token) {
-    const user = await getUserInfo(token);
+    let user = await getUserInfo(token);
+    if (!user) {
+      // JWT scaduto: tenta rinnovo silenzioso prima di mostrare il login
+      await refreshSession();
+      token = localStorage.getItem('sb_token');
+      user = token ? await getUserInfo(token) : null;
+    }
     if (user) { showApp(user); startTokenRefresh(); return; }
     localStorage.removeItem('sb_token');
   }
