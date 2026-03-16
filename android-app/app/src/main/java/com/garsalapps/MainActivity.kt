@@ -28,16 +28,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
-    private val APP_URL = "https://garsal.netlify.app/"
-
+    private val APP_URL             = "https://garsal.netlify.app/"
     private val OAUTH_CALLBACK_SCHEME = "garsalapps"
     private val OAUTH_CALLBACK_HOST   = "oauth"
-
-    /**
-     * Fragment OAuth salvato quando il callback arriva prima che il WebView
-     * sia pronto (app uccisa da Android mentre Chrome Custom Tabs era aperto).
-     */
-    private var pendingOAuthFragment: String? = null
+    private val PREFS_OAUTH           = "oauth_pending"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         // Caso: app uccisa da Android mentre Chrome Custom Tabs era aperto.
         // Il deep link torna via onCreate invece di onNewIntent.
-        intent?.data?.oauthFragment()?.let { pendingOAuthFragment = it }
+        intent?.data?.oauthFragment()?.let { saveTokensToPending(it) }
 
         showBiometricPrompt()
 
@@ -68,12 +62,29 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         val fragment = intent?.data?.oauthFragment() ?: return
-        if (webView.visibility == View.VISIBLE) {
-            injectTokensAndReload(fragment)
-        } else {
-            // Biometria ancora in corso — salva per dopo
-            pendingOAuthFragment = fragment
+        saveTokensToPending(fragment)
+        // Ricarica la pagina: onPageFinished inietterà i token
+        webView.loadUrl(APP_URL)
+    }
+
+    /**
+     * Salva i token OAuth in SharedPreferences (storage nativo Android).
+     * Vengono iniettati nel WebView in onPageFinished dopo il prossimo caricamento.
+     */
+    private fun saveTokensToPending(fragment: String) {
+        val params = fragment.split("&").associate { kv ->
+            val eq = kv.indexOf('=')
+            if (eq > 0) kv.substring(0, eq) to Uri.decode(kv.substring(eq + 1)) else kv to ""
         }
+        val at = params["access_token"] ?: return  // se non c'è l'access token ignora
+        val rt = params["refresh_token"] ?: ""
+        val gt = params["provider_token"] ?: ""
+
+        getSharedPreferences(PREFS_OAUTH, MODE_PRIVATE).edit()
+            .putString("access_token", at)
+            .putString("refresh_token", rt)
+            .putString("provider_token", gt)
+            .apply()
     }
 
     private fun setupWebView() {
@@ -90,14 +101,34 @@ class MainActivity : AppCompatActivity() {
             }
             webViewClient = object : WebViewClient() {
 
+                /**
+                 * Quando la pagina è completamente caricata, controlla se ci sono
+                 * token OAuth in attesa in SharedPreferences e li inietta nel localStorage.
+                 */
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    // Inietta i token OAuth salvati nel localStorage non appena la pagina è pronta
-                    val fragment = pendingOAuthFragment ?: return
-                    if (url?.contains("garsal.netlify.app") == true) {
-                        pendingOAuthFragment = null
-                        injectTokensAndReload(fragment)
+                    if (url?.contains("garsal.netlify.app") != true) return
+
+                    val prefs = getSharedPreferences(PREFS_OAUTH, MODE_PRIVATE)
+                    val at = prefs.getString("access_token", "") ?: ""
+                    if (at.isEmpty()) return
+
+                    val rt = prefs.getString("refresh_token", "") ?: ""
+                    val gt = prefs.getString("provider_token", "") ?: ""
+
+                    // Cancella i token pending PRIMA di iniettarli (evita loop)
+                    prefs.edit().clear().apply()
+
+                    val js = buildString {
+                        append("localStorage.setItem('sb_token','${at.jsEscape()}');")
+                        if (rt.isNotEmpty())
+                            append("localStorage.setItem('refresh_token','${rt.jsEscape()}');")
+                        if (gt.isNotEmpty())
+                            append("localStorage.setItem('google_token','${gt.jsEscape()}');")
+                        // Chiama init() per aggiornare l'UI senza un altro reload
+                        append("if(typeof init==='function')init();")
                     }
+                    view?.evaluateJavascript(js, null)
                 }
 
                 /**
@@ -147,33 +178,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Inietta i token OAuth direttamente nel localStorage del WebView
-     * tramite JavaScript, poi ricarica la pagina in modo che init() li trovi.
-     * Più affidabile del passaggio via URL hash.
-     */
-    private fun injectTokensAndReload(fragment: String) {
-        val params = fragment.split("&").associate { kv ->
-            val eq = kv.indexOf('=')
-            if (eq > 0) kv.substring(0, eq) to Uri.decode(kv.substring(eq + 1)) else kv to ""
-        }
-
-        val accessToken   = params["access_token"]   ?: return
-        val refreshToken  = params["refresh_token"]  ?: ""
-        val providerToken = params["provider_token"] ?: ""
-
-        val js = buildString {
-            append("localStorage.setItem('sb_token','${accessToken.jsEscape()}');")
-            if (refreshToken.isNotEmpty())
-                append("localStorage.setItem('refresh_token','${refreshToken.jsEscape()}');")
-            if (providerToken.isNotEmpty())
-                append("localStorage.setItem('google_token','${providerToken.jsEscape()}');")
-            append("window.location.reload();")
-        }
-
-        webView.evaluateJavascript(js, null)
-    }
-
     /** Ritorna il fragment OAuth dalla Uri se schema e host corrispondono, altrimenti null. */
     private fun Uri.oauthFragment(): String? {
         if (scheme != OAUTH_CALLBACK_SCHEME || host != OAUTH_CALLBACK_HOST) return null
@@ -181,7 +185,7 @@ class MainActivity : AppCompatActivity() {
         return frag.ifEmpty { null }
     }
 
-    /** Escapa i single quote per uso sicuro in stringa JS. */
+    /** Escapa backslash e single quote per uso sicuro in stringa JS. */
     private fun String.jsEscape() = replace("\\", "\\\\").replace("'", "\\'")
 
     private fun showBiometricPrompt() {
