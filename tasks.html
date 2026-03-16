@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.25</title>
+    <title>Tasks v19.18.26</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2176,8 +2176,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.25';
-        const BUILD_TIME  = '2026-03-16T16:00:00Z';
+        const APP_VERSION = 'v19.18.26';
+        const BUILD_TIME  = '2026-03-16T16:15:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -4669,7 +4669,7 @@
         function renderCategories(containerElement = document) {
             // Aggiungi conteggio task per ordinamento
             const categoriesWithCount = categories.map(cat => {
-                const taskCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id) && ['started', 'completed', 'failed', 'skipped'].includes(t.status)).length;
+                const taskCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id)).length;
                 return { ...cat, taskCount };
             });
             
@@ -4678,7 +4678,7 @@
             
             const html = categoriesWithCount.map(cat => {
                 const taskCount = cat.taskCount;
-                const freeRepeatCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id) && t.type === 'free_repeat' && ['started', 'completed', 'failed', 'skipped'].includes(t.status)).length;
+                const freeRepeatCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id) && t.type === 'free_repeat').length;
                 const canDelete = taskCount === 0;
                 const showInDash = cat.show_in_dashboard || false;
                 
@@ -5605,7 +5605,7 @@
             // Conta task per categoria
             const categoriesWithCount = categories.map(cat => ({
                 ...cat,
-                taskCount: tasks.filter(t => t.categories?.some(cid => cid == cat.id) && ['started', 'completed', 'failed', 'skipped'].includes(t.status)).length
+                taskCount: tasks.filter(t => t.categories?.some(cid => cid == cat.id)).length
             }));
             
             // Ordina per numero task (decrescente)
