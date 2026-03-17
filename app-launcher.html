@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.44</title>
+<title>AppSphere v1.5.45</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.44';
-const BUILD_TIME  = '2026-03-17T19:15:00Z';
+const APP_VERSION = 'v1.5.45';
+const BUILD_TIME  = '2026-03-17T19:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1954,22 +1954,49 @@ async function openNotifiche() {
   }
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/cm_notification_rules?select=*&order=entity_title.asc`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
-    );
-    const rules = await res.json();
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token };
+
+    // fetch regole e fire_at più recente per ogni regola in parallelo
+    const [rulesRes, queueRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/cm_notification_rules?select=*`, { headers: hdrs }),
+      fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue?select=app,entity_id,fire_at&status=neq.cancelled&order=fire_at.desc`, { headers: hdrs })
+    ]);
+    const rules    = await rulesRes.json();
+    const queueAll = await queueRes.json();
 
     if (!Array.isArray(rules) || rules.length === 0) {
       body.innerHTML = '<p style="text-align:center;color:#aaa;padding:24px;font-family:DM Mono,monospace;font-size:12px;">Nessuna regola di notifica configurata.</p>';
       return;
     }
 
+    // mappa key → max fire_at (la prima per ogni chiave, essendo già desc)
+    const latestFireAt = {};
+    if (Array.isArray(queueAll)) {
+      for (const q of queueAll) {
+        const k = `${q.app}-${q.entity_id}`;
+        if (!latestFireAt[k]) latestFireAt[k] = q.fire_at;
+      }
+    }
+
+    // ordina: chi ha fire_at più recente viene prima; senza coda va in fondo
+    rules.sort((a, b) => {
+      const fa = latestFireAt[`${a.app}-${a.entity_id}`] || null;
+      const fb = latestFireAt[`${b.app}-${b.entity_id}`] || null;
+      if (fa && fb) return fa < fb ? 1 : fa > fb ? -1 : 0;
+      if (fa) return -1;
+      if (fb) return 1;
+      return (a.entity_title || '').localeCompare(b.entity_title || '');
+    });
+
     const appLabel  = { habits: '🔄 Habit Tracker', tasks: '✅ Tasks', events: '📋 Events Log' };
     const freqLabel = { daily: 'Giornaliero', weekly: 'Settimanale', daily_multiple: 'Multi-orario' };
     const chanLabel = { telegram: '✈ Telegram', push: '📲 Push', email: '✉ Email' };
 
     body.innerHTML = rules.map(rule => {
+      const latestDt = latestFireAt[`${rule.app}-${rule.entity_id}`];
+      const latestStr = latestDt
+        ? (() => { const d = new Date(latestDt); return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); })()
+        : null;
       const p  = rule.reminder_presets || {};
       const times    = (p.times  || []).map(t => `<span class="notif-chip">🕐 ${t}</span>`).join('');
       const fromTo   = (p['from-to'] || [null, null]);
@@ -1991,7 +2018,7 @@ async function openNotifiche() {
             <div class="notif-rule-title">${rule.entity_title || '—'}</div>
             <span id="nrc-arrow-${ruleId}" style="color:#aaa;font-size:12px;transition:transform 0.2s;">▾</span>
           </div>
-          <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}</div>
+          <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}${latestStr ? ' &nbsp;·&nbsp; <span style="color:#6366F1;">🕐 ' + latestStr + '</span>' : ''}</div>
           <div class="notif-chips">${enabled}${channel}${times}${dateRange}${tgBtn}</div>
           <div class="notif-queue-panel" id="nqp-${ruleId}">
             <div class="notif-queue-loading">Caricamento coda…</div>
