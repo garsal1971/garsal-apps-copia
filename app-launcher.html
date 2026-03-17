@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.35</title>
+<title>AppSphere v1.5.42</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -254,32 +254,135 @@
     color: rgba(255,255,255,0.85);
     font-size: 11px;
   }
-  #logout-btn {
-    padding: 5px 12px;
-    border: 1px solid rgba(255,255,255,0.4);
-    border-radius: 6px;
-    background: transparent;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: #fff;
+  /* ── HAMBURGER BTN ── */
+  #hamburger-btn {
+    background: none;
+    border: none;
     cursor: pointer;
-    transition: background 0.2s;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
   }
-  #logout-btn:hover { background: rgba(255,255,255,0.15); }
+  #hamburger-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+  }
 
-  /* ── SETTINGS BTN ── */
-  #settings-btn {
-    padding: 5px 12px;
-    border: 1px solid rgba(255,255,255,0.4);
+  /* ── HAMBURGER DROPDOWN MENU ── */
+  #hamburger-menu {
+    display: none;
+    position: fixed;
+    top: 56px;
+    right: 0;
+    min-width: 180px;
+    background: #fff;
+    border-radius: 0 0 0 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    z-index: 600;
+    overflow: hidden;
+  }
+  #hamburger-menu.open { display: block; }
+  .hm-item {
+    display: block;
+    width: 100%;
+    padding: 15px 20px;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #222;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .hm-item:last-child { border-bottom: none; }
+  .hm-item:hover { background: #f5f5f5; }
+  .hm-item.danger { color: #E74C3C; }
+
+  /* ── NOTIFICHE MODAL ── */
+  #notifiche-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.48);
+    z-index: 700;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #notifiche-overlay.open { display: flex; }
+  #notifiche-modal {
+    background: #fff;
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #notifiche-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+  }
+  #notifiche-modal-header h2 {
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+  }
+  #notifiche-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    padding: 4px 8px;
     border-radius: 6px;
-    background: transparent;
+  }
+  #notifiche-modal-body { padding: 16px 20px 32px; }
+  .notif-rule-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .notif-rule-title {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #111;
+    margin-bottom: 4px;
+  }
+  .notif-rule-app {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.2s;
+    color: #888;
+    margin-bottom: 10px;
   }
-  #settings-btn:hover { background: rgba(255,255,255,0.15); }
+  .notif-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .notif-chip {
+    background: #EEF2FF;
+    color: #3730A3;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+  }
+  .notif-chip.green { background: #ECFDF5; color: #065F46; }
+  .notif-chip.grey  { background: #F3F4F6; color: #9CA3AF; }
+  .notif-chip.red   { background: #FEF2F2; color: #991B1B; }
 
   /* ── BADGE SETTINGS MODAL ── */
   #badge-modal-overlay {
@@ -894,8 +997,27 @@
     <div id="user-bar-brand-text">Garsal Apps</div>
   </div>
   <span id="user-name"></span>
-  <button id="settings-btn" onclick="openBadgeSettings()">⚙ Badge</button>
-  <button id="logout-btn" onclick="logout()">Esci</button>
+  <button id="hamburger-btn" onclick="toggleHamburgerMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<!-- HAMBURGER DROPDOWN -->
+<div id="hamburger-menu">
+  <button class="hm-item" onclick="closeHamburgerMenu(); openBadgeSettings();">⚙ Badge</button>
+  <button class="hm-item" onclick="closeHamburgerMenu(); openNotifiche();">🔔 Notifiche</button>
+  <button class="hm-item danger" onclick="closeHamburgerMenu(); logout();">↩ Esci</button>
+</div>
+
+<!-- NOTIFICHE MODAL -->
+<div id="notifiche-overlay" onclick="handleNotificheOverlayClick(event)">
+  <div id="notifiche-modal">
+    <div id="notifiche-modal-header">
+      <h2>🔔 Notifiche</h2>
+      <button id="notifiche-modal-close" onclick="closeNotifiche()">✕</button>
+    </div>
+    <div id="notifiche-modal-body"></div>
+  </div>
 </div>
 
 <!-- BADGE SETTINGS MODAL -->
@@ -1020,8 +1142,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.41';
-const BUILD_TIME  = '2026-03-16T23:30:00Z';
+const APP_VERSION = 'v1.5.42';
+const BUILD_TIME  = '2026-03-17T18:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1768,6 +1890,83 @@ async function loadApps() {
   }));
 
   render(apps);
+}
+
+// ── HAMBURGER MENU ──
+function toggleHamburgerMenu() {
+  document.getElementById('hamburger-menu').classList.toggle('open');
+}
+function closeHamburgerMenu() {
+  document.getElementById('hamburger-menu').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('hamburger-menu');
+  const btn  = document.getElementById('hamburger-btn');
+  if (menu && menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// ── NOTIFICHE ──
+async function openNotifiche() {
+  const overlay = document.getElementById('notifiche-overlay');
+  const body    = document.getElementById('notifiche-modal-body');
+  overlay.classList.add('open');
+  body.innerHTML = '<p style="text-align:center;color:#aaa;padding:24px;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</p>';
+
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  if (!token) {
+    body.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:20px;">Non autenticato.</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_notification_rules?select=*&order=entity_title.asc`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    const rules = await res.json();
+
+    if (!Array.isArray(rules) || rules.length === 0) {
+      body.innerHTML = '<p style="text-align:center;color:#aaa;padding:24px;font-family:DM Mono,monospace;font-size:12px;">Nessuna regola di notifica configurata.</p>';
+      return;
+    }
+
+    const appLabel  = { habits: '🔄 Habit Tracker', tasks: '✅ Tasks', events: '📋 Events Log' };
+    const freqLabel = { daily: 'Giornaliero', weekly: 'Settimanale', daily_multiple: 'Multi-orario' };
+    const chanLabel = { telegram: '✈ Telegram', push: '📲 Push', email: '✉ Email' };
+
+    body.innerHTML = rules.map(rule => {
+      const p  = rule.reminder_presets || {};
+      const times    = (p.times  || []).map(t => `<span class="notif-chip">🕐 ${t}</span>`).join('');
+      const fromTo   = (p['from-to'] || [null, null]);
+      const dateRange = (fromTo[0] || fromTo[1])
+        ? `<span class="notif-chip">📅 ${fromTo[0] || '?'} → ${fromTo[1] || '∞'}</span>` : '';
+      const tgBtn    = p.telegram_complete_button ? '<span class="notif-chip green">✅ Btn Fatto</span>' : '';
+      const enabled  = rule.enabled
+        ? '<span class="notif-chip green">✓ Attiva</span>'
+        : '<span class="notif-chip red">✗ Disabilitata</span>';
+      const channel  = `<span class="notif-chip">${chanLabel[rule.channel] || rule.channel}</span>`;
+      const freq     = freqLabel[rule.entity_type] || rule.entity_type || '';
+      const app      = appLabel[rule.app] || rule.app || '';
+
+      return `
+        <div class="notif-rule-card">
+          <div class="notif-rule-title">${rule.entity_title || '—'}</div>
+          <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}</div>
+          <div class="notif-chips">${enabled}${channel}${times}${dateRange}${tgBtn}</div>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    body.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:20px;">Errore: ${e.message}</p>`;
+  }
+}
+function closeNotifiche() {
+  document.getElementById('notifiche-overlay').classList.remove('open');
+}
+function handleNotificheOverlayClick(e) {
+  if (e.target === document.getElementById('notifiche-overlay')) closeNotifiche();
 }
 
 // ── BADGE SETTINGS ──
