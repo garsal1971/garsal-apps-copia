@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.39</title>
+    <title>Habit Stack Tracker v9.3.40</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1660,8 +1660,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.39';
-        const BUILD_TIME  = '2026-03-17T14:30:00Z';
+        const APP_VERSION = 'v9.3.40';
+        const BUILD_TIME  = '2026-03-17T15:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5399,16 +5399,9 @@
             } catch { return null; }
         }
 
-        async function triggerFillQueue() {
-            try {
-                if (!supabaseClient) return;
-                const { data, error } = await supabaseClient.functions.invoke('fill-notification-queue', { body: {} });
-                if (error) console.warn('⚠️ triggerFillQueue:', error.message);
-                else console.log('✅ triggerFillQueue:', data);
-            } catch (e) {
-                console.warn('⚠️ triggerFillQueue:', e.message);
-            }
-        }
+        // triggerFillQueue rimosso: l'Edge Function non supporta CORS da browser.
+        // La coda viene popolata dallo scheduler Supabase lato server.
+        function triggerFillQueue() {}
 
         // Elimina fisicamente le notifiche pending/snoozed dalla coda per un habit completato.
         // Richiede due step perché la RLS DELETE ammette solo righe con status='cancelled'.
