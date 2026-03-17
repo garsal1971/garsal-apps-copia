@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.44</title>
+    <title>Habit Stack Tracker v9.3.45</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1183,6 +1183,9 @@
 
             <!-- Archive Page -->
             <div id="page-archive" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1 class="page-title">📦 Archivio</h1>
+                </div>
                 <div id="archivedStacksList">
                     <!-- Lista stack archiviati -->
                 </div>
@@ -1658,8 +1661,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.44';
-        const BUILD_TIME  = '2026-03-17T17:00:00Z';
+        const APP_VERSION = 'v9.3.45';
+        const BUILD_TIME  = '2026-03-17T17:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5843,33 +5846,85 @@
         function renderArchive() {
             const container = document.getElementById('archivedStacksList');
 
+            const reasonLabel = { completato: '✅ Completato', fallito: '💀 Fallito', interrotto: '⏹ Interrotto', stopped: '⏹ Interrotto' };
+            const reasonBg    = { completato: '#e8f5e9', fallito: '#ffebee', interrotto: '#fff8e1', stopped: '#fff8e1' };
             const statusLabel = { completed: '✅ Completata', failed: '💀 Fallita', stopped: '⏹ Interrotta' };
             const statusBg    = { completed: '#e8f5e9', failed: '#ffebee', stopped: '#fff8e1' };
 
-            const inactiveHtml = inactiveHabits.length === 0
-                ? '<p style="opacity: 0.7; text-align: center; padding: 1rem;">Nessuna abitudine non attiva.</p>'
-                : inactiveHabits.map(habit => {
-                    const category = categories.find(c => c.id === habit.category_id);
-                    const label = statusLabel[habit.status] || habit.status;
-                    const bg    = statusBg[habit.status] || '#f5f5f5';
+            // Sezione 1: stack archiviati (cicli completati/falliti con statistiche)
+            let stacksHtml = '';
+            if (archivedStacks.length > 0) {
+                stacksHtml = `
+                    <h2 style="font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.75rem 0;">
+                        Cicli archiviati (${archivedStacks.length})
+                    </h2>
+                ` + archivedStacks.map(stack => {
+                    const category = categories.find(c => c.id === stack.category_id);
+                    const label = reasonLabel[stack.reason] || stack.reason;
+                    const bg    = reasonBg[stack.reason] || '#f5f5f5';
+                    const pct   = stack.total_days > 0 ? Math.min(100, Math.round((stack.total_completions / stack.total_days) * 100)) : 0;
                     return `
                         <div class="card" style="margin-bottom: 1rem; border-left: 4px solid ${category?.color || '#ccc'};">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                                 <div>
-                                    <h3 style="margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                                        ${category ? category.icon : '📌'} ${habit.name}
+                                    <h3 style="margin: 0 0 0.3rem 0;">
+                                        ${category ? category.icon : '📌'} ${stack.habit_name}
                                     </h3>
-                                    <p style="opacity: 0.7; margin: 0; font-size: 0.9rem;">${habit.created_at ? habit.created_at.split('T')[0] : ''}</p>
+                                    <div style="font-size: 0.85rem; opacity: 0.6;">
+                                        ${stack.started_at || ''} → ${stack.ended_at || ''}
+                                    </div>
                                 </div>
-                                <span style="padding: 0.3rem 0.8rem; background: ${bg}; border-radius: 20px; font-size: 0.85rem;">
+                                <span style="padding: 0.3rem 0.8rem; background: ${bg}; border-radius: 20px; font-size: 0.85rem; white-space: nowrap;">
                                     ${label}
                                 </span>
+                            </div>
+                            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.9rem; margin-bottom: 0.75rem;">
+                                <span>📅 ${stack.total_completions ?? 0} / ${stack.total_days ?? 0} giorni</span>
+                                <span>🔥 Streak max: ${stack.final_streak ?? 0}</span>
+                                <span>⭐ ${stack.points_earned ?? 0} punti</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.25rem;">
+                                <span>${pct}% completato</span>
+                            </div>
+                            <div class="progress-bar" style="margin: 0; height: 8px; border-radius: 4px;">
+                                <div class="progress-fill" style="width: ${pct}%;"></div>
                             </div>
                         </div>
                     `;
                 }).join('');
+            }
 
-            container.innerHTML = inactiveHtml;
+            // Sezione 2: abitudini non attive (stopped/failed senza ciclo archiviato)
+            const inactiveHtml = inactiveHabits.length === 0 ? '' : `
+                <h2 style="font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; margin: 1.5rem 0 0.75rem 0;">
+                    Abitudini non attive (${inactiveHabits.length})
+                </h2>
+            ` + inactiveHabits.map(habit => {
+                const category = categories.find(c => c.id === habit.category_id);
+                const label = statusLabel[habit.status] || habit.status;
+                const bg    = statusBg[habit.status] || '#f5f5f5';
+                return `
+                    <div class="card" style="margin-bottom: 0.75rem; border-left: 4px solid ${category?.color || '#ccc'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin: 0 0 0.25rem 0; font-size: 1rem;">
+                                    ${category ? category.icon : '📌'} ${habit.name}
+                                </h3>
+                                <div style="font-size: 0.8rem; opacity: 0.6;">${habit.updated_at ? habit.updated_at.split('T')[0] : ''}</div>
+                            </div>
+                            <span style="padding: 0.25rem 0.7rem; background: ${bg}; border-radius: 20px; font-size: 0.8rem; white-space: nowrap;">
+                                ${label}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (!stacksHtml && !inactiveHtml) {
+                container.innerHTML = '<p style="opacity: 0.7; text-align: center; padding: 2rem;">Nessun archivio disponibile.</p>';
+            } else {
+                container.innerHTML = stacksHtml + inactiveHtml;
+            }
         }
 
         // ==========================================
