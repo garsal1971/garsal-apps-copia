@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comandi Manuali — garsal-apps</title>
+<title>Setup Ambiente Dev — garsal-apps</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -43,6 +43,7 @@
   .task.done { opacity: 0.4; }
   .task.done .task-status { background: #064E3B; color: #34D399; border-color: #065F46; }
   .task.urgent { border-color: #EF4444; }
+  .task.info-only { border-color: #1E40AF; }
 
   .task-header {
     display: flex;
@@ -70,9 +71,12 @@
   .badge.status-done   { background: #064E3B; color: #34D399; border: 1px solid #065F46; }
   .badge.status-urgent { background: #7F1D1D; color: #FCA5A5; border: 1px solid #EF444444; }
   .badge.status-auto   { background: #1E3A5F; color: #60A5FA; border: 1px solid #1E40AF44; }
-  .badge.sql  { background: #78350F22; color: #FCD34D; border: 1px solid #78350F44; }
-  .badge.bash { background: #064E3B22; color: #6EE7B7; border: 1px solid #064E3B44; }
-  .badge.info { background: #1E293B;   color: #94A3B8;  border: 1px solid #334155; }
+  .badge.sql    { background: #78350F22; color: #FCD34D; border: 1px solid #78350F44; }
+  .badge.bash   { background: #064E3B22; color: #6EE7B7; border: 1px solid #064E3B44; }
+  .badge.info   { background: #1E293B;   color: #94A3B8;  border: 1px solid #334155; }
+  .badge.github { background: #1E293B;   color: #C084FC;  border: 1px solid #7C3AED44; }
+  .badge.netlify{ background: #0C4A6E22; color: #38BDF8;  border: 1px solid #0369A144; }
+  .badge.claude { background: #064E3B22; color: #34D399;  border: 1px solid #065F46; }
 
   .code-block {
     position: relative;
@@ -118,6 +122,19 @@
     font-family: monospace;
   }
 
+  .highlight-box {
+    background: #1E3A5F33;
+    border: 1px solid #1E40AF66;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 0 20px 16px;
+    font-size: 13px;
+    color: #93C5FD;
+    line-height: 1.6;
+    font-family: monospace;
+  }
+  .highlight-box strong { color: #60A5FA; }
+
   footer {
     margin-top: 40px;
     text-align: center;
@@ -131,215 +148,489 @@
 <div class="container">
 
   <header>
-    <h1>⚙ Comandi Manuali — garsal-apps</h1>
-    <p>// fix bottone "✅ Fatto" Telegram · history_action_check · 2026-03-16</p>
+    <h1>⚙ Setup Ambiente Dev — garsal-apps</h1>
+    <p>// dev/** branch → Netlify preview → Supabase DEV · 2026-03-17</p>
   </header>
 
   <!-- ══════════════════════════════════════════
-       DA FARE ORA
+       SEZIONE 1 — SUPABASE
        ══════════════════════════════════════════ -->
-  <div class="section-label">▶ da fare ora</div>
+  <div class="section-label">▶ 1 · supabase — crea progetto dev</div>
 
-  <!-- TASK 0 — fix task esistenti con orario UTC errato -->
-  <div class="task urgent" id="task-0">
-    <div class="task-header">
-      <div class="task-num">#000</div>
-      <div class="task-info">
-        <div class="task-title">SQL — correggi i task esistenti con orario salvato senza timezone (+1h errato)</div>
-        <div class="task-desc">
-          I task salvati prima del fix <code>v19.18.22</code> hanno <code>start_date</code> e <code>next_occurrence_date</code>
-          senza offset UTC (es. <code>2026-03-16T14:30:00</code> invece di <code>2026-03-16T13:30:00Z</code>).<br>
-          PostgreSQL/Edge Function li interpreta come UTC+0 → 1 ora avanti rispetto all'intenzione (CET = UTC+1).<br>
-          Questo SQL sottrae 1 ora ai task attivi che hanno l'ora &gt; 00:00 (non mezzanotte, che è spesso un default).
-        </div>
-        <div class="task-meta">
-          <span class="badge status-urgent">🔴 urgente</span>
-          <span class="badge sql">SQL</span>
-          <span class="badge info">Supabase SQL Editor</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-0">
-      <button class="copy-btn" onclick="copyCode('cb-0', this)">Copia</button>
-      <pre>-- Verifica prima: vedi quanti task sarebbero modificati
-SELECT id, title, type, status,
-       start_date,
-       start_date - INTERVAL '1 hour' AS start_date_corretto
-FROM ts_tasks
-WHERE status NOT IN ('terminated', 'archived')
-  AND start_date IS NOT NULL
-  AND EXTRACT(HOUR FROM start_date) != 0
-ORDER BY start_date DESC
-LIMIT 20;
-
--- Se i valori sembrano corretti, applica la correzione:
--- (decommenta le righe UPDATE dopo aver verificato la SELECT)
-
--- UPDATE ts_tasks
--- SET start_date = start_date - INTERVAL '1 hour'
--- WHERE status NOT IN ('terminated', 'archived')
---   AND start_date IS NOT NULL
---   AND EXTRACT(HOUR FROM start_date) != 0;
-
--- UPDATE ts_tasks
--- SET next_occurrence_date = next_occurrence_date - INTERVAL '1 hour'
--- WHERE status NOT IN ('terminated', 'archived')
---   AND next_occurrence_date IS NOT NULL
---   AND EXTRACT(HOUR FROM next_occurrence_date) != 0;</pre>
-    </div>
-    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → esegui prima la SELECT, poi decommenta gli UPDATE se ok</div>
-  </div>
-
-  <!-- TASK 1 — history_action_check constraint fix -->
-  <div class="task urgent" id="task-1">
+  <!-- TASK 1 — Crea progetto Supabase dev -->
+  <div class="task" id="task-1">
     <div class="task-header">
       <div class="task-num">#001</div>
       <div class="task-info">
-        <div class="task-title">SQL — aggiorna la constraint <code>history_action_check</code></div>
+        <div class="task-title">Crea un nuovo progetto Supabase dev</div>
         <div class="task-desc">
-          La constraint su <code>ts_history.action</code> non include <code>'completed_late'</code> (task completati in ritardo)
-          né <code>'rollback'</code> (storno punti). Ogni completamento di task late genera errore <code>23514</code>.<br>
-          Il fix è già nella migration <code>20260316130000</code> che verrà applicata automaticamente dal workflow,
-          ma nel frattempo applica subito da SQL Editor.
+          Vai su <strong>supabase.com/dashboard</strong> → clicca <strong>"New project"</strong>.<br>
+          Nome suggerito: <code>garsal-apps-dev</code> — stessa region del progetto di produzione.<br>
+          Aspetta ~1 minuto che il progetto si inizializzi.
         </div>
         <div class="task-meta">
-          <span class="badge status-urgent">🔴 urgente</span>
-          <span class="badge sql">SQL</span>
-          <span class="badge info">Supabase SQL Editor</span>
+          <span class="badge status-todo">⏳ manuale</span>
+          <span class="badge info">supabase.com/dashboard</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-1">
-      <button class="copy-btn" onclick="copyCode('cb-1', this)">Copia</button>
-      <pre>ALTER TABLE ts_history
-  DROP CONSTRAINT IF EXISTS history_action_check;
-
-ALTER TABLE ts_history
-  ADD CONSTRAINT history_action_check
-    CHECK (action IN (
-      'completed',
-      'completed_late',
-      'failed',
-      'terminated',
-      'archived',
-      'skipped',
-      'reactivated',
-      'rollback'
-    ));</pre>
-    </div>
-    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 supabase.com → Dashboard → New project</div>
   </div>
 
-  <!-- TASK 2 — verifica constraint applicata -->
+  <!-- TASK 2 — Copia credenziali -->
   <div class="task" id="task-2">
     <div class="task-header">
       <div class="task-num">#002</div>
       <div class="task-info">
-        <div class="task-title">SQL — verifica che la constraint sia aggiornata</div>
+        <div class="task-title">Copia Project URL e Anon Key</div>
         <div class="task-desc">
-          Dopo il fix, controlla che tutti e 8 i valori siano presenti nella definizione della constraint.
+          Vai su <strong>Project Settings → API</strong> e copia i due valori evidenziati.<br>
+          Ti serviranno per il passo #004 (da dare a Claude).
         </div>
         <div class="task-meta">
           <span class="badge status-todo">⏳ dopo #001</span>
-          <span class="badge sql">SQL</span>
+          <span class="badge info">Project Settings → API</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-2">
-      <button class="copy-btn" onclick="copyCode('cb-2', this)">Copia</button>
-      <pre>SELECT conname, pg_get_constraintdef(oid) AS definizione
-FROM pg_constraint
-WHERE conrelid = 'ts_history'::regclass
-  AND conname = 'history_action_check';</pre>
+    <div class="highlight-box">
+      <strong>Project URL</strong> → es. <code>https://abcdefgh.supabase.co</code><br>
+      <strong>anon public</strong> → la chiave lunga <code>eyJhbGci...</code>
     </div>
-    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Supabase Dashboard → Project Settings → API → copia entrambi i valori</div>
   </div>
 
-  <!-- TASK 3 — verifica completamento task -->
+  <!-- TASK 3 — Replica schema con migrazioni -->
   <div class="task" id="task-3">
     <div class="task-header">
       <div class="task-num">#003</div>
       <div class="task-info">
-        <div class="task-title">SQL — verifica completamento task via Telegram</div>
+        <div class="task-title">SQL — replica lo schema di produzione nel progetto dev</div>
         <div class="task-desc">
-          Dopo aver cliccato "✅ Fatto" su un task in Telegram, verifica che:<br>
-          • il task abbia <code>status = 'terminated'</code><br>
-          • la regola di notifica sia stata eliminata da <code>cm_notification_rules</code><br>
-          • la coda abbia <code>status = 'completed'</code>
+          Apri il <strong>SQL Editor</strong> del progetto dev e incolla questo script.<br>
+          Crea tutte le tabelle necessarie alle app (tasks, habits, events, weight, notifiche).<br>
+          <em>In alternativa puoi usare Supabase CLI: <code>supabase db push --project-ref &lt;DEV_REF&gt;</code></em>
         </div>
         <div class="task-meta">
-          <span class="badge status-todo">⏳ test finale</span>
+          <span class="badge status-todo">⏳ dopo #001</span>
           <span class="badge sql">SQL</span>
+          <span class="badge info">SQL Editor progetto DEV</span>
         </div>
       </div>
     </div>
     <div class="code-block" id="cb-3">
       <button class="copy-btn" onclick="copyCode('cb-3', this)">Copia</button>
-      <pre>-- Ultimi task completati (ultimi 30 minuti)
-SELECT id, title, type, status, last_completed_date
-FROM ts_tasks
-WHERE status IN ('terminated', 'completed')
-  AND last_completed_date >= now() - interval '30 minutes'
-ORDER BY last_completed_date DESC
-LIMIT 10;
+      <pre>-- ══════════════════════════════════════════════════════════════
+-- garsal-apps — Schema DEV
+-- Incolla nel SQL Editor del progetto Supabase DEV
+-- ══════════════════════════════════════════════════════════════
 
--- Ultimi record in ts_history (verifica action)
-SELECT task_id, from_status, to_status, action, points, timestamp
-FROM ts_history
-ORDER BY timestamp DESC
-LIMIT 10;</pre>
+-- ── SHARED ──────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cm_apps (
+  id            SERIAL PRIMARY KEY,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  html_file     TEXT NOT NULL,
+  score_query   TEXT,
+  color         TEXT,
+  active        BOOLEAN DEFAULT true,
+  riservato     BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS cm_categories (
+  id    SERIAL PRIMARY KEY,
+  name  TEXT NOT NULL,
+  color TEXT,
+  icon  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cm_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cm_notification_rules (
+  id          SERIAL PRIMARY KEY,
+  app         TEXT,
+  entity_id   TEXT,
+  rule_type   TEXT,
+  fire_at     TIMESTAMPTZ,
+  payload     JSONB,
+  active      BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cm_notification_queue (
+  id          SERIAL PRIMARY KEY,
+  app         TEXT,
+  entity_id   TEXT,
+  fire_at     TIMESTAMPTZ,
+  status      TEXT DEFAULT 'pending',
+  payload     JSONB,
+  metadata    JSONB,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- ── TASKS ───────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS ts_tasks (
+  id                    SERIAL PRIMARY KEY,
+  user_id               UUID,
+  title                 TEXT NOT NULL,
+  type                  TEXT DEFAULT 'single',
+  status                TEXT DEFAULT 'active',
+  priority_id           INT,
+  category_id           INT,
+  start_date            TIMESTAMPTZ,
+  next_occurrence_date  TIMESTAMPTZ,
+  recurrence_rule       JSONB,
+  notes                 TEXT,
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  updated_at            TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS ts_history (
+  id          SERIAL PRIMARY KEY,
+  task_id     INT REFERENCES ts_tasks(id) ON DELETE CASCADE,
+  action      TEXT CHECK (action IN (
+                'completed','completed_late','failed','terminated',
+                'archived','skipped','reactivated','rollback'
+              )),
+  completed_at TIMESTAMPTZ DEFAULT now(),
+  notes       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ts_priorities (
+  id     SERIAL PRIMARY KEY,
+  name   TEXT NOT NULL,
+  color  TEXT,
+  weight INT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS ts_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ts_notes (
+  id         SERIAL PRIMARY KEY,
+  title      TEXT,
+  content    TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ── HABIT TRACKER ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS hb_habits (
+  id          SERIAL PRIMARY KEY,
+  user_id     UUID,
+  name        TEXT NOT NULL,
+  stack_order INT DEFAULT 0,
+  points      INT DEFAULT 10,
+  active      BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS hb_completions (
+  id           SERIAL PRIMARY KEY,
+  habit_id     INT REFERENCES hb_habits(id) ON DELETE CASCADE,
+  completed_on DATE NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS hb_user_points (
+  user_id    UUID PRIMARY KEY,
+  balance    INT DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS hb_points_transactions (
+  id         SERIAL PRIMARY KEY,
+  user_id    UUID,
+  delta      INT NOT NULL,
+  reason     TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS hb_archived_stacks (
+  id          SERIAL PRIMARY KEY,
+  user_id     UUID,
+  stack_data  JSONB,
+  archived_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ── EVENTS LOG ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS el_groups (
+  id    SERIAL PRIMARY KEY,
+  name  TEXT NOT NULL,
+  icon  TEXT,
+  color TEXT
+);
+
+CREATE TABLE IF NOT EXISTS el_events (
+  id       SERIAL PRIMARY KEY,
+  group_id INT REFERENCES el_groups(id) ON DELETE CASCADE,
+  name     TEXT NOT NULL,
+  icon     TEXT,
+  color    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS el_logs (
+  id         SERIAL PRIMARY KEY,
+  event_id   INT REFERENCES el_events(id) ON DELETE CASCADE,
+  logged_at  TIMESTAMPTZ DEFAULT now(),
+  notes      TEXT
+);
+
+-- ── WEIGHT QUEST ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS ps_weight_tracking (
+  id          SERIAL PRIMARY KEY,
+  user_id     UUID,
+  weight_kg   NUMERIC(5,2) NOT NULL,
+  measured_at DATE NOT NULL DEFAULT CURRENT_DATE,
+  notes       TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- ── RLS (Row Level Security) — abilita su tutte le tabelle ──────
+ALTER TABLE cm_apps               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cm_categories         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cm_settings           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cm_notification_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cm_notification_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_tasks              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_history            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_priorities         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_settings           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ts_notes              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hb_habits             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hb_completions        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hb_user_points        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hb_points_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hb_archived_stacks    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE el_groups             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE el_events             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE el_logs               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ps_weight_tracking    ENABLE ROW LEVEL SECURITY;
+
+-- Policy: accesso completo all'utente autenticato
+CREATE POLICY "utente autenticato" ON cm_apps               FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON cm_categories         FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON cm_settings           FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON cm_notification_rules FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON cm_notification_queue FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ts_tasks              FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ts_history            FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ts_priorities         FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ts_settings           FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ts_notes              FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON hb_habits             FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON hb_completions        FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON hb_user_points        FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON hb_points_transactions FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON hb_archived_stacks    FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON el_groups             FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON el_events             FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON el_logs               FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "utente autenticato" ON ps_weight_tracking    FOR ALL USING (auth.role() = 'authenticated');
+
+-- ── RPC run_score_query (usata dal launcher) ────────────────────
+CREATE OR REPLACE FUNCTION run_score_query(query_sql TEXT)
+RETURNS INT LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE result INT;
+BEGIN
+  EXECUTE query_sql INTO result;
+  RETURN COALESCE(result, 0);
+END;
+$$;
+
+SELECT 'Schema DEV creato con successo ✓';</pre>
     </div>
-    <div class="platform-note">📍 Supabase Dashboard → SQL Editor → New Query → incolla → Run</div>
+    <div class="platform-note">📍 Supabase Dashboard (progetto DEV) → SQL Editor → New Query → incolla → Run</div>
+  </div>
+
+  <!-- TASK 4 — Configura Auth Redirect URL -->
+  <div class="task" id="task-4">
+    <div class="task-header">
+      <div class="task-num">#004</div>
+      <div class="task-info">
+        <div class="task-title">Configura Google OAuth nel progetto dev</div>
+        <div class="task-desc">
+          Abilita il provider Google e aggiungi la Redirect URL per il branch preview Netlify.<br>
+          Il pattern <code>https://dev--*--*.netlify.app/**</code> copre tutti i branch <code>dev/**</code>.
+        </div>
+        <div class="task-meta">
+          <span class="badge status-todo">⏳ dopo #001</span>
+          <span class="badge info">Authentication → Providers</span>
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <strong>Authentication → Providers → Google</strong><br>
+      Abilita Google OAuth (usa le stesse credenziali del progetto prod)<br><br>
+      <strong>Authentication → URL Configuration → Redirect URLs</strong><br>
+      Aggiungi: <code>https://dev--*--*.netlify.app/**</code>
+    </div>
+    <div class="platform-note">📍 Supabase Dashboard (progetto DEV) → Authentication → URL Configuration → Redirect URLs</div>
   </div>
 
   <!-- ══════════════════════════════════════════
-       AUTOMATIZZATO — non serve più fare a mano
+       SEZIONE 2 — GITHUB
        ══════════════════════════════════════════ -->
-  <div class="section-label">✓ automatizzato (GitHub Actions)</div>
+  <div class="section-label">▶ 2 · github — aggiungi secret</div>
 
-  <div class="task done" id="task-old-1">
+  <!-- TASK 5 — GitHub Secret -->
+  <div class="task" id="task-5">
     <div class="task-header">
-      <div class="task-num">#—</div>
+      <div class="task-num">#005</div>
       <div class="task-info">
-        <div class="task-title">supabase db push — applica le migrations</div>
-        <div class="task-desc">Il workflow GitHub Actions ora esegue <code>supabase db push</code> automaticamente ad ogni push su <code>claude/**</code> quando ci sono file in <code>supabase/migrations/</code>.</div>
+        <div class="task-title">Aggiungi secret <code>SUPABASE_DEV_PROJECT_REF</code> su GitHub</div>
+        <div class="task-desc">
+          Serve al workflow <code>deploy-dev.yml</code> per applicare le migrazioni al progetto dev
+          quando cambia <code>supabase/migrations/</code>.<br>
+          Il valore è il <strong>Project Ref</strong> del progetto dev (la stringa corta, es. <code>abcdefgh</code>).
+        </div>
         <div class="task-meta">
-          <span class="badge status-auto">✓ automatico</span>
-          <span class="badge bash">Bash</span>
+          <span class="badge status-todo">⏳ manuale</span>
+          <span class="badge github">GitHub</span>
         </div>
       </div>
     </div>
+    <div class="highlight-box">
+      <strong>Repository → Settings → Secrets and variables → Actions → New repository secret</strong><br><br>
+      Name: <code>SUPABASE_DEV_PROJECT_REF</code><br>
+      Value: <code>&lt;project-ref-del-progetto-dev&gt;</code>
+    </div>
+    <div class="platform-note">📍 github.com/garsal1971/garsal-apps → Settings → Secrets and variables → Actions</div>
   </div>
 
-  <div class="task done" id="task-old-2">
+  <!-- ══════════════════════════════════════════
+       SEZIONE 3 — NETLIFY
+       ══════════════════════════════════════════ -->
+  <div class="section-label">▶ 3 · netlify — abilita branch deploys</div>
+
+  <!-- TASK 6 — Netlify branch deploys -->
+  <div class="task" id="task-6">
     <div class="task-header">
-      <div class="task-num">#—</div>
+      <div class="task-num">#006</div>
       <div class="task-info">
-        <div class="task-title">supabase functions deploy telegram-webhook</div>
-        <div class="task-desc">Il workflow GitHub Actions deploya automaticamente le Edge Functions modificate ad ogni push su <code>claude/**</code>.</div>
+        <div class="task-title">Abilita branch deploys per <code>dev/*</code> su Netlify</div>
+        <div class="task-desc">
+          Ogni push su un branch <code>dev/</code> deve generare un URL preview Netlify.<br>
+          L'URL avrà il formato: <code>dev--nome-branch--&lt;sitename&gt;.netlify.app</code><br>
+          Le app rilevano automaticamente questo URL e usano il DB dev.
+        </div>
         <div class="task-meta">
-          <span class="badge status-auto">✓ automatico</span>
-          <span class="badge bash">Bash</span>
+          <span class="badge status-todo">⏳ manuale</span>
+          <span class="badge netlify">Netlify</span>
         </div>
       </div>
     </div>
+    <div class="highlight-box">
+      <strong>Netlify Dashboard → Site → Site configuration → Build &amp; deploy → Branches</strong><br><br>
+      Branch deploys → seleziona <strong>"Let me add individual branches"</strong><br>
+      Aggiungi il pattern: <code>dev/*</code>
+    </div>
+    <div class="platform-note">📍 app.netlify.com → tuo sito → Site configuration → Build &amp; deploy → Branches and deploy contexts</div>
   </div>
 
-  <footer>garsal-apps · comandi.html · aggiornato 2026-03-16</footer>
+  <!-- ══════════════════════════════════════════
+       SEZIONE 4 — CLAUDE
+       ══════════════════════════════════════════ -->
+  <div class="section-label">▶ 4 · claude — inserisci credenziali dev negli html</div>
+
+  <!-- TASK 7 — Dai credenziali a Claude -->
+  <div class="task info-only" id="task-7">
+    <div class="task-header">
+      <div class="task-num">#007</div>
+      <div class="task-info">
+        <div class="task-title">Dai a Claude il Project URL e l'Anon Key del progetto dev</div>
+        <div class="task-desc">
+          Dopo aver completato #001 e #002, copia i valori da <strong>Project Settings → API</strong>
+          e passali a Claude nella chat.<br>
+          Claude sostituirà i placeholder <code>DEV_SUPABASE_PROJECT_REF</code> e <code>DEV_SUPABASE_ANON_KEY</code>
+          in tutti gli HTML e pusherà automaticamente.
+        </div>
+        <div class="task-meta">
+          <span class="badge status-todo">⏳ dopo #001 + #002</span>
+          <span class="badge claude">Claude</span>
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box">
+      Messaggio da inviare a Claude:<br><br>
+      <strong>Project URL dev:</strong> <code>https://XXXXXXXX.supabase.co</code><br>
+      <strong>Anon Key dev:</strong> <code>eyJhbGci...</code>
+    </div>
+    <div class="platform-note">📍 Supabase Dashboard (progetto DEV) → Project Settings → API → copia e incolla nella chat</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SEZIONE 5 — FLUSSO DI LAVORO
+       ══════════════════════════════════════════ -->
+  <div class="section-label">▶ 5 · flusso di lavoro dopo il setup</div>
+
+  <div class="task info-only" id="task-8">
+    <div class="task-header">
+      <div class="task-num">#008</div>
+      <div class="task-info">
+        <div class="task-title">Come usare l'ambiente dev</div>
+        <div class="task-desc">Flusso completo dev → produzione dopo il setup completato.</div>
+        <div class="task-meta">
+          <span class="badge info">riferimento</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-8">
+      <button class="copy-btn" onclick="copyCode('cb-8', this)">Copia</button>
+      <pre>## SVILUPPO (branch dev)
+git checkout -b dev/mia-feature
+# modifica i file HTML
+git add .
+git commit -m "feat: descrizione modifica"
+git push origin dev/mia-feature
+# → Netlify crea preview: dev--mia-feature--<sitename>.netlify.app
+# → Le app usano automaticamente il DB Supabase DEV
+
+## PRODUZIONE (branch claude/**)
+git checkout -b claude/mia-feature-XXXXX
+# modifica i file HTML (incrementa APP_VERSION e BUILD_TIME)
+git add .
+git commit -m "feat: descrizione modifica"
+git push origin claude/mia-feature-XXXXX
+# → GitHub Actions merge su master → Netlify deploya in produzione
+# → Le app usano il DB Supabase PROD</pre>
+    </div>
+    <div class="platform-note">📍 Le credenziali Supabase vengono selezionate automaticamente in base all'URL del browser</div>
+  </div>
 
 </div>
 
+<footer>garsal-apps dev setup · 2026-03-17</footer>
+
 <script>
 function copyCode(blockId, btn) {
-  const pre = document.getElementById(blockId).querySelector('pre');
-  const text = pre.innerHTML
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '✓ Copiato';
+  const pre = document.querySelector('#' + blockId + ' pre');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(function() {
+    btn.textContent = 'Copiato ✓';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copia'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(function() {
+      btn.textContent = 'Copia';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(function() {
+    const ta = document.createElement('textarea');
+    ta.value = pre.textContent;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copiato ✓';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copia';
+      btn.classList.remove('copied');
+    }, 2000);
   });
 }
 </script>
