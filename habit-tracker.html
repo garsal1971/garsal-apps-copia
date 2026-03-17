@@ -1648,8 +1648,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.48';
-        const BUILD_TIME  = '2026-03-17T12:00:00Z';
+        const APP_VERSION = 'v9.3.47';
+        const BUILD_TIME  = '2026-03-17T21:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4331,8 +4331,6 @@
 
                     completions.push(data[0]);
                     showToast('✓ Completato!');
-                    // Rimuovi i promemoria pending per questa giornata
-                    await cancelHabitQueueEntries(habitId, dateStr);
                 } else if (existing.status === 'completed') {
                     // Stato 1 → Stato 2: FATTO → DIMENTICATO (rosso)
                     const { data, error } = await supabaseClient
