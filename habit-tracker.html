@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.45</title>
+    <title>Habit Stack Tracker v9.3.46</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1237,19 +1237,6 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="margin-bottom: 1rem;">Notifiche</h2>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="notificationsEnabled" onchange="saveSettings()">
-                            Abilita promemoria per abitudine
-                        </label>
-                    </div>
-                    <p style="opacity:0.7;font-size:0.85rem;margin-top:0.5rem;">
-                        L'orario del promemoria si configura per ogni singola abitudine nel modal di creazione/modifica.
-                    </p>
-                </div>
-
-                <div class="card">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
                         <h2 style="margin:0;">🐛 Console Debug</h2>
                         <div style="display:flex;gap:0.5rem;">
@@ -1661,8 +1648,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.45';
-        const BUILD_TIME  = '2026-03-17T17:30:00Z';
+        const APP_VERSION = 'v9.3.46';
+        const BUILD_TIME  = '2026-03-17T18:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
