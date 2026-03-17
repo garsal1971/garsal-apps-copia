@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.45</title>
+<title>AppSphere v1.5.46</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.45';
-const BUILD_TIME  = '2026-03-17T19:30:00Z';
+const APP_VERSION = 'v1.5.46';
+const BUILD_TIME  = '2026-03-17T19:45:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1969,24 +1969,35 @@ async function openNotifiche() {
       return;
     }
 
-    // mappa key → max fire_at (la prima per ogni chiave, essendo già desc)
-    const latestFireAt = {};
+    // per ogni regola trova la fire_at più vicina a oggi
+    const now = Date.now();
+    const closestFireAt = {};   // key → ISO string
+    const closestDist   = {};   // key → ms distance
     if (Array.isArray(queueAll)) {
       for (const q of queueAll) {
-        const k = `${q.app}-${q.entity_id}`;
-        if (!latestFireAt[k]) latestFireAt[k] = q.fire_at;
+        const k    = `${q.app}-${q.entity_id}`;
+        const dist = Math.abs(new Date(q.fire_at).getTime() - now);
+        if (closestDist[k] === undefined || dist < closestDist[k]) {
+          closestDist[k]   = dist;
+          closestFireAt[k] = q.fire_at;
+        }
       }
     }
 
-    // ordina: chi ha fire_at più recente viene prima; senza coda va in fondo
+    // ordina: chi ha fire_at più vicina a oggi viene prima; senza coda va in fondo
     rules.sort((a, b) => {
-      const fa = latestFireAt[`${a.app}-${a.entity_id}`] || null;
-      const fb = latestFireAt[`${b.app}-${b.entity_id}`] || null;
-      if (fa && fb) return fa < fb ? 1 : fa > fb ? -1 : 0;
-      if (fa) return -1;
-      if (fb) return 1;
+      const ka = `${a.app}-${a.entity_id}`;
+      const kb = `${b.app}-${b.entity_id}`;
+      const da = closestDist[ka] ?? null;
+      const db = closestDist[kb] ?? null;
+      if (da !== null && db !== null) return da - db;
+      if (da !== null) return -1;
+      if (db !== null) return 1;
       return (a.entity_title || '').localeCompare(b.entity_title || '');
     });
+
+    // alias usato nel render
+    const latestFireAt = closestFireAt;
 
     const appLabel  = { habits: '🔄 Habit Tracker', tasks: '✅ Tasks', events: '📋 Events Log' };
     const freqLabel = { daily: 'Giornaliero', weekly: 'Settimanale', daily_multiple: 'Multi-orario' };
