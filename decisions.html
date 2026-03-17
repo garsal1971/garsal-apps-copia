@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="1.7.2">
-    <title>DecisionKeeper v1.7.5</title>
+    <title>DecisionKeeper v1.7.6</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -2135,15 +2135,24 @@
         // ============================================
         // APPLICATION CODE
         // ============================================
-        const APP_VERSION = 'v1.7.5';
-        const BUILD_TIME  = '2026-03-14T15:00:00Z';
+        const APP_VERSION = 'v1.7.6';
+        const BUILD_TIME  = '2026-03-17T21:00:00Z';
         const VERSION_KEY = 'decisionKeeperVersion';
         console.log('%c DECISIONKEEPER ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#7B2FBE;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
-        const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+        // ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+        const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+        const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+                     || (window.location.hostname.endsWith('.netlify.app')
+                        && window.location.hostname.startsWith('dev--'));
+        const SUPABASE_URL = _IS_DEV
+            ? 'https://DEV_SUPABASE_PROJECT_REF.supabase.co'
+            : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+        const SUPABASE_KEY = _IS_DEV
+            ? 'DEV_SUPABASE_ANON_KEY'
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
         let hiddenMode     = false;
 
         let supabaseClient = null;
