@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.43</title>
+    <title>Habit Stack Tracker v9.3.44</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1658,8 +1658,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.43';
-        const BUILD_TIME  = '2026-03-17T16:30:00Z';
+        const APP_VERSION = 'v9.3.44';
+        const BUILD_TIME  = '2026-03-17T17:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3319,6 +3319,20 @@
             return (habit._streak ?? computeHabitStreak(habit)) || 0;
         }
 
+        function getTotalCompletedDays(habit) {
+            const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+            if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                const required = habit.daily_times.length;
+                const byDate = {};
+                habitCompletions.forEach(c => {
+                    const d = c.completed_at.substring(0, 10);
+                    byDate[d] = (byDate[d] || 0) + 1;
+                });
+                return Object.values(byDate).filter(count => count >= required).length;
+            }
+            return new Set(habitCompletions.map(c => c.completed_at.substring(0, 10))).size;
+        }
+
         function calculateCurrentPoints(habit) {
             const completedDays = completions.filter(c => 
                 c.habit_id === habit.id && 
@@ -4408,16 +4422,20 @@
                                 <div style="font-size: 0.9rem; opacity: 0.7;">${frequencyLabel}</div>
                             </div>
                         </div>
-                        ${(() => { const pct = habit.goal > 0 ? Math.min(100, Math.round((getCompletedDaysCount(habit) / habit.goal) * 100)) : 0; return `
-                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-                            <div style="flex: 1;">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${pct}%">
-                                        ${pct}%
-                                    </div>
-                                </div>
+                        ${(() => {
+                            const done = getTotalCompletedDays(habit);
+                            const pct = habit.goal > 0 ? Math.min(100, Math.round((done / habit.goal) * 100)) : 0;
+                            return `
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">
+                                <span>${done} / ${habit.goal} giorni</span>
+                                <span>${pct}%</span>
                             </div>
-                        </div>`; })()}
+                            <div class="progress-bar" style="margin: 0; height: 10px; border-radius: 5px;">
+                                <div class="progress-fill" style="width: ${pct}%;"></div>
+                            </div>
+                        </div>`;
+                        })()}
                         ${habit.status !== 'stopped' ? `
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')">MODIFICA</button>
