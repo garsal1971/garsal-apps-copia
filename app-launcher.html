@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.48';
-const BUILD_TIME  = '2026-03-17T21:00:00Z';
+const APP_VERSION = 'v1.5.49';
+const BUILD_TIME  = '2026-03-17T22:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1612,10 +1612,10 @@ const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
              || (window.location.hostname.endsWith('.netlify.app')
                 && window.location.hostname.startsWith('dev--'));
 const SUPABASE_URL = _IS_DEV
-    ? 'https://DEV_SUPABASE_PROJECT_REF.supabase.co'
+    ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
     : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
 const SUPABASE_KEY = _IS_DEV
-    ? 'DEV_SUPABASE_ANON_KEY'
+    ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
     : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
 
 function loginWithGoogle() {
