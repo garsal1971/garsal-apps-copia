@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.42</title>
+<title>AppSphere v1.5.43</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -383,6 +383,39 @@
   .notif-chip.green { background: #ECFDF5; color: #065F46; }
   .notif-chip.grey  { background: #F3F4F6; color: #9CA3AF; }
   .notif-chip.red   { background: #FEF2F2; color: #991B1B; }
+  .notif-rule-card { cursor: pointer; transition: box-shadow 0.15s; }
+  .notif-rule-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+  .notif-rule-card.open { border-color: #6366F1; }
+  .notif-queue-panel {
+    display: none;
+    margin-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 10px;
+  }
+  .notif-queue-panel.open { display: block; }
+  .notif-queue-loading { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; }
+  .notif-queue-empty  { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; font-style: italic; }
+  .notif-queue-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+  }
+  .notif-queue-row:last-child { border-bottom: none; }
+  .notif-queue-status {
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .nqs-pending  { background: #FFF7ED; color: #C2410C; }
+  .nqs-snoozed  { background: #EFF6FF; color: #1D4ED8; }
+  .nqs-sent     { background: #ECFDF5; color: #065F46; }
+  .nqs-cancelled{ background: #F3F4F6; color: #9CA3AF; }
 
   /* ── BADGE SETTINGS MODAL ── */
   #badge-modal-overlay {
@@ -1142,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.42';
-const BUILD_TIME  = '2026-03-17T18:30:00Z';
+const APP_VERSION = 'v1.5.43';
+const BUILD_TIME  = '2026-03-17T19:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1950,11 +1983,19 @@ async function openNotifiche() {
       const freq     = freqLabel[rule.entity_type] || rule.entity_type || '';
       const app      = appLabel[rule.app] || rule.app || '';
 
+      const ruleId = `${rule.app}-${rule.entity_id}`;
       return `
-        <div class="notif-rule-card">
-          <div class="notif-rule-title">${rule.entity_title || '—'}</div>
+        <div class="notif-rule-card" id="nrc-${ruleId}"
+             onclick="toggleQueuePanel('${ruleId}', '${rule.app}', '${rule.entity_id}')">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="notif-rule-title">${rule.entity_title || '—'}</div>
+            <span id="nrc-arrow-${ruleId}" style="color:#aaa;font-size:12px;transition:transform 0.2s;">▾</span>
+          </div>
           <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}</div>
           <div class="notif-chips">${enabled}${channel}${times}${dateRange}${tgBtn}</div>
+          <div class="notif-queue-panel" id="nqp-${ruleId}">
+            <div class="notif-queue-loading">Caricamento coda…</div>
+          </div>
         </div>`;
     }).join('');
 
@@ -1962,6 +2003,67 @@ async function openNotifiche() {
     body.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:20px;">Errore: ${e.message}</p>`;
   }
 }
+async function toggleQueuePanel(ruleId, app, entityId) {
+  const card  = document.getElementById('nrc-' + ruleId);
+  const panel = document.getElementById('nqp-' + ruleId);
+  const arrow = document.getElementById('nrc-arrow-' + ruleId);
+  if (!card || !panel) return;
+
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    card.classList.remove('open');
+    arrow.style.transform = '';
+    return;
+  }
+
+  panel.classList.add('open');
+  card.classList.add('open');
+  arrow.style.transform = 'rotate(180deg)';
+  panel.innerHTML = '<div class="notif-queue-loading">Caricamento coda…</div>';
+
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  try {
+    const params = new URLSearchParams({
+      app:       `eq.${app}`,
+      entity_id: `eq.${entityId}`,
+      status:    'neq.cancelled',
+      order:     'fire_at.asc',
+      select:    'fire_at,status,body',
+      limit:     '30'
+    });
+    const res  = await fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue?${params}`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } });
+    const rows = await res.json();
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      panel.innerHTML = '<div class="notif-queue-empty">Nessuna notifica in coda.</div>';
+      return;
+    }
+
+    const statusClass = { pending: 'nqs-pending', snoozed: 'nqs-snoozed', sent: 'nqs-sent', cancelled: 'nqs-cancelled' };
+    const statusLabel = { pending: '⏳ pending', snoozed: '💤 snoozed', sent: '✅ inviata', cancelled: '✗ annullata' };
+
+    panel.innerHTML = rows.map(r => {
+      const d = r.fire_at ? new Date(r.fire_at) : null;
+      const dateStr = d
+        ? d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+          + ' ' + d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+        : '—';
+      const sc = statusClass[r.status] || 'nqs-pending';
+      const sl = statusLabel[r.status] || r.status;
+      return `
+        <div class="notif-queue-row">
+          <span class="notif-queue-status ${sc}">${sl}</span>
+          <span style="flex:1;">${dateStr}</span>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    panel.innerHTML = `<div class="notif-queue-empty" style="color:#e74c3c;">Errore: ${e.message}</div>`;
+  }
+}
+
 function closeNotifiche() {
   document.getElementById('notifiche-overlay').classList.remove('open');
 }
