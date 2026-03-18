@@ -1664,8 +1664,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.57';
-        const BUILD_TIME  = '2026-03-18T17:30:00Z';
+        const APP_VERSION = 'v9.3.58';
+        const BUILD_TIME  = '2026-03-18T18:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3812,11 +3812,23 @@
                     const maxFailures = habit.max_failures || 3;
 
                     // Conta le fallite/mancate REALI dai completions (fonte di verità)
-                    const actualFailures = completions.filter(c =>
-                        c.habit_id === habit.id &&
-                        (c.status === 'failed' || c.status === 'missed') &&
-                        new Date(c.completed_at) >= startDate
-                    ).length;
+                    // Per daily_multiple: conta GIORNI distinti con fallimenti, non singole sessioni
+                    let actualFailures;
+                    if (habit.frequency === 'daily_multiple' && habit.daily_times?.length > 0) {
+                        actualFailures = new Set(
+                            completions.filter(c =>
+                                c.habit_id === habit.id &&
+                                (c.status === 'failed' || c.status === 'missed') &&
+                                new Date(c.completed_at) >= startDate
+                            ).map(c => c.completed_at.substring(0, 10))
+                        ).size;
+                    } else {
+                        actualFailures = completions.filter(c =>
+                            c.habit_id === habit.id &&
+                            (c.status === 'failed' || c.status === 'missed') &&
+                            new Date(c.completed_at) >= startDate
+                        ).length;
+                    }
 
                     // Sincronizza current_failures se discrepante
                     if (actualFailures !== (habit.current_failures || 0)) {
@@ -3853,6 +3865,8 @@
 
                         if (shouldHaveCompleted) {
                             if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                                // Raccoglie gli slot mancanti per questo giorno
+                                const missingSlotsForDay = [];
                                 for (const timeSlot of habit.daily_times) {
                                     const slotKey = buildPeriodKey('daily_multiple', dateStr, timeSlot);
                                     const alreadyExists = completions.some(c =>
@@ -3861,10 +3875,14 @@
                                          (c.period_key == null && c.completed_at.startsWith(`${dateStr}T${timeSlot}`)))
                                     );
                                     if (!alreadyExists) {
-                                        missedCount++;
-                                        autoFailedSlots.push({ date: dateStr, key: slotKey });
+                                        missingSlotsForDay.push({ date: dateStr, key: slotKey });
                                         console.log(`❌ ${dateStr} ${timeSlot} per ${habit.name}: orario mancante`);
                                     }
+                                }
+                                // Per daily_multiple: 1 fallimento per GIORNO mancato, non per sessione
+                                if (missingSlotsForDay.length > 0) {
+                                    missedCount++;
+                                    autoFailedSlots.push(...missingSlotsForDay);
                                 }
                             } else {
                                 const periodKey = habit.frequency === 'weekly'
