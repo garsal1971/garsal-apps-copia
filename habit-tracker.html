@@ -1648,8 +1648,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.51';
-        const BUILD_TIME  = '2026-03-18T13:00:00Z';
+        const APP_VERSION = 'v9.3.52';
+        const BUILD_TIME  = '2026-03-18T14:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2887,6 +2887,20 @@
 
                     console.log(`⏰ Stack scaduto per calendario: ${habit.name} (streak: ${streak}/${habit.goal})`);
 
+                    // Deduplicazione: se già archiviato con questo started_at, salta
+                    const { data: existing } = await supabaseClient
+                        .from('hb_archived_stacks')
+                        .select('id')
+                        .eq('habit_id', habit.id)
+                        .eq('started_at', habit.started_at)
+                        .limit(1);
+                    if (existing && existing.length > 0) {
+                        console.log(`⚠️ Stack "${habit.name}" già archiviato — salto duplicato`);
+                        // Il vecchio record in hb_habits potrebbe ancora esserci — eliminalo
+                        await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
+                        continue;
+                    }
+
                     // Archivia stack scaduto
                     const { data: archivedData } = await supabaseClient
                         .from('hb_archived_stacks')
@@ -3945,6 +3959,19 @@
                 );
 
                 console.log(`💀 Auto-chiusura stack fallito: ${habit.name} (streak: ${currentStreak})`);
+
+                // Deduplicazione: se già archiviato con questo started_at, salta
+                const { data: existingArchive } = await supabaseClient
+                    .from('hb_archived_stacks')
+                    .select('id')
+                    .eq('habit_id', habitId)
+                    .eq('started_at', habit.started_at)
+                    .limit(1);
+                if (existingArchive && existingArchive.length > 0) {
+                    console.log(`⚠️ Stack "${habit.name}" già archiviato — salto duplicato`);
+                    await supabaseClient.from('hb_habits').delete().eq('id', habitId);
+                    return false;
+                }
 
                 // Archivia stack fallito
                 const { data: archivedData } = await supabaseClient
