@@ -1529,8 +1529,11 @@
                 <input type="date" id="gameOverStartDate"
                     style="width: 100%; padding: 0.6rem 0.8rem; font-size: 1rem; border-radius: 8px; border: none; color: #333; box-sizing: border-box;" />
             </div>
-            <button class="btn btn-primary" onclick="closeGameOver()" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
+            <button class="btn btn-primary" onclick="closeGameOver(true)" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
                 🔄 Ricomincia
+            </button>
+            <button onclick="closeGameOver(false)" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
+                ⛔ Interrompi
             </button>
             <button id="undoGameOverBtn" onclick="undoGameOver()" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
                 ↩ Annulla ultimo fallimento
@@ -1661,8 +1664,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.55';
-        const BUILD_TIME  = '2026-03-18T16:30:00Z';
+        const APP_VERSION = 'v9.3.56';
+        const BUILD_TIME  = '2026-03-18T17:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4168,17 +4171,17 @@
             if (!next.alreadyProcessed) playGameOverSound();
         }
 
-        async function closeGameOver() {
+        async function closeGameOver(createNew) {
             const habitId = window.currentResetHabitId;
             if (!habitId) return;
 
             // Leggi la data di inizio dal campo input
             const startDateInput = document.getElementById('gameOverStartDate').value || localDateStr();
 
-            // Se già processato (archivio già fatto), crea solo il nuovo stack con la data scelta
+            // Se già processato (archivio già fatto), crea il nuovo stack solo se richiesto
             if (window.currentResetAlreadyProcessed) {
                 const habitData = window.currentResetHabitData;
-                if (habitData) {
+                if (createNew && habitData) {
                     try {
                         await supabaseClient.from('hb_habits').insert([{
                             name: habitData.name,
@@ -4209,6 +4212,17 @@
                 await loadCompletions();
                 habits.forEach(h => { h._streak = computeHabitStreak(h); });
                 recalculateTotalScore();
+                renderDashboard();
+                renderHabits();
+                showNextGameOver();
+                return;
+            }
+
+            // Se interrompi (createNew=false), chiudi il modal senza creare nuovo stack
+            if (!createNew) {
+                document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
+                await loadHabits();
                 renderDashboard();
                 renderHabits();
                 showNextGameOver();
@@ -4338,7 +4352,7 @@
                 renderDashboard();
                 renderHabits();
 
-                showToast('📦 Stack archiviato! Nuovo stack dal giorno dopo.');
+                showToast(`📦 Stack archiviato! Nuovo stack dal ${startDateInput}.`);
                 showNextGameOver();
                 
             } catch (error) {
