@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.65</title>
+    <title>Habit Stack Tracker v9.3.66</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1662,8 +1662,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.65';
-        const BUILD_TIME  = '2026-03-18T22:00:00Z';
+        const APP_VERSION = 'v9.3.66';
+        const BUILD_TIME  = '2026-03-18T23:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2844,7 +2844,7 @@
                             status: 'active',
                             current_failures: 0
                         }]).select().single();
-                        if (newHabit && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabit.id, startDate, habitData.goal);
+                        if (newHabit && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabit.id, startDate, habitData.goal, habitData.savedNotificationRule || null);
                         console.log(`✅ Nuovo ciclo attivo dal ${startDate} per "${habitData.name}"`);
                     } catch (err) {
                         console.error('❌ Errore creazione nuovo ciclo:', err);
@@ -2924,6 +2924,16 @@
                         c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
                     );
 
+                    // Leggi rule promemoria prima di aggiornare lo stato dell'habit
+                    let _savedNotiRule = null;
+                    if (sbAccessToken) {
+                        const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                        if (_ruleUserId) {
+                            const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habit.id).eq('user_id', _ruleUserId).maybeSingle();
+                            _savedNotiRule = _rd || null;
+                        }
+                    }
+
                     // Archivia stack completato
                     await supabaseClient.from('hb_archived_stacks').insert([{
                         habit_id: habit.id,
@@ -2957,7 +2967,8 @@
                             goal: habit.goal,
                             max_failures: habit.max_failures,
                             points_reward: habit.points_reward,
-                            points_penalty: habit.points_penalty
+                            points_penalty: habit.points_penalty,
+                            savedNotificationRule: _savedNotiRule
                         }
                     });
                     console.log(`🏆 Stack completato (auto): ${habit.name} streak=${streak} punti=+${pointsReward}`);
@@ -4371,8 +4382,18 @@
             try {
                 const habit = habits.find(h => h.id === habitId);
                 if (!habit) return;
-                
+
                 const todayStr = localDateStr();
+
+                // Leggi rule promemoria prima di eliminare l'habit
+                let _savedNotiRule = null;
+                if (sbAccessToken) {
+                    const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                    if (_ruleUserId) {
+                        const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habitId).eq('user_id', _ruleUserId).maybeSingle();
+                        _savedNotiRule = _rd || null;
+                    }
+                }
 
                 // Calcola statistiche dello stack da archiviare
                 const startDate = new Date(habit.started_at);
@@ -4476,7 +4497,7 @@
                     showToast('Errore creazione nuovo stack');
                     return;
                 }
-                if (newHabitRow) await migrateHabitNotificationRule(habitId, newHabitRow.id, startDateInput, habit.goal);
+                if (newHabitRow) await migrateHabitNotificationRule(habitId, newHabitRow.id, startDateInput, habit.goal, _savedNotiRule);
                 console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
                 
                 // Chiudi modal
