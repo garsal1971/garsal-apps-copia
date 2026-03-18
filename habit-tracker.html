@@ -1544,8 +1544,16 @@
             <div style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
             <h1 style="font-size: 2.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); animation: pulse 1s infinite;">STACK COMPLETATO!</h1>
             <div id="successStackList" style="margin: 1.5rem 0;"></div>
-            <button class="btn btn-primary" onclick="closeSuccessModal()" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #00B894; border: none;">
-                🚀 Avanti!
+            <div style="margin-top: 1rem; text-align: left;">
+                <label style="font-size: 0.9rem; opacity: 0.85; display: block; margin-bottom: 0.4rem;">📅 Inizia nuovo ciclo dal:</label>
+                <input type="date" id="successStartDate"
+                    style="width: 100%; padding: 0.6rem 0.8rem; font-size: 1rem; border-radius: 8px; border: none; color: #333; box-sizing: border-box;" />
+            </div>
+            <button class="btn btn-primary" onclick="closeSuccessModal(true)" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #00B894; border: none;">
+                🚀 Inizia Nuovo Ciclo
+            </button>
+            <button onclick="closeSuccessModal(false)" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
+                ⛔ Interrompi
             </button>
         </div>
     </div>
@@ -1653,8 +1661,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.54';
-        const BUILD_TIME  = '2026-03-18T16:00:00Z';
+        const APP_VERSION = 'v9.3.55';
+        const BUILD_TIME  = '2026-03-18T16:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2585,13 +2593,17 @@
                 .update({ status: 'completed' })
                 .eq('id', habitId);
 
-            // Crea nuovo stack attivo dal giorno dopo
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = localDateStr(tomorrow);
-            await supabaseClient
-                .from('hb_habits')
-                .insert([{
+            await loadHabits();
+            await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
+            await loadArchivedStacks();
+            recalculateTotalScore();
+            renderHabitsTimeline();
+            showStackSuccessModal([{
+                name: habit.name,
+                streak: currentStreak,
+                points: pointsReward,
+                habitData: {
                     name: habit.name,
                     description: habit.description,
                     category_id: habit.category_id,
@@ -2601,19 +2613,9 @@
                     goal: habit.goal,
                     max_failures: habit.max_failures,
                     points_reward: habit.points_reward,
-                    points_penalty: habit.points_penalty,
-                    started_at: tomorrowStr,
-                    status: 'active',
-                    current_failures: 0
-                }]);
-
-            await loadHabits();
-            await loadCompletions();
-            habits.forEach(h => { h._streak = computeHabitStreak(h); });
-            await loadArchivedStacks();
-            recalculateTotalScore();
-            renderHabitsTimeline();
-            showStackSuccessModal([{ name: habit.name, streak: currentStreak, points: pointsReward }]);
+                    points_penalty: habit.points_penalty
+                }
+            }]);
         }
 
         function calculateWeeklyStreak(habit, completions, startDate) {
@@ -2760,6 +2762,8 @@
 
         // Rendering Functions
         function showStackSuccessModal(results) {
+            window.currentSuccessHabitsData = results.map(r => r.habitData).filter(Boolean);
+            document.getElementById('successStartDate').value = localDateStr();
             const list = document.getElementById('successStackList');
             list.innerHTML = results.map(r => `
                 <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
@@ -2773,8 +2777,42 @@
             document.getElementById('stackSuccessModal').classList.add('active');
         }
 
-        function closeSuccessModal() {
+        async function closeSuccessModal(createNew) {
+            if (createNew) {
+                const startDate = document.getElementById('successStartDate').value || localDateStr();
+                const habitDataList = window.currentSuccessHabitsData || [];
+                for (const habitData of habitDataList) {
+                    try {
+                        await supabaseClient.from('hb_habits').insert([{
+                            name: habitData.name,
+                            description: habitData.description,
+                            category_id: habitData.category_id,
+                            frequency: habitData.frequency,
+                            weekdays: habitData.weekdays,
+                            daily_times: habitData.daily_times,
+                            goal: habitData.goal,
+                            max_failures: habitData.max_failures,
+                            points_reward: habitData.points_reward,
+                            points_penalty: habitData.points_penalty,
+                            started_at: startDate,
+                            status: 'active',
+                            current_failures: 0
+                        }]);
+                        console.log(`✅ Nuovo ciclo attivo dal ${startDate} per "${habitData.name}"`);
+                    } catch (err) {
+                        console.error('❌ Errore creazione nuovo ciclo:', err);
+                    }
+                }
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                recalculateTotalScore();
+                renderDashboard();
+                renderHabits();
+                showToast(`🚀 Nuovo ciclo dal ${startDate}!`);
+            }
             document.getElementById('stackSuccessModal').classList.remove('active');
+            window.currentSuccessHabitsData = null;
         }
 
         // Conta i giorni (o settimane) completati al 100% nel periodo started_at→limitDate
@@ -2857,26 +2895,23 @@
                     // Marca vecchio stack come completato
                     await supabaseClient.from('hb_habits').update({ status: 'completed' }).eq('id', habit.id);
 
-                    // Crea nuovo stack attivo dal giorno dopo
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    await supabaseClient.from('hb_habits').insert([{
+                    results.push({
                         name: habit.name,
-                        description: habit.description,
-                        category_id: habit.category_id,
-                        frequency: habit.frequency,
-                        weekdays: habit.weekdays,
-                        daily_times: habit.daily_times,
-                        goal: habit.goal,
-                        max_failures: habit.max_failures,
-                        points_reward: habit.points_reward,
-                        points_penalty: habit.points_penalty,
-                        started_at: localDateStr(tomorrow),
-                        status: 'active',
-                        current_failures: 0
-                    }]);
-
-                    results.push({ name: habit.name, streak, points: pointsReward });
+                        streak,
+                        points: pointsReward,
+                        habitData: {
+                            name: habit.name,
+                            description: habit.description,
+                            category_id: habit.category_id,
+                            frequency: habit.frequency,
+                            weekdays: habit.weekdays,
+                            daily_times: habit.daily_times,
+                            goal: habit.goal,
+                            max_failures: habit.max_failures,
+                            points_reward: habit.points_reward,
+                            points_penalty: habit.points_penalty
+                        }
+                    });
                     console.log(`🏆 Stack completato (auto): ${habit.name} streak=${streak} punti=+${pointsReward}`);
                 } catch (err) {
                     console.error(`❌ Errore completamento stack ${habit.name}:`, err);
