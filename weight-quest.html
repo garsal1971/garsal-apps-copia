@@ -731,8 +731,10 @@
 
     <!-- GARSAL TOP BAR -->
     <div id="garsal-top-bar">
-        <div id="garsal-top-bar-icon">G</div>
-        <div id="garsal-top-bar-text">Garsal Apps</div>
+        <a href="app-launcher.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="15" r="7" fill="rgba(255,255,255,0.85)"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg>
+            <div id="garsal-top-bar-text">Garsal Apps</div>
+        </a>
     </div>
 
     <!-- AUTH SECTION — richiede AppSphere -->
@@ -760,9 +762,6 @@
             <div class="icon-nav-item" data-action="sync">
                 <span class="icon">🔄</span>
             </div>
-            <div class="icon-nav-item" onclick="window.location.href='app-launcher.html'" style="margin-left:auto;opacity:0.75;border-left:1px solid rgba(255,255,255,0.15);">
-                <span class="icon"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="13" cy="15" r="7" fill="#0081C8"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg></span>
-            </div>
         </div>
 
         <!-- CONTENT WRAPPER -->
@@ -782,10 +781,6 @@
                     <div class="sidebar-nav-item" data-action="sync">
                         <span class="nav-icon">🔄</span>
                         <span>Sincronizza</span>
-                    </div>
-                    <div class="sidebar-nav-item" onclick="window.location.href='app-launcher.html'" style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.15);opacity:0.75;cursor:pointer;">
-                        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><circle cx="13" cy="15" r="7" fill="#0081C8"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg></span>
-                        <span>AppSphere</span>
                     </div>
                 </nav>
             </div>
@@ -1048,8 +1043,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.37';
-        var BUILD_TIME  = '2026-03-17T22:00:00Z';
+        var APP_VERSION = 'v3.5.38';
+        var BUILD_TIME  = '2026-03-18T20:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
