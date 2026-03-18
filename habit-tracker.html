@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker v9.3.49</title>
+    <title>Habit Stack Tracker v9.3.65</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -1662,8 +1662,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.64';
-        const BUILD_TIME  = '2026-03-18T21:00:00Z';
+        const APP_VERSION = 'v9.3.65';
+        const BUILD_TIME  = '2026-03-18T22:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2649,6 +2649,7 @@
                 streak: currentStreak,
                 points: pointsReward,
                 habitData: {
+                    id: habit.id,
                     name: habit.name,
                     description: habit.description,
                     category_id: habit.category_id,
@@ -2828,7 +2829,7 @@
                 const habitDataList = window.currentSuccessHabitsData || [];
                 for (const habitData of habitDataList) {
                     try {
-                        await supabaseClient.from('hb_habits').insert([{
+                        const { data: newHabit } = await supabaseClient.from('hb_habits').insert([{
                             name: habitData.name,
                             description: habitData.description,
                             category_id: habitData.category_id,
@@ -2842,7 +2843,8 @@
                             started_at: startDate,
                             status: 'active',
                             current_failures: 0
-                        }]);
+                        }]).select().single();
+                        if (newHabit && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabit.id, startDate, habitData.goal);
                         console.log(`✅ Nuovo ciclo attivo dal ${startDate} per "${habitData.name}"`);
                     } catch (err) {
                         console.error('❌ Errore creazione nuovo ciclo:', err);
@@ -2945,6 +2947,7 @@
                         streak,
                         points: pointsReward,
                         habitData: {
+                            id: habit.id,
                             name: habit.name,
                             description: habit.description,
                             category_id: habit.category_id,
@@ -3053,10 +3056,21 @@
                             reason: coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'
                         }]);
 
+                    // Leggi rule promemoria prima di eliminare l'habit
+                    let _savedNotiRule = null;
+                    if (sbAccessToken) {
+                        const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                        if (_ruleUserId) {
+                            const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habit.id).eq('user_id', _ruleUserId).maybeSingle();
+                            _savedNotiRule = _rd || null;
+                        }
+                    }
+
                     // Elimina vecchio stack da hb_habits
                     await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
 
                     const habitData = {
+                        id: habit.id,
                         name: habit.name,
                         description: habit.description,
                         category_id: habit.category_id,
@@ -3066,7 +3080,8 @@
                         goal: habit.goal,
                         max_failures: habit.max_failures,
                         points_reward: habit.points_reward,
-                        points_penalty: habit.points_penalty
+                        points_penalty: habit.points_penalty,
+                        savedNotificationRule: _savedNotiRule
                     };
 
                     if (coveredByJolly) {
@@ -4176,6 +4191,16 @@
                         .eq('id', archivedData[0].id);
                 }
 
+                // Leggi rule promemoria prima di eliminare l'habit
+                let _savedNotiRule = null;
+                if (sbAccessToken) {
+                    const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                    if (_ruleUserId) {
+                        const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habitId).eq('user_id', _ruleUserId).maybeSingle();
+                        _savedNotiRule = _rd || null;
+                    }
+                }
+
                 // Elimina vecchio stack fallito da hb_habits
                 await supabaseClient
                     .from('hb_habits')
@@ -4194,6 +4219,7 @@
                     alreadyProcessed: true,
                     canUndo: false,
                     habitData: {
+                        id: habitId,
                         name: habit.name,
                         description: habit.description,
                         category_id: habit.category_id,
@@ -4203,7 +4229,8 @@
                         goal: habit.goal,
                         max_failures: habit.max_failures,
                         points_reward: habit.points_reward,
-                        points_penalty: habit.points_penalty
+                        points_penalty: habit.points_penalty,
+                        savedNotificationRule: _savedNotiRule
                     }
                 });
 
@@ -4294,7 +4321,7 @@
                 const habitData = window.currentResetHabitData;
                 if (createNew && habitData) {
                     try {
-                        await supabaseClient.from('hb_habits').insert([{
+                        const { data: newHabitRow } = await supabaseClient.from('hb_habits').insert([{
                             name: habitData.name,
                             description: habitData.description,
                             category_id: habitData.category_id,
@@ -4308,7 +4335,8 @@
                             started_at: startDateInput,
                             status: 'active',
                             current_failures: 0
-                        }]);
+                        }]).select().single();
+                        if (newHabitRow && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabitRow.id, startDateInput, habitData.goal, habitData.savedNotificationRule);
                         console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
                     } catch (err) {
                         console.error('❌ Errore creazione nuovo stack:', err);
@@ -4425,7 +4453,7 @@
                 console.log('✅ Stack vecchio eliminato');
 
                 // STEP 3: Crea nuovo stack attivo dalla data scelta dall'utente
-                const { error } = await supabaseClient
+                const { data: newHabitRow, error } = await supabaseClient
                     .from('hb_habits')
                     .insert([{
                         name: habit.name,
@@ -4441,13 +4469,14 @@
                         started_at: startDateInput,
                         status: 'active',
                         current_failures: 0
-                    }]);
+                    }]).select().single();
 
                 if (error) {
                     console.error('❌ Errore creazione nuovo stack:', error);
                     showToast('Errore creazione nuovo stack');
                     return;
                 }
+                if (newHabitRow) await migrateHabitNotificationRule(habitId, newHabitRow.id, startDateInput, habit.goal);
                 console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
                 
                 // Chiudi modal
@@ -6027,6 +6056,69 @@
                 console.log('🗑️ Regola promemoria eliminata per:', habitId);
             } catch (e) {
                 console.warn('⚠️ deleteHabitNotificationRule:', e.message);
+            }
+        }
+
+        // Migra la cm_notification_rules dal vecchio habit ID al nuovo (usata dopo ricreazione serie)
+        async function migrateHabitNotificationRule(oldHabitId, newHabitId, newStartedAt, newGoal, savedRule) {
+            if (!supabaseClient || !sbAccessToken) return;
+            const payload = decodeJWT(sbAccessToken);
+            const userId = payload?.sub;
+            if (!userId) return;
+            try {
+                let ruleRecord = savedRule || null;
+                if (!ruleRecord) {
+                    const { data } = await supabaseClient
+                        .from('cm_notification_rules')
+                        .select('*')
+                        .eq('app', 'habits')
+                        .eq('entity_id', oldHabitId)
+                        .eq('user_id', userId)
+                        .maybeSingle();
+                    ruleRecord = data || null;
+                }
+                if (!ruleRecord) return; // nessuna regola da migrare
+
+                // Calcola nuova end_date = newStartedAt + newGoal - 1 giorni
+                let endDate = null;
+                if (newStartedAt && newGoal) {
+                    const d = new Date(newStartedAt);
+                    d.setDate(d.getDate() + Number(newGoal) - 1);
+                    endDate = localDateStr(d);
+                }
+
+                // Aggiorna from-to e habit_id nel completion_update
+                const presets = { ...(ruleRecord.reminder_presets || {}) };
+                presets['from-to'] = [newStartedAt || null, endDate];
+                if (presets.completion_update?.operations?.[0]?.fields) {
+                    presets.completion_update.operations[0].fields.habit_id = newHabitId;
+                }
+
+                // Cancella vecchia regola + notifiche pending
+                await deleteHabitNotificationRule(oldHabitId);
+
+                // Inserisce nuova regola per il nuovo habit
+                const { error } = await supabaseClient.from('cm_notification_rules').insert({
+                    user_id: userId,
+                    app: 'habits',
+                    entity_id: newHabitId,
+                    entity_type: ruleRecord.entity_type,
+                    entity_title: ruleRecord.entity_title,
+                    reminder_presets: presets,
+                    channel: ruleRecord.channel || 'telegram',
+                    enabled: true
+                });
+
+                if (error) {
+                    console.error('❌ migrateHabitNotificationRule:', error);
+                } else {
+                    habitNotificationRules[newHabitId] = presets;
+                    delete habitNotificationRules[oldHabitId];
+                    console.log(`✅ cm_notification_rules migrata: ${oldHabitId} → ${newHabitId}`);
+                    triggerFillQueue();
+                }
+            } catch (e) {
+                console.warn('⚠️ migrateHabitNotificationRule:', e.message);
             }
         }
 
