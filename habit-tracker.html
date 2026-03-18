@@ -1662,8 +1662,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.63';
-        const BUILD_TIME  = '2026-03-18T20:30:00Z';
+        const APP_VERSION = 'v9.3.64';
+        const BUILD_TIME  = '2026-03-18T21:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2006,6 +2006,12 @@
                         total += (done / goal) * (h.points_reward || 0);
                     }
                 }
+
+                // Aggiunge i punti degli stack archiviati
+                for (const archived of (archivedStacks || [])) {
+                    total += archived.points_earned || 0;
+                }
+
                 document.getElementById('totalScore').textContent = Math.round(total);
             } catch (err) {
                 console.error('❌ Errore recalculateTotalScore:', err);
