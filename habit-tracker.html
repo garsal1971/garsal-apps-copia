@@ -1505,7 +1505,7 @@
         <div class="modal-content" style="max-width: 500px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; animation: shake 0.5s;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">💀</div>
             <h1 style="font-size: 3rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); animation: pulse 1s infinite;">GAME OVER</h1>
-            <p style="font-size: 1.5rem; margin: 1rem 0; opacity: 0.9;">Jolly Esauriti!</p>
+            <p id="gameOverSubtitle" style="font-size: 1.5rem; margin: 1rem 0; opacity: 0.9;">Jolly Esauriti!</p>
             
             <div id="gameOverHabitName" style="font-size: 1.2rem; margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.2); border-radius: 8px;">
                 <!-- Nome abitudine -->
@@ -1664,8 +1664,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.60';
-        const BUILD_TIME  = '2026-03-18T19:00:00Z';
+        const APP_VERSION = 'v9.3.61';
+        const BUILD_TIME  = '2026-03-18T19:30:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -3000,6 +3000,9 @@
                 try {
                     const startDate = new Date(habit.started_at);
                     const totalDays = Number(habit.goal); // giorni del ciclo, non giorni trascorsi
+                    const missedDays = habit.goal - completedDays;
+                    const maxFailures = habit.max_failures || 0;
+                    const coveredByJolly = maxFailures > 0 && missedDays <= maxFailures;
 
                     const stackCompletions = completions.filter(c =>
                         c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
@@ -3008,7 +3011,11 @@
                         c.habit_id === habit.id && (c.status === 'failed' || c.status === 'missed') && new Date(c.completed_at) >= startDate
                     );
 
-                    console.log(`⏰ Stack scaduto per calendario: ${habit.name} (giorni completati: ${completedDays}/${habit.goal})`);
+                    if (coveredByJolly) {
+                        console.log(`🏆 Stack "${habit.name}" scaduto: ${missedDays} giorni mancati ≤ ${maxFailures} jolly → COMPLETATO`);
+                    } else {
+                        console.log(`⏰ Stack scaduto per calendario: ${habit.name} (giorni completati: ${completedDays}/${habit.goal}, mancati: ${missedDays}, jolly: ${maxFailures})`);
+                    }
 
                     // Deduplicazione: se già archiviato con questo started_at, salta
                     const { data: existing } = await supabaseClient
@@ -3023,8 +3030,8 @@
                         continue;
                     }
 
-                    // Archivia stack scaduto come fallito
-                    const { data: archivedData } = await supabaseClient
+                    // Archivia stack
+                    await supabaseClient
                         .from('hb_archived_stacks')
                         .insert([{
                             habit_id: habit.id,
@@ -3036,10 +3043,9 @@
                             total_days: totalDays,
                             total_completions: stackCompletions.length,
                             total_failures: stackFailures.length,
-                            points_earned: -(habit.points_penalty || 0),
-                            reason: 'scadenza_calendario'
-                        }])
-                        .select();
+                            points_earned: coveredByJolly ? (habit.points_reward || 0) : -(habit.points_penalty || 0),
+                            reason: coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'
+                        }]);
 
                     // Elimina vecchio stack da hb_habits
                     await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
@@ -3051,6 +3057,8 @@
                         habitName: habit.name,
                         streak: completedDays,
                         days: totalDays,
+                        missedDays,
+                        reason: coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario',
                         alreadyProcessed: true,
                         canUndo: false,
                         habitData: {
@@ -3067,7 +3075,7 @@
                         }
                     });
 
-                    console.log(`✅ Stack "${habit.name}" scaduto → archiviato. In attesa data dal modal.`);
+                    console.log(`✅ Stack "${habit.name}" → archiviato (${coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'}). In attesa data dal modal.`);
                 } catch (err) {
                     console.error(`❌ Errore checkExpiredStacks per ${habit.name}:`, err);
                 }
@@ -4226,6 +4234,16 @@
             document.getElementById('gameOverHabitName').textContent = next.habitName;
             document.getElementById('gameOverStreak').textContent = next.streak;
             document.getElementById('gameOverDays').textContent = next.days;
+            const _subtitle = document.getElementById('gameOverSubtitle');
+            if (_subtitle) {
+                if (next.reason === 'completato_con_jolly') {
+                    _subtitle.textContent = `Completato! (${next.missedDays} giorn${next.missedDays === 1 ? 'o' : 'i'} coperti dai jolly)`;
+                } else if (next.reason === 'scadenza_calendario') {
+                    _subtitle.textContent = 'Stack Scaduto per Calendario';
+                } else {
+                    _subtitle.textContent = 'Jolly Esauriti!';
+                }
+            }
             window.currentResetHabitId = next.habitId;
             window.currentResetAlreadyProcessed = next.alreadyProcessed;
             window.currentResetHabitData = next.habitData || null;
