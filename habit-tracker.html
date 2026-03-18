@@ -1648,8 +1648,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.49';
-        const BUILD_TIME  = '2026-03-18T10:00:00Z';
+        const APP_VERSION = 'v9.3.50';
+        const BUILD_TIME  = '2026-03-18T12:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2847,8 +2847,115 @@
             }
         }
 
+        async function checkExpiredStacks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = localDateStr(today);
+
+            const expired = [];
+            for (const habit of habits.filter(h => h.status === 'active' && h.goal > 0)) {
+                const startDate = parseDateLocal(habit.started_at);
+                if (!startDate) continue;
+
+                // Ultimo giorno valido dello stack (incluso)
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + Number(habit.goal) - 1);
+                endDate.setHours(0, 0, 0, 0);
+
+                if (today > endDate) {
+                    const streak = computeHabitStreak(habit);
+                    // streak >= goal viene già gestito da checkCompletedStacks
+                    if (streak < habit.goal) {
+                        expired.push({ habit, streak });
+                    }
+                }
+            }
+
+            if (expired.length === 0) return;
+
+            for (const { habit, streak } of expired) {
+                try {
+                    const startDate = new Date(habit.started_at);
+                    const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+
+                    const stackCompletions = completions.filter(c =>
+                        c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                    );
+                    const stackFailures = completions.filter(c =>
+                        c.habit_id === habit.id && (c.status === 'failed' || c.status === 'missed') && new Date(c.completed_at) >= startDate
+                    );
+
+                    console.log(`⏰ Stack scaduto per calendario: ${habit.name} (streak: ${streak}/${habit.goal})`);
+
+                    // Archivia stack scaduto
+                    const { data: archivedData } = await supabaseClient
+                        .from('hb_archived_stacks')
+                        .insert([{
+                            habit_id: habit.id,
+                            habit_name: habit.name,
+                            category_id: habit.category_id,
+                            started_at: habit.started_at,
+                            ended_at: todayStr,
+                            final_streak: streak,
+                            total_days: totalDays,
+                            total_completions: stackCompletions.length,
+                            total_failures: stackFailures.length,
+                            points_earned: -(habit.points_penalty || 0),
+                            reason: 'scadenza_calendario'
+                        }])
+                        .select();
+
+                    // Elimina vecchio stack da hb_habits
+                    await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
+
+                    // Crea nuovo stack attivo dal giorno dopo
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowStr = localDateStr(tomorrow);
+                    await supabaseClient.from('hb_habits').insert([{
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        started_at: tomorrowStr,
+                        status: 'active',
+                        current_failures: 0
+                    }]);
+
+                    // Accoda game over
+                    window.gameOverQueue = window.gameOverQueue || [];
+                    window.gameOverQueue.push({
+                        habitId: habit.id,
+                        habitName: habit.name,
+                        streak,
+                        days: totalDays,
+                        alreadyProcessed: true,
+                        canUndo: false
+                    });
+
+                    console.log(`✅ Stack "${habit.name}" scaduto → archiviato. Nuovo stack dal ${tomorrowStr}`);
+                } catch (err) {
+                    console.error(`❌ Errore checkExpiredStacks per ${habit.name}:`, err);
+                }
+            }
+
+            // Ricarica dati dopo chiusure
+            await loadHabits();
+            await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
+            await loadArchivedStacks();
+            recalculateTotalScore();
+        }
+
         async function renderDashboard() {
             await checkCompletedStacks();
+            await checkExpiredStacks();
             await checkMissedDays();
             renderHabitsTimeline();
         }
