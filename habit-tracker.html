@@ -1664,8 +1664,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.59';
-        const BUILD_TIME  = '2026-03-18T18:30:00Z';
+        const APP_VERSION = 'v9.3.60';
+        const BUILD_TIME  = '2026-03-18T19:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2257,46 +2257,55 @@
 
                     // Gestione jolly
                     // Per daily_multiple: 1 jolly per GIORNO, non per sessione
-                    console.log(`🃏 Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                     const _habitForJolly = habits.find(h => h.id === habitId);
                     const _isMultiple = _habitForJolly?.frequency === 'daily_multiple' && _habitForJolly?.daily_times?.length > 0;
+                    console.log(`🃏 [STS] Jolly check: habit="${_habitForJolly?.name}" isMultiple=${_isMultiple} existing.status=${existing?.status} newState=${newState} date=${targetDate} current_failures=${_habitForJolly?.current_failures}/${_habitForJolly?.max_failures}`);
 
                     if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
-                        console.log('✅ Condizione RESTORE soddisfatta!');
                         if (_isMultiple) {
                             // Restituisci jolly solo se NON ci sono altri slot falliti nello stesso giorno
-                            const otherDayFailures = completions.some(c =>
+                            const otherDayFailures = completions.filter(c =>
                                 c.habit_id === habitId &&
                                 (c.status === 'failed' || c.status === 'missed') &&
                                 c.completed_at.startsWith(targetDate) &&
                                 c.id !== existing.id
                             );
-                            if (!otherDayFailures) await restoreJolly(habitId);
-                            else console.log('⚪ Altri slot falliti nello stesso giorno — jolly non restituito');
+                            console.log(`🃏 [STS] RESTORE check: altri slot failed/missed nello stesso giorno (escluso current):`, otherDayFailures.map(c => c.period_key || c.completed_at));
+                            if (otherDayFailures.length === 0) {
+                                console.log('✅ [STS] Nessun altro slot fallito → RESTITUISCO jolly');
+                                await restoreJolly(habitId);
+                            } else {
+                                console.log(`⚪ [STS] ${otherDayFailures.length} altri slot falliti rimasti — jolly NON restituito`);
+                            }
                         } else {
+                            console.log('✅ [STS] RESTORE jolly (non-multiple)');
                             await restoreJolly(habitId);
                         }
                     }
                     else if (newState === 'failed') {
-                        console.log('❌ Condizione CONSUME soddisfatta!');
                         if (_isMultiple) {
                             // Consuma jolly solo se NON ci sono già altri slot falliti nello stesso giorno
-                            // (il nuovo record è già in completions, escludo l'id corrente se presente)
-                            const otherSlotFailed = completions.some(c =>
+                            const otherSlotFailed = completions.filter(c =>
                                 c.habit_id === habitId &&
                                 (c.status === 'failed' || c.status === 'missed') &&
                                 c.completed_at.startsWith(targetDate) &&
                                 c.id !== existing?.id &&
                                 c.period_key !== key
                             );
-                            if (!otherSlotFailed) await handleFailure(habitId);
-                            else console.log('⚪ Giorno già contato come fallito — jolly non consumato');
+                            console.log(`🃏 [STS] CONSUME check: altri slot failed/missed oggi (escluso questo):`, otherSlotFailed.map(c => c.period_key || c.completed_at));
+                            if (otherSlotFailed.length === 0) {
+                                console.log('❌ [STS] Primo slot fallito del giorno → CONSUMO jolly');
+                                await handleFailure(habitId);
+                            } else {
+                                console.log(`⚪ [STS] Giorno già contato come fallito (${otherSlotFailed.length} altri slot) — jolly NON consumato`);
+                            }
                         } else {
+                            console.log('❌ [STS] CONSUME jolly (non-multiple)');
                             await handleFailure(habitId);
                         }
                     }
                     else {
-                        console.log('⚪ Nessuna gestione jolly necessaria');
+                        console.log('⚪ [STS] Nessuna gestione jolly necessaria');
                     }
                     
                     // showToast removed
@@ -3843,20 +3852,18 @@
                     // Conta le fallite/mancate REALI dai completions (fonte di verità)
                     // Per daily_multiple: conta GIORNI distinti con fallimenti, non singole sessioni
                     let actualFailures;
+                    const rawFailedCompletions = completions.filter(c =>
+                        c.habit_id === habit.id &&
+                        (c.status === 'failed' || c.status === 'missed') &&
+                        new Date(c.completed_at) >= startDate
+                    );
                     if (habit.frequency === 'daily_multiple' && habit.daily_times?.length > 0) {
-                        actualFailures = new Set(
-                            completions.filter(c =>
-                                c.habit_id === habit.id &&
-                                (c.status === 'failed' || c.status === 'missed') &&
-                                new Date(c.completed_at) >= startDate
-                            ).map(c => c.completed_at.substring(0, 10))
-                        ).size;
+                        const failedDates = [...new Set(rawFailedCompletions.map(c => c.completed_at.substring(0, 10)))];
+                        actualFailures = failedDates.length;
+                        console.log(`🃏 [CMD] "${habit.name}" daily_multiple — record failed/missed in DB: ${rawFailedCompletions.length}, giorni distinti: ${actualFailures}/${maxFailures}`, failedDates);
                     } else {
-                        actualFailures = completions.filter(c =>
-                            c.habit_id === habit.id &&
-                            (c.status === 'failed' || c.status === 'missed') &&
-                            new Date(c.completed_at) >= startDate
-                        ).length;
+                        actualFailures = rawFailedCompletions.length;
+                        console.log(`🃏 [CMD] "${habit.name}" ${habit.frequency} — fallimenti: ${actualFailures}/${maxFailures}`);
                     }
 
                     // Sincronizza current_failures se discrepante
@@ -3905,13 +3912,14 @@
                                     );
                                     if (!alreadyExists) {
                                         missingSlotsForDay.push({ date: dateStr, key: slotKey });
-                                        console.log(`❌ ${dateStr} ${timeSlot} per ${habit.name}: orario mancante`);
+                                        console.log(`❌ [CMD] ${dateStr} slot=${timeSlot} per "${habit.name}": mancante (key=${slotKey})`);
                                     }
                                 }
                                 // Per daily_multiple: 1 fallimento per GIORNO mancato, non per sessione
                                 if (missingSlotsForDay.length > 0) {
                                     missedCount++;
                                     autoFailedSlots.push(...missingSlotsForDay);
+                                    console.log(`📅 [CMD] "${habit.name}" giorno ${dateStr}: ${missingSlotsForDay.length}/${habit.daily_times.length} slot mancanti → +1 jolly (tot missedCount=${missedCount})`);
                                 }
                             } else {
                                 const periodKey = habit.frequency === 'weekly'
