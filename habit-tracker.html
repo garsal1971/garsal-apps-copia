@@ -1664,8 +1664,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.61';
-        const BUILD_TIME  = '2026-03-18T19:30:00Z';
+        const APP_VERSION = 'v9.3.62';
+        const BUILD_TIME  = '2026-03-18T20:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2996,10 +2996,12 @@
 
             if (expired.length === 0) return;
 
+            const successResults = []; // completato_con_jolly → modal successo
+
             for (const { habit, completedDays } of expired) {
                 try {
                     const startDate = new Date(habit.started_at);
-                    const totalDays = Number(habit.goal); // giorni del ciclo, non giorni trascorsi
+                    const totalDays = Number(habit.goal);
                     const missedDays = habit.goal - completedDays;
                     const maxFailures = habit.max_failures || 0;
                     const coveredByJolly = maxFailures > 0 && missedDays <= maxFailures;
@@ -3017,7 +3019,7 @@
                         console.log(`⏰ Stack scaduto per calendario: ${habit.name} (giorni completati: ${completedDays}/${habit.goal}, mancati: ${missedDays}, jolly: ${maxFailures})`);
                     }
 
-                    // Deduplicazione: se già archiviato con questo started_at, salta
+                    // Deduplicazione
                     const { data: existing } = await supabaseClient
                         .from('hb_archived_stacks')
                         .select('id')
@@ -3050,32 +3052,44 @@
                     // Elimina vecchio stack da hb_habits
                     await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
 
-                    // Accoda game over — il nuovo stack verrà creato dal modal con la data scelta
-                    window.gameOverQueue = window.gameOverQueue || [];
-                    window.gameOverQueue.push({
-                        habitId: habit.id,
-                        habitName: habit.name,
-                        streak: completedDays,
-                        days: totalDays,
-                        missedDays,
-                        reason: coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario',
-                        alreadyProcessed: true,
-                        canUndo: false,
-                        habitData: {
-                            name: habit.name,
-                            description: habit.description,
-                            category_id: habit.category_id,
-                            frequency: habit.frequency,
-                            weekdays: habit.weekdays,
-                            daily_times: habit.daily_times,
-                            goal: habit.goal,
-                            max_failures: habit.max_failures,
-                            points_reward: habit.points_reward,
-                            points_penalty: habit.points_penalty
-                        }
-                    });
+                    const habitData = {
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty
+                    };
 
-                    console.log(`✅ Stack "${habit.name}" → archiviato (${coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'}). In attesa data dal modal.`);
+                    if (coveredByJolly) {
+                        // Usa modal SUCCESSO
+                        successResults.push({
+                            name: habit.name,
+                            streak: completedDays,
+                            points: habit.points_reward || 0,
+                            habitData
+                        });
+                    } else {
+                        // Usa modal GAME OVER
+                        window.gameOverQueue = window.gameOverQueue || [];
+                        window.gameOverQueue.push({
+                            habitId: habit.id,
+                            habitName: habit.name,
+                            streak: completedDays,
+                            days: totalDays,
+                            missedDays,
+                            reason: 'scadenza_calendario',
+                            alreadyProcessed: true,
+                            canUndo: false,
+                            habitData
+                        });
+                    }
+
+                    console.log(`✅ Stack "${habit.name}" → archiviato (${coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'}).`);
                 } catch (err) {
                     console.error(`❌ Errore checkExpiredStacks per ${habit.name}:`, err);
                 }
@@ -3087,6 +3101,11 @@
             habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
             recalculateTotalScore();
+
+            // Mostra modal successo per stack completati con jolly
+            if (successResults.length > 0) {
+                showStackSuccessModal(successResults);
+            }
         }
 
         async function renderDashboard() {
