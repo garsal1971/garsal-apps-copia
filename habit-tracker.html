@@ -1524,8 +1524,13 @@
                 </div>
             </div>
             
-            <button class="btn btn-primary" onclick="closeGameOver()" style="width: 100%; margin-top: 2rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
-                🔄 Ricomincia da Capo
+            <div style="margin-top: 1.5rem; text-align: left;">
+                <label style="font-size: 0.9rem; opacity: 0.85; display: block; margin-bottom: 0.4rem;">📅 Inizia nuovo ciclo dal:</label>
+                <input type="date" id="gameOverStartDate"
+                    style="width: 100%; padding: 0.6rem 0.8rem; font-size: 1rem; border-radius: 8px; border: none; color: #333; box-sizing: border-box;" />
+            </div>
+            <button class="btn btn-primary" onclick="closeGameOver()" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
+                🔄 Ricomincia
             </button>
             <button id="undoGameOverBtn" onclick="undoGameOver()" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
                 ↩ Annulla ultimo fallimento
@@ -1648,8 +1653,8 @@
         // ==========================================
         // VERSION
         // ==========================================
-        const APP_VERSION = 'v9.3.53';
-        const BUILD_TIME  = '2026-03-18T15:00:00Z';
+        const APP_VERSION = 'v9.3.54';
+        const BUILD_TIME  = '2026-03-18T16:00:00Z';
         console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2963,38 +2968,30 @@
                     // Elimina vecchio stack da hb_habits
                     await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
 
-                    // Crea nuovo stack attivo dal giorno dopo
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    const tomorrowStr = localDateStr(tomorrow);
-                    await supabaseClient.from('hb_habits').insert([{
-                        name: habit.name,
-                        description: habit.description,
-                        category_id: habit.category_id,
-                        frequency: habit.frequency,
-                        weekdays: habit.weekdays,
-                        daily_times: habit.daily_times,
-                        goal: habit.goal,
-                        max_failures: habit.max_failures,
-                        points_reward: habit.points_reward,
-                        points_penalty: habit.points_penalty,
-                        started_at: tomorrowStr,
-                        status: 'active',
-                        current_failures: 0
-                    }]);
-
-                    // Accoda game over
+                    // Accoda game over — il nuovo stack verrà creato dal modal con la data scelta
                     window.gameOverQueue = window.gameOverQueue || [];
                     window.gameOverQueue.push({
                         habitId: habit.id,
                         habitName: habit.name,
-                        streak,
+                        streak: completedDays,
                         days: totalDays,
                         alreadyProcessed: true,
-                        canUndo: false
+                        canUndo: false,
+                        habitData: {
+                            name: habit.name,
+                            description: habit.description,
+                            category_id: habit.category_id,
+                            frequency: habit.frequency,
+                            weekdays: habit.weekdays,
+                            daily_times: habit.daily_times,
+                            goal: habit.goal,
+                            max_failures: habit.max_failures,
+                            points_reward: habit.points_reward,
+                            points_penalty: habit.points_penalty
+                        }
                     });
 
-                    console.log(`✅ Stack "${habit.name}" scaduto → archiviato. Nuovo stack dal ${tomorrowStr}`);
+                    console.log(`✅ Stack "${habit.name}" scaduto → archiviato. In attesa data dal modal.`);
                 } catch (err) {
                     console.error(`❌ Errore checkExpiredStacks per ${habit.name}:`, err);
                 }
@@ -4046,13 +4043,18 @@
                     .delete()
                     .eq('id', habitId);
 
-                // Crea nuovo stack attivo dal giorno dopo
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = localDateStr(tomorrow);
-                await supabaseClient
-                    .from('hb_habits')
-                    .insert([{
+                console.log(`✅ Stack "${habit.name}" → eliminato e archiviato. In attesa data dal modal.`);
+
+                // Accoda al game over — il nuovo stack verrà creato dal modal con la data scelta
+                window.gameOverQueue = window.gameOverQueue || [];
+                window.gameOverQueue.push({
+                    habitId,
+                    habitName: habit.name,
+                    streak: currentStreak,
+                    days: totalDays,
+                    alreadyProcessed: true,
+                    canUndo: false,
+                    habitData: {
                         name: habit.name,
                         description: habit.description,
                         category_id: habit.category_id,
@@ -4062,23 +4064,8 @@
                         goal: habit.goal,
                         max_failures: habit.max_failures,
                         points_reward: habit.points_reward,
-                        points_penalty: habit.points_penalty,
-                        started_at: tomorrowStr,
-                        status: 'active',
-                        current_failures: 0
-                    }]);
-
-                console.log(`✅ Stack "${habit.name}" → eliminato e archiviato. Nuovo stack dal ${tomorrowStr}`);
-
-                // Accoda al game over (senza undo, già processato)
-                window.gameOverQueue = window.gameOverQueue || [];
-                window.gameOverQueue.push({
-                    habitId,
-                    habitName: habit.name,
-                    streak: currentStreak,
-                    days: totalDays,
-                    alreadyProcessed: true,
-                    canUndo: false
+                        points_penalty: habit.points_penalty
+                    }
                 });
 
                 return true;
@@ -4108,7 +4095,8 @@
                     streak: computeHabitStreak(habit),
                     days: daysPassed,
                     alreadyProcessed: false,
-                    canUndo: !!window.currentResetCanUndo
+                    canUndo: !!window.currentResetCanUndo,
+                    habitData: null // verrà letto live da habits[] in closeGameOver
                 });
                 window.currentResetCanUndo = false;
 
@@ -4132,7 +4120,11 @@
             document.getElementById('gameOverDays').textContent = next.days;
             window.currentResetHabitId = next.habitId;
             window.currentResetAlreadyProcessed = next.alreadyProcessed;
+            window.currentResetHabitData = next.habitData || null;
             window.currentResetPrevFailures = next.prevFailures ?? window.currentResetPrevFailures;
+
+            // Default data inizio nuovo ciclo = oggi
+            document.getElementById('gameOverStartDate').value = localDateStr();
 
             const undoBtn = document.getElementById('undoGameOverBtn');
             if (undoBtn) undoBtn.style.display = next.canUndo ? 'block' : 'none';
@@ -4145,11 +4137,45 @@
             const habitId = window.currentResetHabitId;
             if (!habitId) return;
 
-            // Se già processato (es. autoCloseFailedStack), chiudi solo il modal
+            // Leggi la data di inizio dal campo input
+            const startDateInput = document.getElementById('gameOverStartDate').value || localDateStr();
+
+            // Se già processato (archivio già fatto), crea solo il nuovo stack con la data scelta
             if (window.currentResetAlreadyProcessed) {
+                const habitData = window.currentResetHabitData;
+                if (habitData) {
+                    try {
+                        await supabaseClient.from('hb_habits').insert([{
+                            name: habitData.name,
+                            description: habitData.description,
+                            category_id: habitData.category_id,
+                            frequency: habitData.frequency,
+                            weekdays: habitData.weekdays,
+                            daily_times: habitData.daily_times,
+                            goal: habitData.goal,
+                            max_failures: habitData.max_failures,
+                            points_reward: habitData.points_reward,
+                            points_penalty: habitData.points_penalty,
+                            started_at: startDateInput,
+                            status: 'active',
+                            current_failures: 0
+                        }]);
+                        console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
+                    } catch (err) {
+                        console.error('❌ Errore creazione nuovo stack:', err);
+                        showToast('Errore creazione nuovo stack');
+                    }
+                }
                 document.getElementById('gameOverModal').classList.remove('active');
                 window.currentResetHabitId = null;
                 window.currentResetAlreadyProcessed = false;
+                window.currentResetHabitData = null;
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                recalculateTotalScore();
+                renderDashboard();
+                renderHabits();
                 showNextGameOver();
                 return;
             }
@@ -4238,10 +4264,7 @@
                 }
                 console.log('✅ Stack vecchio eliminato');
 
-                // STEP 3: Crea nuovo stack attivo dal giorno dopo
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowStr = localDateStr(tomorrow);
+                // STEP 3: Crea nuovo stack attivo dalla data scelta dall'utente
                 const { error } = await supabaseClient
                     .from('hb_habits')
                     .insert([{
@@ -4255,7 +4278,7 @@
                         max_failures: habit.max_failures,
                         points_reward: habit.points_reward,
                         points_penalty: habit.points_penalty,
-                        started_at: tomorrowStr,
+                        started_at: startDateInput,
                         status: 'active',
                         current_failures: 0
                     }]);
@@ -4265,7 +4288,7 @@
                     showToast('Errore creazione nuovo stack');
                     return;
                 }
-                console.log(`✅ Nuovo stack attivo dal ${tomorrowStr}`);
+                console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
                 
                 // Chiudi modal
                 document.getElementById('gameOverModal').classList.remove('active');
