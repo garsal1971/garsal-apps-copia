@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.50</title>
+<title>AppSphere v1.5.51</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.50';
-const BUILD_TIME  = '2026-03-19T10:00:00Z';
+const APP_VERSION = 'v1.5.51';
+const BUILD_TIME  = '2026-03-19T11:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1996,10 +1996,15 @@ async function openNotifiche() {
     // helper: estrae la data di riferimento per regole senza coda
     // usa due_date oppure la prima data di reminder_presets['from-to']
     function getRuleRefDate(rule) {
-      if (rule.due_date) return new Date(rule.due_date).getTime();
-      const fromTo = (rule.reminder_presets || {})['from-to'] || [];
-      if (fromTo[0]) return new Date(fromTo[0]).getTime();
-      return null;
+      const p = rule.reminder_presets || {};
+      const raw = p.due_date || ((p['from-to'] || [])[0]) || null;
+      if (!raw) return null;
+      // supporta sia ISO (2026-03-15) che europeo (15/03/2026)
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [d, m, y] = raw.split('/');
+        return new Date(`${y}-${m}-${d}`).getTime();
+      }
+      return new Date(raw).getTime();
     }
 
     // ordina: chi ha fire_at più vicina a oggi viene prima;
