@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.48</title>
+<title>AppSphere v1.5.50</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.49';
-const BUILD_TIME  = '2026-03-17T22:00:00Z';
+const APP_VERSION = 'v1.5.50';
+const BUILD_TIME  = '2026-03-19T10:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -1993,7 +1993,17 @@ async function openNotifiche() {
       }
     }
 
-    // ordina: chi ha fire_at più vicina a oggi viene prima; senza coda va in fondo
+    // helper: estrae la data di riferimento per regole senza coda
+    // usa due_date oppure la prima data di reminder_presets['from-to']
+    function getRuleRefDate(rule) {
+      if (rule.due_date) return new Date(rule.due_date).getTime();
+      const fromTo = (rule.reminder_presets || {})['from-to'] || [];
+      if (fromTo[0]) return new Date(fromTo[0]).getTime();
+      return null;
+    }
+
+    // ordina: chi ha fire_at più vicina a oggi viene prima;
+    // senza coda: ordina per due_date / from-to[0] crescente (null va in fondo)
     rules.sort((a, b) => {
       const ka = `${a.app}-${a.entity_id}`;
       const kb = `${b.app}-${b.entity_id}`;
@@ -2002,6 +2012,12 @@ async function openNotifiche() {
       if (da !== null && db !== null) return da - db;
       if (da !== null) return -1;
       if (db !== null) return 1;
+      // entrambe senza coda: ordina per data di riferimento
+      const ra = getRuleRefDate(a);
+      const rb = getRuleRefDate(b);
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
       return (a.entity_title || '').localeCompare(b.entity_title || '');
     });
 
