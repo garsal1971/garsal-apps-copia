@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Cose da fare — garsal-apps</title>
+<style>
+  body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 32px; max-width: 700px; margin: auto; }
+  h1 { color: #6C5CE7; font-size: 20px; margin-bottom: 24px; }
+  h2 { color: #a29bfe; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; margin: 28px 0 10px; }
+  ul { list-style: none; padding: 0; }
+  li { padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; font-size: 13px; line-height: 1.6; }
+  li.todo   { background: #2d2d44; border-left: 3px solid #6C5CE7; }
+  li.done   { background: #1e2d1e; border-left: 3px solid #00B894; color: #aaa; text-decoration: line-through; }
+  li.note   { background: #2d2418; border-left: 3px solid #F39C12; color: #f1c27d; }
+  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-right: 6px; font-weight: 700; }
+  .tag.feat   { background: #6C5CE7; color: #fff; }
+  .tag.fix    { background: #e74c3c; color: #fff; }
+  .tag.ui     { background: #0081C8; color: #fff; }
+  .tag.db     { background: #00B894; color: #fff; }
+</style>
+</head>
+<body>
+<h1>📋 Cose da fare — garsal-apps</h1>
+
+<h2>✅ Completato</h2>
+<ul>
+  <li class="done"><span class="tag feat">feat</span> Aggiunto "⚡ Notifica al Volo" nel menu hamburger di AppSphere (v1.5.57)</li>
+  <li class="done"><span class="tag feat">feat</span> Modal a due viste (lista + form) ispirata a Premi</li>
+  <li class="done"><span class="tag db">db</span> Salvataggio in cm_notification_rules e cm_notification_queue</li>
+  <li class="done"><span class="tag feat">feat</span> Bottoni Telegram: snooze + cancella (telegram_snooze_button / telegram_cancel_button)</li>
+</ul>
+
+<h2>🔜 Da fare</h2>
+<ul>
+  <li class="todo"><span class="tag db">db</span> Creare le colonne / tabella nel progetto Supabase dev per supportare app='quick' in cm_notification_rules se non già presenti</li>
+  <li class="todo"><span class="tag feat">feat</span> Backend Telegram: leggere telegram_snooze_button e telegram_cancel_button dai reminder_presets e aggiungere inline keyboard al messaggio</li>
+  <li class="todo"><span class="tag feat">feat</span> Gestire il callback Telegram per snooze (posticipa di 30 min / 1 ora / domani) e cancella (imposta status='cancelled' in cm_notification_queue)</li>
+  <li class="todo"><span class="tag ui">ui</span> Nella lista "Notifica al Volo" mostrare stato reale dalla cm_notification_queue (pending / snoozed / sent / cancelled)</li>
+  <li class="todo"><span class="tag feat">feat</span> Aggiungere opzione snooze personalizzato (l'utente sceglie quanto posticipare)</li>
+  <li class="todo"><span class="tag fix">fix</span> Verificare che il campo created_at esista in cm_notification_rules per l'ordinamento desc nella lista</li>
+</ul>
+
+<h2>📝 Note</h2>
+<ul>
+  <li class="note">Il campo reminder_presets.fire_at contiene l'ISO datetime della notifica rapida (es. "2026-03-20T10:00:00")</li>
+  <li class="note">Le notifiche al volo usano app='quick', entity_type='once', channel='telegram'</li>
+  <li class="note">Branch produzione: claude/add-quick-notifications-mB0bu → auto-merge su master via GitHub Actions</li>
+</ul>
+
+</body>
+</html>
