@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.54</title>
+<title>AppSphere v1.5.55</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1175,8 +1175,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.54';
-const BUILD_TIME  = '2026-03-19T11:45:00Z';
+const APP_VERSION = 'v1.5.55';
+const BUILD_TIME  = '2026-03-19T12:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2066,6 +2066,7 @@ async function openNotifiche() {
             <span id="nrc-arrow-${ruleId}" style="color:#aaa;font-size:12px;transition:transform 0.2s;">▾</span>
           </div>
           <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}${dueStr ? ' &nbsp;·&nbsp; <span style="color:#e67e22;">📅 scad. ' + dueStr + '</span>' : ''}${latestStr ? ' &nbsp;·&nbsp; <span style="color:#6366F1;">🕐 ' + latestStr + '</span>' : ''}</div>
+          <div style="font-size:10px;color:#999;word-break:break-all;padding:2px 0;">${JSON.stringify(rule.reminder_presets)}</div>
           <div class="notif-chips">${enabled}${channel}${times}${dateRange}${tgBtn}</div>
           <div class="notif-queue-panel" id="nqp-${ruleId}">
             <div class="notif-queue-loading">Caricamento coda…</div>
