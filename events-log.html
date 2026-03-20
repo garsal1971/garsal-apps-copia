@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.2.23</title>
+    <title>Events Log v2.2.26</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -1034,8 +1034,8 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.2.25';
-    var BUILD_TIME  = '2026-03-18T20:30:00Z';
+    var APP_VERSION = 'v2.2.26';
+    var BUILD_TIME  = '2026-03-20T13:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1897,13 +1897,12 @@ function localDateStr(d) {
         String(dt.getMonth() + 1).padStart(2, '0') + '-' +
         String(dt.getDate()).padStart(2, '0');
 }
-// Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+// Restituisce ISO UTC "YYYY-MM-DDTHH:MM:SS.sssZ" per il salvataggio su DB.
+// PostgreSQL timestamptz tratta stringhe senza offset come UTC; inviare esplicitamente
+// UTC evita lo shift di date per utenti in fuso UTC+N (es. CET/CEST).
 function localDateTimeStr(d) {
     const dt = d || new Date();
-    return localDateStr(dt) + 'T' +
-        String(dt.getHours()).padStart(2, '0') + ':' +
-        String(dt.getMinutes()).padStart(2, '0') + ':' +
-        String(dt.getSeconds()).padStart(2, '0');
+    return dt.toISOString();
 }
 
 function showToast(msg, isError = false) {
