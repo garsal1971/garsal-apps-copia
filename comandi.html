@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TODO — garsal-apps</title>
+<title>Comandi — garsal-apps</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -16,59 +16,36 @@
   header h1 { font-size: 20px; font-weight: 700; color: #F1F5F9; }
   header p  { font-size: 12px; color: #475569; margin-top: 5px; font-family: monospace; }
 
-  .section-label {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.1em; color: #475569; margin: 28px 0 10px; font-family: monospace;
-  }
-
   .item {
-    background: #1E293B; border: 1px solid #334155; border-radius: 10px;
+    background: #1E293B; border: 1px solid #78350F55; border-radius: 10px;
     margin-bottom: 12px; overflow: hidden;
   }
-  .item.done   { opacity: 0.4; border-color: #1E3B2E; }
-  .item.urgent { border-color: #7F1D1D; }
-  .item.sql    { border-color: #78350F55; }
-
   .item-header {
     display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px;
+    border-bottom: 1px solid #334155;
   }
-  .item.has-code .item-header { border-bottom: 1px solid #334155; }
-  .item.done .item-header { border-bottom-color: transparent; }
-
   .check {
     width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 700;
+    background: #78350F; color: #FCD34D; border: 1.5px solid #92400E;
   }
-  .check.todo   { background: #312E81; color: #A78BFA; border: 1.5px solid #4C1D95; }
-  .check.done   { background: #064E3B; color: #34D399; border: 1.5px solid #065F46; }
-  .check.urgent { background: #7F1D1D; color: #FCA5A5; border: 1.5px solid #991B1B; }
-  .check.sql-c  { background: #78350F; color: #FCD34D; border: 1.5px solid #92400E; }
-
   .item-body { flex: 1; }
   .item-title { font-size: 14px; font-weight: 600; color: #F1F5F9; line-height: 1.4; }
-  .item.done .item-title { text-decoration: line-through; color: #94A3B8; }
   .item-desc  { font-size: 12px; color: #64748B; margin-top: 5px; line-height: 1.6; }
-
   .tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .tag {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px;
   }
-  .tag.feat  { background: #312E8144; color: #A78BFA; border: 1px solid #4C1D9544; }
-  .tag.fix   { background: #7F1D1D44; color: #FCA5A5; border: 1px solid #99000044; }
-  .tag.db    { background: #064E3B44; color: #34D399;  border: 1px solid #065F4644; }
-  .tag.ui    { background: #0C4A6E44; color: #38BDF8;  border: 1px solid #0369A144; }
-  .tag.tg    { background: #1E3A5F44; color: #60A5FA;  border: 1px solid #1E40AF44; }
-  .tag.done-t{ background: #064E3B44; color: #34D399;  border: 1px solid #065F4644; }
-  .tag.sql-t { background: #78350F44; color: #FCD34D;  border: 1px solid #78350F44; }
+  .tag.sql-t { background: #78350F44; color: #FCD34D; border: 1px solid #78350F44; }
   .tag.warn  { background: #78350F66; color: #FDE68A;  border: 1px solid #B45309; }
+  .tag.db    { background: #064E3B44; color: #34D399;  border: 1px solid #065F4644; }
 
   .code-block { position: relative; padding: 14px 16px; background: #0B1423; }
-  .item.done .code-block { display: none; }
   .code-block pre {
     font-family: 'Courier New', monospace; font-size: 12.5px; line-height: 1.75;
-    color: #BAE6FD; white-space: pre; overflow-x: auto; padding-right: 60px;
+    color: #BAE6FD; white-space: pre; overflow-x: auto; padding-right: 70px;
   }
   .copy-btn {
     position: absolute; top: 10px; right: 12px;
@@ -84,13 +61,6 @@
     font-size: 11px; color: #475569; font-family: monospace;
   }
 
-  .info-box {
-    margin: 0 16px 14px; padding: 12px 14px;
-    background: #1E3A5F33; border: 1px solid #1E40AF66; border-radius: 7px;
-    font-size: 12px; color: #93C5FD; font-family: monospace; line-height: 1.7;
-  }
-  .info-box strong { color: #60A5FA; }
-
   footer { margin-top: 40px; text-align: center; font-size: 11px; color: #334155; font-family: monospace; }
 </style>
 </head>
@@ -98,68 +68,13 @@
 <div class="container">
 
   <header>
-    <h1>📋 Cose da fare — garsal-apps</h1>
+    <h1>Comandi — garsal-apps</h1>
     <p>// aggiornato 2026-03-20</p>
   </header>
 
-  <!-- ══════════════════════════════════════════
-       SUPABASE — STRUTTURA DATI
-       ══════════════════════════════════════════ -->
-  <div class="section-label">🗄 supabase — struttura dati usata da "notifica al volo"</div>
-
-  <div class="item sql has-code" id="item-schema">
+  <div class="item" id="item-check-constraint">
     <div class="item-header">
-      <div class="check sql-c">i</div>
-      <div class="item-body">
-        <div class="item-title">Schema usato — nessun ALTER TABLE necessario</div>
-        <div class="item-desc">
-          I campi <code>entity_title</code>, <code>channel</code>, <code>fire_at</code> e i flag Telegram
-          sono tutti scritti nel campo <code>payload</code> JSONB esistente.<br>
-          Si usa <code>active</code> (già presente) al posto di <code>enabled</code>, e <code>rule_type</code> per il tipo.
-        </div>
-        <div class="tags">
-          <span class="tag sql-t">riferimento</span>
-          <span class="tag db">cm_notification_rules</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-schema">
-      <button class="copy-btn" onclick="copyCode('cb-schema', this)">Copia</button>
-      <pre>-- cm_notification_rules — colonne usate da "Notifica al Volo"
--- (tutte già esistenti, nessuna migrazione necessaria)
-
--- INSERT scritto da app-launcher:
-{
-  "app":       "quick",
-  "entity_id": "&lt;uuid&gt;",
-  "rule_type": "once",
-  "fire_at":   "2026-03-20T10:00:00",
-  "active":    true,
-  "payload": {
-    "entity_title":           "testo libero",
-    "channel":                "telegram",
-    "fire_at":                "2026-03-20T10:00:00",
-    "telegram_snooze_button": true,
-    "telegram_cancel_button": true
-  }
-}
-
--- cm_notification_queue — INSERT corrispondente:
-{
-  "app":       "quick",
-  "entity_id": "&lt;uuid&gt;",
-  "fire_at":   "2026-03-20T10:00:00",
-  "status":    "pending",
-  "metadata":  { "body": "testo libero" }
-}</pre>
-    </div>
-    <div class="platform-note">📍 Nessuna azione richiesta su Supabase — lo schema esistente è sufficiente</div>
-  </div>
-
-  <!-- CHECK constraint fix -->
-  <div class="item sql has-code" id="item-check-constraint">
-    <div class="item-header">
-      <div class="check sql-c">!</div>
+      <div class="check">!</div>
       <div class="item-body">
         <div class="item-title">ALTER TABLE — allarga CHECK constraint per <code>app='quick'</code></div>
         <div class="item-desc">
@@ -190,106 +105,6 @@ ALTER TABLE cm_notification_rules
         CHECK (entity_type IN ('task', 'habit', 'event', 'objective', 'quick'));</pre>
     </div>
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
-  </div>
-
-  <!-- RLS check -->
-  <div class="item sql has-code" id="item-rls">
-    <div class="item-header">
-      <div class="check sql-c">!</div>
-      <div class="item-body">
-        <div class="item-title">Verifica policy RLS su <code>cm_notification_rules</code> e <code>cm_notification_queue</code></div>
-        <div class="item-desc">
-          Se le tabelle non hanno policy, l'utente autenticato non può leggere/scrivere.
-          Esegui la query di verifica e, se mancano righe, esegui i <code>CREATE POLICY</code>.
-        </div>
-        <div class="tags">
-          <span class="tag sql-t">SQL</span>
-          <span class="tag warn">PROD</span>
-        </div>
-      </div>
-    </div>
-    <div class="code-block" id="cb-rls">
-      <button class="copy-btn" onclick="copyCode('cb-rls', this)">Copia</button>
-      <pre>-- Verifica policy esistenti
-SELECT tablename, policyname
-FROM pg_policies
-WHERE tablename IN ('cm_notification_rules', 'cm_notification_queue');
-
--- Se NON ci sono righe per una tabella, esegui:
-
--- ALTER TABLE cm_notification_rules ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "utente autenticato" ON cm_notification_rules
---   FOR ALL USING (auth.role() = 'authenticated');
-
--- ALTER TABLE cm_notification_queue ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "utente autenticato" ON cm_notification_queue
---   FOR ALL USING (auth.role() = 'authenticated');</pre>
-    </div>
-    <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       COMPLETATE
-       ══════════════════════════════════════════ -->
-  <div class="section-label">✅ completate</div>
-
-  <div class="item done">
-    <div class="item-header">
-      <div class="check done">✓</div>
-      <div class="item-body">
-        <div class="item-title">Aggiunta voce "⚡ Notifica al Volo" nel menu hamburger di AppSphere</div>
-        <div class="item-desc">Modal lista + form. Dati scritti in payload JSONB. v1.5.57 → v1.5.58</div>
-        <div class="tags"><span class="tag done-t">feat</span><span class="tag done-t">app-launcher</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-       DA FARE — BACKEND
-       ══════════════════════════════════════════ -->
-  <div class="section-label">🔜 da fare — backend telegram</div>
-
-  <div class="item urgent">
-    <div class="item-header">
-      <div class="check urgent">!</div>
-      <div class="item-body">
-        <div class="item-title">Bot Telegram: bottoni inline Snooze e Cancella</div>
-        <div class="item-desc">
-          Quando il bot invia una notifica con <code>app='quick'</code>, leggere
-          <code>payload.telegram_snooze_button</code> e <code>payload.telegram_cancel_button</code>
-          e allegare una InlineKeyboardMarkup al messaggio.
-        </div>
-        <div class="tags"><span class="tag tg">telegram</span><span class="tag feat">feat</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="item">
-    <div class="item-header">
-      <div class="check todo">○</div>
-      <div class="item-body">
-        <div class="item-title">Bot Telegram: callback "Snooze" → posticipa fire_at</div>
-        <div class="item-desc">
-          Pressione Snooze → opzione (30 min / 1 ora / domani) →
-          aggiorna <code>fire_at</code> in cm_notification_queue, <code>status='snoozed'</code>.
-        </div>
-        <div class="tags"><span class="tag tg">telegram</span><span class="tag feat">feat</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="item">
-    <div class="item-header">
-      <div class="check todo">○</div>
-      <div class="item-body">
-        <div class="item-title">Bot Telegram: callback "Cancella" → disabilita regola</div>
-        <div class="item-desc">
-          Pressione Cancella → <code>status='cancelled'</code> in cm_notification_queue
-          + <code>active=false</code> in cm_notification_rules.
-        </div>
-        <div class="tags"><span class="tag tg">telegram</span><span class="tag feat">feat</span></div>
-      </div>
-    </div>
   </div>
 
 </div>
