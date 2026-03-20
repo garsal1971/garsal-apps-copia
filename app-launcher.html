@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.66</title>
+<title>AppSphere v1.5.67</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1421,8 +1421,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.66';
-const BUILD_TIME  = '2026-03-20T13:30:00Z';
+const APP_VERSION = 'v1.5.67';
+const BUILD_TIME  = '2026-03-20T14:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2464,6 +2464,22 @@ async function nqvLoadList() {
   }
 }
 
+async function triggerFillQueue() {
+  try {
+    const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+    if (!token) return;
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/fill-notification-queue`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { console.warn('⚠️ triggerFillQueue: risposta non ok', resp.status); return; }
+    const result = await resp.json();
+    console.log('✅ triggerFillQueue:', result);
+  } catch (e) {
+    console.warn('⚠️ triggerFillQueue eccezione:', e.message);
+  }
+}
+
 async function deleteNqv(id, entityId, event) {
   event && event.stopPropagation();
   if (!confirm('Eliminare questa notifica?')) return;
@@ -2484,6 +2500,7 @@ async function deleteNqv(id, entityId, event) {
       if (listEl && !listEl.querySelector('.nqv-item')) {
         listEl.innerHTML = '<div class="nqv-empty">Nessuna notifica al volo.<br>Premi ➕ Inserisci per aggiungerne una.</div>';
       }
+      triggerFillQueue();
     }
   } catch(e) {
     alert('Errore: ' + e.message);
@@ -2571,6 +2588,7 @@ async function saveNqv() {
       })
     });
 
+    triggerFillQueue();
     nqvShowView('list');
     await nqvLoadList();
   } catch(e) {
