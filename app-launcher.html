@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.57</title>
+<title>AppSphere v1.5.65</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1421,8 +1421,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.64';
-const BUILD_TIME  = '2026-03-20T15:00:00Z';
+const APP_VERSION = 'v1.5.65';
+const BUILD_TIME  = '2026-03-20T16:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2542,6 +2542,11 @@ async function saveNqv() {
       throw new Error(err.message || 'Errore inserimento regola');
     }
 
+    const ruleData = await ruleRes.json();
+    const ruleId   = Array.isArray(ruleData) ? ruleData[0]?.id : ruleData?.id;
+    // occurrence_id: formato uniforme con fill-notification-queue → ruleId:YYYY-MM-DD:HH:MM
+    const occurrenceId = `${ruleId}:${data}:${orario}`;
+
     // Inserisci anche in coda per pianificare l'invio
     await fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue`, {
       method:  'POST',
@@ -2551,11 +2556,16 @@ async function saveNqv() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        app:       'quick',
-        entity_id: entityId,
-        fire_at:   fireAt,
-        status:    'pending',
-        metadata:  { body: testo }
+        rule_id:       ruleId,
+        user_id:       userId,
+        app:           'quick',
+        entity_id:     entityId,
+        title:         '⚡ ' + testo,
+        body:          testo,
+        channel:       'telegram',
+        fire_at:       fireAt,
+        status:        'pending',
+        occurrence_id: occurrenceId
       })
     });
 

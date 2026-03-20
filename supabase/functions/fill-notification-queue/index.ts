@@ -54,6 +54,12 @@ interface TaskReminderPresets {
   telegram_complete_button?: boolean
 }
 
+interface QuickReminderPresets {
+  fire_at:                string   // ISO datetime — ora esatta della notifica
+  telegram_snooze_button?: boolean
+  telegram_cancel_button?: boolean
+}
+
 interface HabitReminderPresets {
   reminders: number[]
   times:     string[]           // ["HH:MM", ...]
@@ -72,7 +78,7 @@ interface HabitReminderPresets {
   }
 }
 
-type ReminderPresetsJson = TaskReminderPresets | HabitReminderPresets
+type ReminderPresetsJson = TaskReminderPresets | HabitReminderPresets | QuickReminderPresets
 
 interface Rule {
   id:               string
@@ -167,19 +173,25 @@ Deno.serve(async (_req) => {
     for (const rule of (rules as Rule[]) ?? []) {
       const rp = rule.reminder_presets
 
-      // Detect struttura: habit (times[]) vs task (due_at)
-      const isHabit = Array.isArray((rp as HabitReminderPresets).times)
-
-      // Valida dati minimi
-      if (!rp?.reminders?.length) {
-        console.warn(`[fill-queue] regola ${rule.id} senza reminders, skip`)
-        skipped++
-        continue
-      }
+      // Detect struttura: quick (app='quick') | habit (times[]) | task (due_at)
+      const isQuick = rule.app === 'quick'
+      const isHabit = !isQuick && Array.isArray((rp as HabitReminderPresets).times)
 
       let entries: QueueEntry[]
 
-      if (isHabit) {
+      if (isQuick) {
+        const qrp = rp as QuickReminderPresets
+        if (!qrp.fire_at) {
+          console.warn(`[fill-queue] regola quick ${rule.id} senza fire_at, skip`)
+          skipped++
+          continue
+        }
+        entries = generateQuickEntry(qrp, now, horizon, rule.id)
+      } else if (!rp?.reminders?.length) {
+        console.warn(`[fill-queue] regola ${rule.id} senza reminders, skip`)
+        skipped++
+        continue
+      } else if (isHabit) {
         const hrp = rp as HabitReminderPresets
         if (!hrp.times?.length || !hrp['from-to']?.[0]) {
           console.warn(`[fill-queue] regola habit ${rule.id} senza times o from-to, skip`)
@@ -213,14 +225,19 @@ Deno.serve(async (_req) => {
       }
 
       // 4. Upsert le nuove entry
-      const title = rule.entity_title ? `🔔 ${rule.entity_title}` : `🔔 Promemoria`
+      const title = isQuick
+        ? (rule.entity_title ? `⚡ ${rule.entity_title}` : `⚡ Notifica`)
+        : (rule.entity_title ? `🔔 ${rule.entity_title}` : `🔔 Promemoria`)
 
       for (const entry of entries) {
-        const body = buildBody(entry, rule.entity_title)
+        const body = buildBody(entry, rule.entity_title, isQuick)
 
         // Metadata per-entry: include slot_time per filtrare la cancellazione per slot
+        // Le notifiche quick non hanno completion_update — snooze/cancel sempre visibili
         let entryMetadata: Record<string, unknown> | null = null
-        if (isHabit) {
+        if (isQuick) {
+          // nessun metadata aggiuntivo necessario
+        } else if (isHabit) {
           const hrp = rp as HabitReminderPresets
           if (hrp.telegram_complete_button && hrp.completion_update) {
             // Clone per non mutare l'originale dal DB
@@ -414,11 +431,35 @@ function generateHabitEntries(
 }
 
 // ---------------------------------------------------------------------------
+// Genera entry per una notifica quick (fire_at diretto, nessun offset preset)
+// Una regola quick → 1 occorrenza → 1 notifica
+// ---------------------------------------------------------------------------
+function generateQuickEntry(
+  rp:      QuickReminderPresets,
+  now:     Date,
+  horizon: Date,
+  ruleId:  string,
+): QueueEntry[] {
+  const fireAt  = new Date(rp.fire_at)
+  if (fireAt <= now || fireAt > horizon) return []
+  const dateStr = rp.fire_at.slice(0, 10)   // YYYY-MM-DD
+  const timeStr = rp.fire_at.slice(11, 16)  // HH:MM
+  return [{
+    fire_at:         fireAt.toISOString(),
+    label:           '',
+    time:            timeStr,
+    occurrence_id:   `${ruleId}:${dateStr}:${timeStr}`,
+    occurrence_date: dateStr,
+  }]
+}
+
+// ---------------------------------------------------------------------------
 // Body unificato — stesso formato per task e habit
 //   "{entity_title} — {preset_label} prima — DD/MM/YYYY[ ore HH:MM]"
 //   L'ora è omessa se è 00:00 (task con solo data, nessun orario specifico)
 // ---------------------------------------------------------------------------
-function buildBody(entry: QueueEntry, entityTitle: string | null): string {
+function buildBody(entry: QueueEntry, entityTitle: string | null, isQuick = false): string {
+  if (isQuick) return entityTitle ?? 'Notifica'
   const name     = entityTitle ?? 'Promemoria'
   const datePart = formatDateStr(entry.occurrence_date)
   const timePart = entry.time !== '00:00' ? ` ore ${entry.time}` : ''
