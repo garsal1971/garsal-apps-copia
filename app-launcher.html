@@ -1421,8 +1421,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.60';
-const BUILD_TIME  = '2026-03-20T12:00:00Z';
+const APP_VERSION = 'v1.5.61';
+const BUILD_TIME  = '2026-03-20T13:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2444,7 +2444,7 @@ async function nqvLoadList() {
       return;
     }
     el.innerHTML = rows.map(r => {
-      const p  = r.payload || {};
+      const p  = r.reminder_presets || {};
       const fa = p.fire_at ? new Date(p.fire_at) : null;
       const dateStr = fa
         ? fa.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'numeric'})
@@ -2508,7 +2508,7 @@ async function saveNqv() {
     app:       'quick',
     entity_id: entityId,
     rule_type: 'once',
-    payload: {
+    reminder_presets: {
       entity_title:           testo,
       channel:                'telegram',
       fire_at:                fireAt,
