@@ -37,7 +37,7 @@ interface QueueItem {
   status:               string
   created_at:           string
   telegram_message_id?: number | null
-  metadata?:            { completion_update?: Record<string, unknown> } | null
+  metadata?:            { completion_update?: Record<string, unknown>; telegram_cancel_button?: boolean } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ async function sendTelegram(
 
 // Costruisce la inline keyboard con le opzioni snooze + annulla
 // Se completeButton è true aggiunge il pulsante "✅ Fatto" come prima riga
-function buildInlineKeyboard(itemId: string, completeButton = false): object {
+function buildInlineKeyboard(itemId: string, completeButton = false, cancelButton = true): object {
   const rows: object[][] = []
   if (completeButton) {
     rows.push([{ text: '✅ Fatto', callback_data: `complete:${itemId}` }])
@@ -88,10 +88,10 @@ function buildInlineKeyboard(itemId: string, completeButton = false): object {
     { text: '⏸ 3h',     callback_data: `snooze:180:${itemId}`  },
     { text: '⏸ Domani', callback_data: `snooze:1440:${itemId}` },
   ])
-  rows.push([
-    { text: '❌ Annulla promemoria', callback_data: `cancel:${itemId}`  },
-    { text: '🗑 Chiudi',            callback_data: `dismiss:${itemId}` },
-  ])
+  const lastRow: object[] = []
+  if (cancelButton) lastRow.push({ text: '❌ Annulla promemoria', callback_data: `cancel:${itemId}` })
+  lastRow.push({ text: '🗑 Chiudi', callback_data: `dismiss:${itemId}` })
+  rows.push(lastRow)
   return { inline_keyboard: rows }
 }
 
@@ -148,7 +148,8 @@ Deno.serve(async (_req) => {
       ) {
         const message     = `${item.title}\n${item.body}`
         const hasComplete = !!(item.metadata?.completion_update)
-        const replyMarkup = buildInlineKeyboard(item.id, hasComplete)
+        const hasCancel   = item.metadata?.telegram_cancel_button ?? true
+        const replyMarkup = buildInlineKeyboard(item.id, hasComplete, hasCancel)
         const result      = await sendTelegram(settings.telegram_chat_id, message, replyMarkup)
         telegramOk        = result.ok
         responseText      = result.response
