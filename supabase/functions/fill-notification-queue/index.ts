@@ -236,7 +236,11 @@ Deno.serve(async (_req) => {
         // Le notifiche quick non hanno completion_update — snooze/cancel sempre visibili
         let entryMetadata: Record<string, unknown> | null = null
         if (isQuick) {
-          // nessun metadata aggiuntivo necessario
+          const qrp = rp as QuickReminderPresets
+          entryMetadata = {
+            telegram_snooze_button: qrp.telegram_snooze_button ?? true,
+            telegram_cancel_button: qrp.telegram_cancel_button ?? true,
+          }
         } else if (isHabit) {
           const hrp = rp as HabitReminderPresets
           if (hrp.telegram_complete_button && hrp.completion_update) {
