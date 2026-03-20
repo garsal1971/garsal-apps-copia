@@ -1421,8 +1421,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.57';
-const BUILD_TIME  = '2026-03-19T15:00:00Z';
+const APP_VERSION = 'v1.5.58';
+const BUILD_TIME  = '2026-03-20T10:00:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2444,20 +2444,20 @@ async function nqvLoadList() {
       return;
     }
     el.innerHTML = rows.map(r => {
-      const p  = r.reminder_presets || {};
-      const fa = p.fire_at ? new Date(p.fire_at) : null;
+      const p  = r.payload || {};
+      const fa = (p.fire_at || r.fire_at) ? new Date(p.fire_at || r.fire_at) : null;
       const dateStr = fa
         ? fa.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'numeric'})
           + ' ' + fa.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})
         : '—';
-      const statusStyle = r.enabled
+      const statusStyle = r.active
         ? 'background:#ECFDF5;color:#065F46;'
         : 'background:#F3F4F6;color:#9CA3AF;';
-      const statusLabel = r.enabled ? '✓ Attiva' : '✗ Off';
+      const statusLabel = r.active ? '✓ Attiva' : '✗ Off';
       return `
         <div class="nqv-item" id="nqv-item-${r.id}">
           <div class="nqv-item-body">
-            <div class="nqv-item-title">${r.entity_title || '—'}</div>
+            <div class="nqv-item-title">${p.entity_title || '—'}</div>
             <div class="nqv-item-meta">📅 ${dateStr} &nbsp;·&nbsp; ✈ Telegram</div>
           </div>
           <span class="nqv-item-status" style="${statusStyle}">${statusLabel}</span>
@@ -2510,16 +2510,17 @@ async function saveNqv() {
     : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
   const rulePayload = {
-    app:          'quick',
-    entity_id:    entityId,
-    entity_title: testo,
-    entity_type:  'once',
-    channel:      'telegram',
-    enabled:      true,
-    reminder_presets: {
-      fire_at:                  fireAt,
-      telegram_snooze_button:   true,
-      telegram_cancel_button:   true
+    app:       'quick',
+    entity_id: entityId,
+    rule_type: 'once',
+    fire_at:   fireAt,
+    active:    true,
+    payload: {
+      entity_title:           testo,
+      channel:                'telegram',
+      fire_at:                fireAt,
+      telegram_snooze_button: true,
+      telegram_cancel_button: true
     }
   };
 
@@ -2556,7 +2557,7 @@ async function saveNqv() {
         entity_id: entityId,
         fire_at:   fireAt,
         status:    'pending',
-        body:      testo
+        metadata:  { body: testo }
       })
     });
 
