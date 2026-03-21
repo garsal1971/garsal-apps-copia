@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.30</title>
+    <title>Tasks v19.18.31</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2177,8 +2177,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.30';
-        const BUILD_TIME  = '2026-03-20T15:00:00Z';
+        const APP_VERSION = 'v19.18.31';
+        const BUILD_TIME  = '2026-03-21T14:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -6647,13 +6647,15 @@
                 
                 // Sblocca step dipendenti (completed O failed contano come "fatto")
                 wfUnlockSuccessors(steps, now);
-                
+
                 // Controlla se workflow finito (nessuno step locked o active)
                 const allDone = steps.every(s => s.status === 'completed' || s.status === 'failed');
-                
+                // Auto-completa solo se TUTTI gli step sono completati (nessuno fallito)
+                const allCompleted = steps.every(s => s.status === 'completed');
+
                 // Calcola next_occurrence_date = min(start_date) degli step active
                 const nextOccurrence = wfCalcNextOccurrence(steps, allDone);
-                
+
                 // Salva history per lo step completato
                 await sb.from('ts_history').insert([{
                     task_id: taskId,
@@ -6664,22 +6666,42 @@
                     timestamp: now
                 }]);
                 
-                // Aggiorna task (NON auto-completa, l'utente decide dal popup)
-                const updateData = {
-                    workflow_steps: steps,
-                    last_completed_date: now,
-                    next_occurrence_date: nextOccurrence
-                };
-                
-                await sb.from('ts_tasks').update(updateData).eq('id', taskId);
-                
+                if (allCompleted) {
+                    // Tutti gli step completati: auto-completa il workflow
+                    await sb.from('ts_history').insert([{
+                        task_id: taskId,
+                        from_status: task.status,
+                        to_status: 'completed',
+                        action: 'completed',
+                        points: wfPoints.task_success || 0,
+                        timestamp: now
+                    }]);
+                    await sb.from('ts_tasks').update({
+                        workflow_steps: steps,
+                        status: 'completed',
+                        last_completed_date: now,
+                        next_occurrence_date: nextOccurrence
+                    }).eq('id', taskId);
+                } else {
+                    // Step con fallimenti o workflow ancora in corso
+                    await sb.from('ts_tasks').update({
+                        workflow_steps: steps,
+                        last_completed_date: now,
+                        next_occurrence_date: nextOccurrence
+                    }).eq('id', taskId);
+                }
+
                 await loadTasks();
                 await loadHistory();
                 renderDashboard();
                 renderCalendar();
                 renderManagement();
-                
-                showToast(`✅ Step "${step.title}" completato! +${wfPoints.step_success} pt`);
+
+                if (allCompleted) {
+                    showToast(`🎉 Workflow completato! +${wfPoints.task_success || 0} pt`);
+                } else {
+                    showToast(`✅ Step "${step.title}" completato! +${wfPoints.step_success} pt`);
+                }
             } catch (error) {
                 console.error('Error completing workflow step:', error);
                 showToast('❌ Errore nel completare lo step');
@@ -7019,12 +7041,12 @@
         // Azioni dal popup
         async function wfPopupCompleteStep(taskId, stepId) {
             await completeWorkflowStep(taskId, stepId);
-            // Riapri popup aggiornato
             const task = tasks.find(t => t.id === taskId);
-            if (task && ['started', 'completed', 'failed', 'skipped'].includes(task.status)) {
-                renderWorkflowPopup(task);
-            } else {
+            // Se il workflow è stato auto-completato, chiudi il popup
+            if (!task || task.status === 'completed') {
                 closeWorkflowPopup();
+            } else {
+                renderWorkflowPopup(task);
             }
         }
         
