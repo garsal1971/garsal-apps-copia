@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.18.31</title>
+    <title>Tasks v19.18.32</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -2177,8 +2177,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.18.31';
-        const BUILD_TIME  = '2026-03-21T14:00:00Z';
+        const APP_VERSION = 'v19.18.32';
+        const BUILD_TIME  = '2026-03-21T15:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -6667,18 +6667,18 @@
                 }]);
                 
                 if (allCompleted) {
-                    // Tutti gli step completati: auto-completa il workflow
+                    // Tutti gli step completati: auto-completa il workflow → terminato
                     await sb.from('ts_history').insert([{
                         task_id: taskId,
                         from_status: task.status,
-                        to_status: 'completed',
+                        to_status: 'terminated',
                         action: 'completed',
                         points: wfPoints.task_success || 0,
                         timestamp: now
                     }]);
                     await sb.from('ts_tasks').update({
                         workflow_steps: steps,
-                        status: 'completed',
+                        status: 'terminated',
                         last_completed_date: now,
                         next_occurrence_date: nextOccurrence
                     }).eq('id', taskId);
@@ -7042,8 +7042,8 @@
         async function wfPopupCompleteStep(taskId, stepId) {
             await completeWorkflowStep(taskId, stepId);
             const task = tasks.find(t => t.id === taskId);
-            // Se il workflow è stato auto-completato, chiudi il popup
-            if (!task || task.status === 'completed') {
+            // Se il workflow è stato auto-completato (terminato), chiudi il popup
+            if (!task || task.status === 'terminated') {
                 closeWorkflowPopup();
             } else {
                 renderWorkflowPopup(task);
@@ -7078,7 +7078,7 @@
             await sb.from('ts_history').insert([{
                 task_id: taskId,
                 from_status: task.status,
-                to_status: 'completed',
+                to_status: 'terminated',
                 action: 'completed',
                 points: wfPts.task_success || 0,
                 timestamp: now
@@ -7086,9 +7086,9 @@
 
             const completedDates = steps.filter(s => s.completed_at).map(s => new Date(s.completed_at));
             const maxDate = completedDates.length > 0 ? new Date(Math.max(...completedDates)).toISOString() : now;
-            
+
             await sb.from('ts_tasks').update({
-                status: 'completed',
+                status: 'terminated',
                 last_completed_date: now,
                 next_occurrence_date: maxDate
             }).eq('id', taskId);
@@ -7125,11 +7125,11 @@
             const maxDate = completedDates.length > 0 ? new Date(Math.max(...completedDates)).toISOString() : now;
             
             await sb.from('ts_tasks').update({
-                status: 'completed',
+                status: 'terminated',
                 last_completed_date: now,
                 next_occurrence_date: maxDate
             }).eq('id', taskId);
-            
+
             await loadTasks();
             await loadHistory();
             renderDashboard();
