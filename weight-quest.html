@@ -1043,8 +1043,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.40';
-        var BUILD_TIME  = '2026-03-21T10:00:00Z';
+        var APP_VERSION = 'v3.5.41';
+        var BUILD_TIME  = '2026-03-21T11:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -2517,9 +2517,43 @@
             return null;
         }
 
+        function openAuthPopup(onSuccess) {
+            var popup = window.open('app-launcher.html', 'appsphere_auth', 'width=480,height=640,left=200,top=100');
+            if (!popup) {
+                window.location.href = 'app-launcher.html';
+                return;
+            }
+            log('Popup AppSphere aperto — in attesa del token Google...');
+            var storageHandler = function(e) {
+                if (e.key === 'google_token' && e.newValue) {
+                    googleToken = e.newValue;
+                    localStorage.setItem('googleToken', googleToken);
+                    window.removeEventListener('storage', storageHandler);
+                    clearInterval(checkClosed);
+                    try { popup.close(); } catch(ex) {}
+                    log('google_token ricevuto dal popup AppSphere');
+                    if (onSuccess) onSuccess();
+                }
+            };
+            window.addEventListener('storage', storageHandler);
+            var checkClosed = setInterval(function() {
+                try {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        window.removeEventListener('storage', storageHandler);
+                        var tok = localStorage.getItem('google_token') || localStorage.getItem('googleToken');
+                        if (tok && !googleToken) {
+                            googleToken = tok;
+                            if (onSuccess) onSuccess();
+                        }
+                    }
+                } catch(ex) { clearInterval(checkClosed); }
+            }, 500);
+        }
+
         function syncFit() {
             if (!googleToken) {
-                window.location.href = 'app-launcher.html';
+                openAuthPopup(function() { syncFit(); });
                 return;
             }
             if (!userData.milestones || userData.milestones.length < 2) {
@@ -2612,7 +2646,7 @@
                     googleToken = null;
                     localStorage.removeItem('googleToken');
                     localStorage.removeItem('google_token');
-                    alert('Token Google scaduto.\nRitorna ad AppSphere, ricarica la pagina e rientra in Weight Quest per rinnovare l\'accesso a Google Fit.');
+                    openAuthPopup(function() { syncFit(); });
                 } else {
                     alert('Errore sincronizzazione: ' + error.message);
                 }
