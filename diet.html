@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano Dietetico — 4 Settimane</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --parchment: #ede6d6;
+    --green-dark: #2d4a2d;
+    --green-mid: #3d6b3d;
+    --green-light: #6a9a6a;
+    --green-pale: #c8dcc8;
+    --gold: #b8860b;
+    --gold-light: #d4a82a;
+    --brown: #5c3d2e;
+    --text: #2a2016;
+    --text-light: #6b5a3e;
+    --white: #fefcf8;
+    --shadow: rgba(44,32,12,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 17px;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    background: var(--green-dark);
+    padding: 2.5rem 2rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(106,154,106,0.2) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(184,134,11,0.1) 0%, transparent 60%);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+    position: relative;
+  }
+  header p {
+    color: var(--green-pale);
+    margin-top: 0.4rem;
+    font-style: italic;
+    font-size: 1.05rem;
+    position: relative;
+  }
+  .header-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.4rem;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .stat-pill {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(200,220,200,0.3);
+    border-radius: 30px;
+    padding: 0.4rem 1.1rem;
+    color: var(--green-pale);
+    font-size: 0.88rem;
+    letter-spacing: 0.03em;
+  }
+  .stat-pill strong { color: var(--gold-light); }
+
+  /* ---- NAV ---- */
+  nav {
+    background: var(--white);
+    border-bottom: 2px solid var(--parchment);
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+  .nav-btn {
+    padding: 1rem 2.5rem;
+    border: none;
+    background: transparent;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.25s;
+    letter-spacing: 0.02em;
+  }
+  .nav-btn:hover { color: var(--green-dark); }
+  .nav-btn.active {
+    color: var(--green-dark);
+    border-bottom-color: var(--green-mid);
+  }
+
+  /* ---- SECTIONS ---- */
+  section { display: none; }
+  section.active { display: block; }
+
+  /* ---- DIET PLAN ---- */
+  .diet-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .intro-box {
+    background: var(--white);
+    border-left: 4px solid var(--green-mid);
+    border-radius: 0 12px 12px 0;
+    padding: 1.2rem 1.6rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .intro-box p { line-height: 1.7; color: var(--text-light); }
+  .intro-box strong { color: var(--green-dark); }
+
+  .macros-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .macro-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
+    text-align: center;
+    box-shadow: 0 2px 10px var(--shadow);
+    border-top: 4px solid var(--green-light);
+  }
+  .macro-card .macro-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+  .macro-card .macro-label {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 0.2rem;
+  }
+  .macro-card:nth-child(2) { border-top-color: var(--gold); }
+  .macro-card:nth-child(2) .macro-val { color: var(--gold); }
+  .macro-card:nth-child(3) { border-top-color: var(--brown); }
+  .macro-card:nth-child(3) .macro-val { color: var(--brown); }
+  .macro-card:nth-child(4) { border-top-color: var(--green-mid); }
+
+  .week-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+  }
+  .week-tab {
+    padding: 0.55rem 1.4rem;
+    border-radius: 30px;
+    border: 2px solid var(--green-pale);
+    background: transparent;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .week-tab:hover { border-color: var(--green-mid); color: var(--green-dark); }
+  .week-tab.active {
+    background: var(--green-dark);
+    border-color: var(--green-dark);
+    color: var(--cream);
+  }
+
+  .week-content { display: none; }
+  .week-content.active { display: block; }
+
+  .week-header {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--green-dark);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--green-pale);
+  }
+  .week-header span {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-light);
+    margin-left: 0.8rem;
+  }
+
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .day-card {
+    background: var(--white);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .day-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--shadow);
+  }
+  .day-header {
+    background: var(--green-dark);
+    padding: 0.7rem 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .day-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cream);
+  }
+  .day-date {
+    font-size: 0.78rem;
+    color: var(--green-pale);
+    font-style: italic;
+  }
+  .day-body { padding: 1rem 1.1rem 1.1rem; }
+
+  .meal-section { margin-bottom: 0.6rem; }
+  .meal-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 0.25rem;
+  }
+  .meal-items { list-style: none; }
+  .meal-items li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.22rem 0;
+    font-size: 0.92rem;
+    color: var(--text);
+    line-height: 1.4;
+    border-bottom: 1px solid var(--parchment);
+  }
+  .meal-items li:last-child { border-bottom: none; }
+  .meal-items li::before {
+    content: '·';
+    color: var(--green-light);
+    font-size: 1.2rem;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+
+  .day-macros {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--parchment);
+  }
+  .dm {
+    font-size: 0.75rem;
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+    color: var(--text-light);
+  }
+  .dm strong { color: var(--green-dark); }
+
+  /* ---- SHOPPING LIST ---- */
+  .shop-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .shop-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: var(--green-dark);
+    margin-bottom: 0.4rem;
+  }
+  .shop-subtitle {
+    color: var(--text-light);
+    font-style: italic;
+    margin-bottom: 2rem;
+  }
+
+  .period-selector {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 2px 14px var(--shadow);
+    margin-bottom: 2rem;
+  }
+  .period-selector h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--green-dark);
+    margin-bottom: 1.2rem;
+  }
+  .period-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .period-opt {
+    padding: 0.9rem 0.5rem;
+    border: 2px solid var(--green-pale);
+    border-radius: 12px;
+    background: transparent;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .period-opt:hover { border-color: var(--green-mid); color: var(--green-dark); }
+  .period-opt.selected {
+    background: var(--green-dark);
+    border-color: var(--green-dark);
+    color: var(--cream);
+  }
+  .period-opt .days-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 300;
+    opacity: 0.8;
+    margin-top: 0.15rem;
+  }
+
+  .date-info {
+    background: var(--parchment);
+    border-radius: 10px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+  }
+  .date-info strong { color: var(--green-dark); }
+
+  .generate-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1.4rem;
+    padding: 1rem;
+    background: var(--green-dark);
+    color: var(--cream);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.2s;
+  }
+  .generate-btn:hover { background: var(--green-mid); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Shopping list results */
+  .shop-result { display: none; }
+  .shop-result.visible { display: block; }
+
+  .shop-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .shop-result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--green-dark);
+  }
+  .print-btn {
+    padding: 0.55rem 1.4rem;
+    background: transparent;
+    border: 2px solid var(--green-mid);
+    border-radius: 30px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--green-dark);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .print-btn:hover { background: var(--green-dark); color: var(--cream); }
+
+  .shop-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.2rem;
+  }
+
+  .shop-cat {
+    background: var(--white);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+  .shop-cat-header {
+    padding: 0.7rem 1.1rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .shop-cat-header .icon { font-size: 1.1rem; }
+  .cat-proteine .shop-cat-header { background: #e8f0e8; color: var(--green-dark); }
+  .cat-verdure .shop-cat-header { background: #eef5e0; color: #3a5c1a; }
+  .cat-latticini .shop-cat-header { background: #faf4e8; color: var(--brown); }
+  .cat-base .shop-cat-header { background: #f0ece4; color: #4a3828; }
+
+  .shop-items { list-style: none; padding: 0.8rem 1.1rem; }
+  .shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--parchment);
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .shop-item:last-child { border-bottom: none; }
+  .shop-item-check {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--green-light);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .shop-item.checked .shop-item-check {
+    background: var(--green-mid);
+    border-color: var(--green-mid);
+  }
+  .shop-item.checked .shop-item-check::after {
+    content: '✓';
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+  .shop-item.checked .shop-item-name {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+  .shop-item-name {
+    flex: 1;
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+  .shop-item-qty {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--green-dark);
+    background: var(--cream);
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .progress-bar-container {
+    margin-top: 1.5rem;
+    background: var(--white);
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: var(--text-light);
+    margin-bottom: 0.6rem;
+  }
+  .progress-label strong { color: var(--green-dark); }
+  .progress-track {
+    height: 8px;
+    background: var(--parchment);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-mid), var(--green-light));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.7rem; }
+    .nav-btn { padding: 0.85rem 1.2rem; font-size: 0.9rem; }
+    .day-grid { grid-template-columns: 1fr; }
+    .shop-categories { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    nav, header, .period-selector, .generate-btn, .print-btn, .progress-bar-container { display: none !important; }
+    .shop-result { display: block !important; }
+    .shop-categories { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Piano Dietetico · 4 Settimane</h1>
+  <p>Un pasto al giorno · Low-Carb · Alto contenuto proteico</p>
+  <div class="header-stats">
+    <span class="stat-pill">Peso iniziale: <strong>80 kg</strong></span>
+    <span class="stat-pill">Obiettivo: <strong>75 kg</strong></span>
+    <span class="stat-pill">Durata: <strong>8 settimane</strong></span>
+    <span class="stat-pill">Ritmo: <strong>~0.6 kg/sett.</strong></span>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showSection('piano')">📋 Piano Dietetico</button>
+  <button class="nav-btn" onclick="showSection('spesa')">🛒 Lista della Spesa</button>
+</nav>
+
+<!-- SEZIONE PIANO DIETETICO -->
+<section id="piano" class="active">
+  <div class="diet-container">
+
+    <div class="intro-box">
+      <p>Ogni giorno consumi <strong>un pasto unico</strong> (OMAD), idealmente a cena. Il pasto è strutturato per garantire circa <strong>~130g di proteine</strong>, pochi carboidrati e verdure abbondanti. Accompagna sempre con <strong>2 litri d'acqua</strong> durante la giornata. Condisci con <strong>olio EVO</strong> (1-2 cucchiai), sale, pepe, erbe aromatiche a piacere.</p>
+    </div>
+
+    <div class="macros-bar">
+      <div class="macro-card">
+        <div class="macro-val">~1.200</div>
+        <div class="macro-label">Kcal / giorno</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val">~130g</div>
+        <div class="macro-label">Proteine</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val">&lt;30g</div>
+        <div class="macro-label">Carboidrati</div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val">~60g</div>
+        <div class="macro-label">Grassi</div>
+      </div>
+    </div>
+
+    <div class="week-tabs">
+      <button class="week-tab active" onclick="showWeek(1)">Settimana 1</button>
+      <button class="week-tab" onclick="showWeek(2)">Settimana 2</button>
+      <button class="week-tab" onclick="showWeek(3)">Settimana 3</button>
+      <button class="week-tab" onclick="showWeek(4)">Settimana 4</button>
+    </div>
+
+    <!-- SETTIMANA 1 -->
+    <div class="week-content active" id="week-1">
+      <div class="week-header">Settimana 1 <span>24 mar – 30 mar 2026</span></div>
+      <div class="day-grid" id="days-1"></div>
+    </div>
+
+    <!-- SETTIMANA 2 -->
+    <div class="week-content" id="week-2">
+      <div class="week-header">Settimana 2 <span>31 mar – 6 apr 2026</span></div>
+      <div class="day-grid" id="days-2"></div>
+    </div>
+
+    <!-- SETTIMANA 3 -->
+    <div class="week-content" id="week-3">
+      <div class="week-header">Settimana 3 <span>7 apr – 13 apr 2026</span></div>
+      <div class="day-grid" id="days-3"></div>
+    </div>
+
+    <!-- SETTIMANA 4 -->
+    <div class="week-content" id="week-4">
+      <div class="week-header">Settimana 4 <span>14 apr – 20 apr 2026</span></div>
+      <div class="day-grid" id="days-4"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SEZIONE LISTA DELLA SPESA -->
+<section id="spesa">
+  <div class="shop-container">
+    <h2 class="shop-title">Lista della Spesa</h2>
+    <p class="shop-subtitle">Genera la lista in base a quanti giorni vuoi fare la spesa, a partire da oggi.</p>
+
+    <div class="period-selector">
+      <h3>Per quanto tempo farai la spesa?</h3>
+      <div class="period-options">
+        <button class="period-opt" onclick="selectPeriod(3, this)">3 giorni<span class="days-label">3 giorni</span></button>
+        <button class="period-opt" onclick="selectPeriod(7, this)">1 settimana<span class="days-label">7 giorni</span></button>
+        <button class="period-opt" onclick="selectPeriod(14, this)">2 settimane<span class="days-label">14 giorni</span></button>
+        <button class="period-opt" onclick="selectPeriod(28, this)">4 settimane<span class="days-label">28 giorni</span></button>
+      </div>
+      <div class="date-info" id="date-info">
+        Seleziona un periodo per vedere le date di riferimento.
+      </div>
+      <button class="generate-btn" id="gen-btn" onclick="generateList()" disabled>
+        Genera Lista della Spesa
+      </button>
+    </div>
+
+    <div class="shop-result" id="shop-result">
+      <div class="shop-result-header">
+        <div class="shop-result-title" id="result-title"></div>
+        <button class="print-btn" onclick="window.print()">🖨 Stampa lista</button>
+      </div>
+      <div class="shop-categories" id="shop-categories"></div>
+      <div class="progress-bar-container">
+        <div class="progress-label">
+          <span>Articoli nel carrello</span>
+          <strong id="progress-text">0 / 0</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+// ─── DATI DIETA ───────────────────────────────────────────────
+
+const giorni = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+
+const piani = [
+  // SETTIMANA 1
+  [
+    { g: 'Lunedì',    d: '24 mar', p: ['Petto di pollo 300g (grigliato)','3 uova sode'], v: ['Broccoli 300g al vapore','Insalata verde'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1180 },
+    { g: 'Martedì',   d: '25 mar', p: ['Salmone 250g al forno','Fiocchi di latte 100g'], v: ['Spinaci saltati 300g','Pomodorini'], f: ['Olio EVO 1 cucchiaio'], pr:125, kcal:1200 },
+    { g: 'Mercoledì', d: '26 mar', p: ['Petto di tacchino 300g','3 uova strapazzate'], v: ['Zucchine grigliate 300g'], f: ['Olio EVO 1 cucchiaio'], pr:132, kcal:1150 },
+    { g: 'Giovedì',   d: '27 mar', p: ['Merluzzo 300g al forno','Ricotta 100g'], v: ['Cavolfiore al vapore 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:120, kcal:1100 },
+    { g: 'Venerdì',   d: '28 mar', p: ['Petto di pollo 300g','3 uova sode'], v: ['Fagiolini 300g','Insalata mista'], f: ['Olio EVO 1 cucchiaio'], pr:130, kcal:1160 },
+    { g: 'Sabato',    d: '29 mar', p: ['Tonno naturale 2 scatolette (320g)','3 uova'], v: ['Insalata mista 300g','Cetrioli'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1120 },
+    { g: 'Domenica',  d: '30 mar', p: ['Bistecca manzo magra 250g','Fiocchi di latte 100g'], v: ['Verdure miste grigliate 300g'], f: ['Olio EVO 1 cucchiaio'], pr:135, kcal:1250 },
+  ],
+  // SETTIMANA 2
+  [
+    { g: 'Lunedì',    d: '31 mar', p: ['Salmone 250g al forno','3 uova sode'], v: ['Broccoli 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1210 },
+    { g: 'Martedì',   d: '1 apr',  p: ['Petto di pollo 300g','Ricotta 100g'], v: ['Spinaci saltati 300g','Pomodorini'], f: ['Olio EVO 1 cucchiaio'], pr:122, kcal:1170 },
+    { g: 'Mercoledì', d: '2 apr',  p: ['Merluzzo 300g','3 uova strapazzate'], v: ['Zucchine 300g','Insalata verde'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1140 },
+    { g: 'Giovedì',   d: '3 apr',  p: ['Petto di tacchino 300g','Fiocchi di latte 100g'], v: ['Cavolfiore 300g','Cetrioli'], f: ['Olio EVO 1 cucchiaio'], pr:130, kcal:1160 },
+    { g: 'Venerdì',   d: '4 apr',  p: ['Tonno naturale 2 scatolette','3 uova'], v: ['Insalata mista 300g','Sedano'], f: ['Olio EVO 1 cucchiaio'], pr:125, kcal:1100 },
+    { g: 'Sabato',    d: '5 apr',  p: ['Petto di pollo 300g','Ricotta 100g'], v: ['Fagiolini 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:122, kcal:1150 },
+    { g: 'Domenica',  d: '6 apr',  p: ['Bistecca manzo magra 250g','3 uova'], v: ['Verdure miste 300g'], f: ['Olio EVO 1 cucchiaio'], pr:135, kcal:1240 },
+  ],
+  // SETTIMANA 3
+  [
+    { g: 'Lunedì',    d: '7 apr',  p: ['Petto di tacchino 300g','3 uova sode'], v: ['Broccoli 300g','Insalata verde'], f: ['Olio EVO 1 cucchiaio'], pr:130, kcal:1155 },
+    { g: 'Martedì',   d: '8 apr',  p: ['Merluzzo 300g al forno','Fiocchi di latte 100g'], v: ['Spinaci 300g','Pomodorini'], f: ['Olio EVO 1 cucchiaio'], pr:120, kcal:1120 },
+    { g: 'Mercoledì', d: '9 apr',  p: ['Petto di pollo 300g','3 uova strapazzate'], v: ['Zucchine 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:130, kcal:1160 },
+    { g: 'Giovedì',   d: '10 apr', p: ['Salmone 250g','Ricotta 100g'], v: ['Cavolfiore 300g','Cetrioli'], f: ['Olio EVO 1 cucchiaio'], pr:125, kcal:1200 },
+    { g: 'Venerdì',   d: '11 apr', p: ['Bistecca manzo magra 250g','3 uova'], v: ['Insalata mista 300g','Sedano'], f: ['Olio EVO 1 cucchiaio'], pr:133, kcal:1230 },
+    { g: 'Sabato',    d: '12 apr', p: ['Tonno naturale 2 scatolette','Fiocchi di latte 100g'], v: ['Fagiolini 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1110 },
+    { g: 'Domenica',  d: '13 apr', p: ['Petto di pollo 300g','3 uova'], v: ['Verdure miste 300g'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1150 },
+  ],
+  // SETTIMANA 4
+  [
+    { g: 'Lunedì',    d: '14 apr', p: ['Salmone 250g','3 uova sode'], v: ['Broccoli 300g','Insalata verde'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1200 },
+    { g: 'Martedì',   d: '15 apr', p: ['Petto di tacchino 300g','Ricotta 100g'], v: ['Spinaci 300g','Pomodorini'], f: ['Olio EVO 1 cucchiaio'], pr:122, kcal:1160 },
+    { g: 'Mercoledì', d: '16 apr', p: ['Merluzzo 300g','3 uova strapazzate'], v: ['Zucchine 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1140 },
+    { g: 'Giovedì',   d: '17 apr', p: ['Petto di pollo 300g','Fiocchi di latte 100g'], v: ['Cavolfiore 300g','Cetrioli'], f: ['Olio EVO 1 cucchiaio'], pr:122, kcal:1150 },
+    { g: 'Venerdì',   d: '18 apr', p: ['Bistecca manzo magra 250g','3 uova'], v: ['Insalata mista 300g','Sedano'], f: ['Olio EVO 1 cucchiaio'], pr:133, kcal:1230 },
+    { g: 'Sabato',    d: '19 apr', p: ['Petto di pollo 300g','Ricotta 100g'], v: ['Fagiolini 300g','Rucola'], f: ['Olio EVO 1 cucchiaio'], pr:122, kcal:1150 },
+    { g: 'Domenica',  d: '20 apr', p: ['Salmone 250g','3 uova'], v: ['Verdure miste 300g'], f: ['Olio EVO 1 cucchiaio'], pr:128, kcal:1200 },
+  ],
+];
+
+// ─── SPESA BASE PER SETTIMANA ──────────────────────────────────
+
+const spesaBase = {
+  proteine: [
+    { n: 'Petto di pollo', qty1: '1.2 kg', qty2: '2.4 kg', qty3: '3.6 kg', qty4: '4.8 kg' },
+    { n: 'Salmone fresco/surgelato', qty1: '500 g', qty2: '1 kg', qty3: '1.5 kg', qty4: '2 kg' },
+    { n: 'Petto di tacchino', qty1: '600 g', qty2: '1.2 kg', qty3: '1.8 kg', qty4: '2.4 kg' },
+    { n: 'Merluzzo (filetti)', qty1: '600 g', qty2: '1.2 kg', qty3: '1.8 kg', qty4: '2.4 kg' },
+    { n: 'Tonno naturale (scatolette)', qty1: '4 scatolette', qty2: '8 scatolette', qty3: '12 scatolette', qty4: '16 scatolette' },
+    { n: 'Bistecca manzo magra', qty1: '500 g', qty2: '1 kg', qty3: '1.5 kg', qty4: '2 kg' },
+    { n: 'Uova', qty1: '21 pz', qty2: '42 pz', qty3: '63 pz', qty4: '84 pz' },
+  ],
+  latticini: [
+    { n: 'Ricotta (vaccina)', qty1: '400 g', qty2: '800 g', qty3: '1.2 kg', qty4: '1.6 kg' },
+    { n: 'Fiocchi di latte', qty1: '400 g', qty2: '800 g', qty3: '1.2 kg', qty4: '1.6 kg' },
+  ],
+  verdure: [
+    { n: 'Broccoli', qty1: '600 g', qty2: '1.2 kg', qty3: '1.8 kg', qty4: '2.4 kg' },
+    { n: 'Spinaci freschi', qty1: '600 g', qty2: '1.2 kg', qty3: '1.8 kg', qty4: '2.4 kg' },
+    { n: 'Zucchine', qty1: '600 g', qty2: '1.2 kg', qty3: '1.8 kg', qty4: '2.4 kg' },
+    { n: 'Cavolfiore', qty1: '300 g', qty2: '600 g', qty3: '900 g', qty4: '1.2 kg' },
+    { n: 'Fagiolini', qty1: '300 g', qty2: '600 g', qty3: '900 g', qty4: '1.2 kg' },
+    { n: 'Insalata mista (busta)', qty1: '3 buste', qty2: '6 buste', qty3: '9 buste', qty4: '12 buste' },
+    { n: 'Rucola', qty1: '2 buste', qty2: '4 buste', qty3: '6 buste', qty4: '8 buste' },
+    { n: 'Pomodorini', qty1: '300 g', qty2: '600 g', qty3: '900 g', qty4: '1.2 kg' },
+    { n: 'Cetrioli', qty1: '2 pz', qty2: '4 pz', qty3: '6 pz', qty4: '8 pz' },
+    { n: 'Sedano', qty1: '1 mazzo', qty2: '2 mazzi', qty3: '3 mazzi', qty4: '4 mazzi' },
+  ],
+  base: [
+    { n: 'Olio extravergine d\'oliva', qty1: '1 bottiglia', qty2: '1 bottiglia', qty3: '2 bottiglie', qty4: '2 bottiglie' },
+    { n: 'Sale fino', qty1: 'q.b.', qty2: 'q.b.', qty3: 'q.b.', qty4: 'q.b.' },
+    { n: 'Pepe nero', qty1: 'q.b.', qty2: 'q.b.', qty3: 'q.b.', qty4: 'q.b.' },
+    { n: 'Erbe aromatiche (rosmarino, timo)', qty1: '1 conf.', qty2: '1 conf.', qty3: '2 conf.', qty4: '2 conf.' },
+    { n: 'Limoni', qty1: '4 pz', qty2: '8 pz', qty3: '12 pz', qty4: '16 pz' },
+  ]
+};
+
+// ─── PERIODI SPECIALI (3 giorni) ─────────────────────────────
+
+const spesa3gg = {
+  proteine: [
+    { n: 'Petto di pollo', qty: '500 g' },
+    { n: 'Salmone fresco/surgelato', qty: '250 g' },
+    { n: 'Merluzzo (filetti)', qty: '300 g' },
+    { n: 'Uova', qty: '9 pz' },
+  ],
+  latticini: [
+    { n: 'Ricotta (vaccina)', qty: '200 g' },
+    { n: 'Fiocchi di latte', qty: '200 g' },
+  ],
+  verdure: [
+    { n: 'Broccoli', qty: '300 g' },
+    { n: 'Spinaci freschi', qty: '300 g' },
+    { n: 'Zucchine', qty: '300 g' },
+    { n: 'Insalata mista (busta)', qty: '2 buste' },
+    { n: 'Pomodorini', qty: '200 g' },
+  ],
+  base: [
+    { n: 'Olio extravergine d\'oliva', qty: '1 bottiglia' },
+    { n: 'Limoni', qty: '2 pz' },
+    { n: 'Erbe aromatiche', qty: '1 conf.' },
+  ]
+};
+
+// ─── FUNZIONI UI ──────────────────────────────────────────────
+
+function showSection(id) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showWeek(n) {
+  document.querySelectorAll('.week-content').forEach(w => w.classList.remove('active'));
+  document.querySelectorAll('.week-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('week-' + n).classList.add('active');
+  document.querySelectorAll('.week-tab')[n - 1].classList.add('active');
+}
+
+function renderDays() {
+  piani.forEach((week, wi) => {
+    const container = document.getElementById('days-' + (wi + 1));
+    week.forEach(day => {
+      const card = document.createElement('div');
+      card.className = 'day-card';
+      card.innerHTML = `
+        <div class="day-header">
+          <span class="day-name">${day.g}</span>
+          <span class="day-date">${day.d}</span>
+        </div>
+        <div class="day-body">
+          <div class="meal-section">
+            <div class="meal-label">🥩 Proteine</div>
+            <ul class="meal-items">${day.p.map(i => `<li>${i}</li>`).join('')}</ul>
+          </div>
+          <div class="meal-section">
+            <div class="meal-label">🥦 Verdure</div>
+            <ul class="meal-items">${day.v.map(i => `<li>${i}</li>`).join('')}</ul>
+          </div>
+          <div class="meal-section">
+            <div class="meal-label">🫒 Condimento</div>
+            <ul class="meal-items">${day.f.map(i => `<li>${i}</li>`).join('')}</ul>
+          </div>
+          <div class="day-macros">
+            <span class="dm">🔥 <strong>${day.kcal}</strong> kcal</span>
+            <span class="dm">💪 <strong>${day.pr}g</strong> prot.</span>
+            <span class="dm">🌱 <strong>&lt;30g</strong> carb.</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  });
+}
+
+// ─── LISTA DELLA SPESA ────────────────────────────────────────
+
+let selectedDays = 0;
+
+function selectPeriod(days, btn) {
+  selectedDays = days;
+  document.querySelectorAll('.period-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('gen-btn').disabled = false;
+
+  const today = new Date(2026, 2, 24); // 24 marzo 2026
+  const end = new Date(today);
+  end.setDate(end.getDate() + days - 1);
+  const fmt = d => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  document.getElementById('date-info').innerHTML =
+    `Spesa dal <strong>${fmt(today)}</strong> al <strong>${fmt(end)}</strong> · <strong>${days} giorni</strong>`;
+}
+
+function getQtyKey(days) {
+  if (days <= 3)  return null; // usa spesa3gg
+  if (days <= 7)  return 'qty1';
+  if (days <= 14) return 'qty2';
+  if (days <= 21) return 'qty3';
+  return 'qty4';
+}
+
+function generateList() {
+  const result = document.getElementById('shop-result');
+  const container = document.getElementById('shop-categories');
+  container.innerHTML = '';
+  result.classList.add('visible');
+
+  const today = new Date(2026, 2, 24);
+  const end = new Date(today);
+  end.setDate(end.getDate() + selectedDays - 1);
+  const fmt = d => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  document.getElementById('result-title').textContent =
+    `Lista: ${fmt(today)} — ${fmt(end)} (${selectedDays} giorni)`;
+
+  const cats = [
+    { key: 'proteine',  label: '🥩 Proteine',   cls: 'cat-proteine' },
+    { key: 'verdure',   label: '🥦 Verdure',     cls: 'cat-verdure' },
+    { key: 'latticini', label: '🥛 Latticini',   cls: 'cat-latticini' },
+    { key: 'base',      label: '🫙 Dispensa',    cls: 'cat-base' },
+  ];
+
+  const qKey = getQtyKey(selectedDays);
+  let totalItems = 0;
+
+  cats.forEach(cat => {
+    const items = qKey === null ? spesa3gg[cat.key] : spesaBase[cat.key];
+    const div = document.createElement('div');
+    div.className = `shop-cat ${cat.cls}`;
+    const ul = items.map((item, idx) => {
+      totalItems++;
+      const qty = qKey === null ? item.qty : item[qKey];
+      return `
+        <li class="shop-item" onclick="toggleItem(this)" data-cat="${cat.key}" data-idx="${idx}">
+          <div class="shop-item-check"></div>
+          <span class="shop-item-name">${item.n}</span>
+          <span class="shop-item-qty">${qty}</span>
+        </li>`;
+    }).join('');
+    div.innerHTML = `
+      <div class="shop-cat-header"><span class="icon">${cat.label.split(' ')[0]}</span>${cat.label.substring(2)}</div>
+      <ul class="shop-items">${ul}</ul>`;
+    container.appendChild(div);
+  });
+
+  updateProgress(totalItems);
+}
+
+function toggleItem(el) {
+  el.classList.toggle('checked');
+  updateProgress();
+}
+
+function updateProgress(total) {
+  const all = document.querySelectorAll('.shop-item');
+  const checked = document.querySelectorAll('.shop-item.checked');
+  const tot = total || all.length;
+  const chk = checked.length;
+  document.getElementById('progress-text').textContent = `${chk} / ${tot}`;
+  document.getElementById('progress-fill').style.width = tot > 0 ? (chk / tot * 100) + '%' : '0%';
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderDays();
+</script>
+</body>
+</html>
