@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.36</title>
+    <title>Weight Quest v3.5.42</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -910,6 +910,7 @@
                                 <option value="50">50 righe</option>
                                 <option value="100">100 righe</option>
                             </select>
+                            <button id="btnDownloadCSV" onclick="downloadWeightCSV()" style="padding:8px 14px; border:none; border-radius:0; background:#00B894; color:white; font-weight:bold; cursor:pointer; font-size:14px; white-space:nowrap;">⬇ CSV</button>
                         </div>
                         <div style="overflow-x: auto;">
                             <table>
@@ -1043,8 +1044,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.41';
-        var BUILD_TIME  = '2026-03-21T11:00:00Z';
+        var APP_VERSION = 'v3.5.42';
+        var BUILD_TIME  = '2026-03-24T10:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4060,6 +4061,47 @@
             }
             if (!q) return days;
             return days.filter(function(d) { return d.toLowerCase().indexOf(q) !== -1; });
+        }
+
+        function downloadWeightCSV() {
+            var btn = document.getElementById('btnDownloadCSV');
+            btn.disabled = true;
+            btn.textContent = '⏳ Download...';
+            fetchAllWeights('date', true, null, null).then(function(res) {
+                if (res.error) {
+                    alert('Errore nel recupero dati: ' + (res.error.message || res.error));
+                    btn.disabled = false;
+                    btn.textContent = '⬇ CSV';
+                    return;
+                }
+                var rows = res.data || [];
+                var csvLines = ['timestamp,date,time,weight,target_weight'];
+                rows.forEach(function(r) {
+                    var ts   = r.timestamp   !== undefined && r.timestamp   !== null ? r.timestamp   : '';
+                    var date = r.date        !== undefined && r.date        !== null ? r.date        : '';
+                    var time = r.time        !== undefined && r.time        !== null ? r.time        : '';
+                    var w    = r.weight      !== undefined && r.weight      !== null ? r.weight      : '';
+                    var tw   = r.target_weight !== undefined && r.target_weight !== null ? r.target_weight : '';
+                    csvLines.push([ts, date, time, w, tw].join(','));
+                });
+                var blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                var url  = URL.createObjectURL(blob);
+                var a    = document.createElement('a');
+                var fileName = 'pesate_' + new Date().toISOString().slice(0, 10) + '.csv';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                log('CSV scaricato: ' + rows.length + ' record → ' + fileName);
+            }).catch(function(err) {
+                alert('Errore: ' + (err.message || err));
+                log('Errore download CSV: ' + (err.message || err));
+            }).finally(function() {
+                btn.disabled = false;
+                btn.textContent = '⬇ CSV';
+            });
         }
 
         function tableRenderPage() {
