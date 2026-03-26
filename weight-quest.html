@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.47</title>
+    <title>Weight Quest v3.5.48</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1084,8 +1084,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.47';
-        var BUILD_TIME  = '2026-03-26T14:00:00Z';
+        var APP_VERSION = 'v3.5.48';
+        var BUILD_TIME  = '2026-03-26T19:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5040,10 +5040,21 @@
         }
 
         // Costruisce il testo del prompt da dare all'AI
-        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo) {
+        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo) {
             var da_perdere = pesoAttuale && pesoObiettivo ? (pesoAttuale - pesoObiettivo).toFixed(1) : null;
             var rateRef = analisi.avgRate ? analisi.avgRate.toFixed(2) : '~0.5';
             var lines = [];
+
+            // Calcola durata periodo obiettivo in giorni/settimane
+            var durataPeriodo = null;
+            var settPeriodo = null;
+            if (dataInizioObiettivo && dataFineObiettivo) {
+                var ms = new Date(dataFineObiettivo) - new Date(dataInizioObiettivo);
+                if (ms > 0) {
+                    durataPeriodo = Math.round(ms / 86400000);
+                    settPeriodo = (durataPeriodo / 7).toFixed(1);
+                }
+            }
 
             lines.push('Sei un nutrizionista esperto. Ho bisogno di un piano alimentare personalizzato basato sui miei dati reali di peso.');
             lines.push('');
@@ -5053,6 +5064,10 @@
             if (pesoAttuale)   lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
             if (pesoObiettivo) lines.push('• Peso obiettivo: ' + pesoObiettivo.toFixed(1) + ' kg' + (nomeObiettivo ? '  (' + nomeObiettivo + ')' : ''));
             if (da_perdere && parseFloat(da_perdere) > 0) lines.push('• Da perdere:     ' + da_perdere + ' kg');
+            if (dataInizioObiettivo && dataFineObiettivo) {
+                lines.push('• Periodo dieta:  dal ' + fmtDateIt(dataInizioObiettivo) + ' al ' + fmtDateIt(dataFineObiettivo) +
+                    (durataPeriodo ? '  (' + durataPeriodo + ' giorni / ' + settPeriodo + ' settimane)' : ''));
+            }
             lines.push('');
 
             lines.push('═══════════════════════════════════════');
@@ -5146,11 +5161,25 @@
             lines.push('   - Menu con ingredienti della cucina italiana, pratici da preparare');
             lines.push('   - Specificare quali alimenti evitare per le interazioni farmacologiche');
             lines.push('');
-            lines.push('3. PROIEZIONE TEMPORALE');
+            lines.push('3. COMPATIBILITÀ PERIODO DIETA CON L\'ANALISI');
+            if (dataInizioObiettivo && dataFineObiettivo && durataPeriodo) {
+                lines.push('   Il mio obiettivo copre un periodo di ' + durataPeriodo + ' giorni (' + settPeriodo + ' settimane),');
+                lines.push('   dal ' + fmtDateIt(dataInizioObiettivo) + ' al ' + fmtDateIt(dataFineObiettivo) + '.');
+                lines.push('   Basandoti sul ritmo medio documentato (−' + rateRef + ' kg/sett) e sui ' + (da_perdere && parseFloat(da_perdere) > 0 ? da_perdere + ' kg da perdere' : 'dati di peso') + ':');
+                lines.push('   - Il periodo pianificato è REALISTICO per raggiungere il peso obiettivo?');
+                lines.push('   - In ' + settPeriodo + ' settimane al ritmo di −' + rateRef + ' kg/sett, quanti kg potrei perdere?');
+                lines.push('   - Se il periodo non è sufficiente, di quante settimane aggiuntive avrei bisogno?');
+                lines.push('   - Se invece è sovrastimato, quale sarebbe la data realistica di raggiungimento?');
+            } else {
+                lines.push('   - Verifica se il periodo dell\'obiettivo è compatibile con il ritmo di perdita documentato');
+                lines.push('   - Indica quante settimane servono realisticamente per raggiungere il peso obiettivo');
+            }
+            lines.push('');
+            lines.push('4. PROIEZIONE TEMPORALE');
             lines.push('   - Stima delle settimane necessarie per raggiungere il peso obiettivo');
             lines.push('   - Date intermedie di controllo suggerite');
             lines.push('');
-            lines.push('4. CONSIGLI PRATICI');
+            lines.push('5. CONSIGLI PRATICI');
             lines.push('   - Come gestire il digiuno prolungato con i farmaci antipertensivi');
             lines.push('   - Idratazione ottimale durante il digiuno (con ipertensione)');
             lines.push('   - Segnali di allerta da monitorare (pressione, lipidi, glicemia)');
@@ -5189,6 +5218,8 @@
                     var obj = userData.currentObjective;
                     var pesoObiettivo = obj ? parseFloat(obj.end_weight) : null;
                     var nomeObiettivo = obj ? obj.objective_name : null;
+                    var dataInizioObiettivo = obj ? obj.start_date : null;
+                    var dataFineObiettivo = obj ? obj.end_date : null;
 
                     // --- Card analisi ---
                     var analisiHtml = '';
@@ -5249,7 +5280,7 @@
 
                     document.getElementById('dietaAnalisiContent').innerHTML = analisiHtml;
 
-                    var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo);
+                    var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo);
                     document.getElementById('dietaPromptText').value = prompt;
 
                     statusEl.style.display = 'none';
