@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.44</title>
+    <title>Weight Quest v3.5.45</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1084,8 +1084,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.44';
-        var BUILD_TIME  = '2026-03-26T12:00:00Z';
+        var APP_VERSION = 'v3.5.45';
+        var BUILD_TIME  = '2026-03-26T13:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -4946,98 +4946,103 @@
             return (p[2] || '??') + '/' + (p[1] || '??') + '/' + (p[0] || '????');
         }
 
-        // Analizza l'array di pesate e restituisce:
-        //   bestPeriod: il periodo con il ritmo massimo di perdita
-        //   topPeriods: i top-5 periodi ordinati per ritmo
-        //   recentTrend: andamento ultime 4 settimane
+        // Analizza l'array di pesate:
+        //   - un record per giorno (peso minimo)
+        //   - trova massimi e minimi locali (finestra WIN vicini per lato)
+        //   - accoppia ogni massimo locale con il PROSSIMO minimo locale
+        //   - tiene solo coppie con durata >= 21 giorni e perdita > 0
+        //   - calcola il ritmo medio di tutti questi periodi
         function analizzaRitmoPerditaPeso(weights) {
-            // Ordina per data ASC e prendi un record per giorno (media)
+            // Un record per giorno: peso minimo della giornata
             var byDay = {};
             weights.forEach(function(r) {
                 if (!r.date || r.weight == null || !isFinite(r.weight)) return;
-                if (!byDay[r.date] || r.weight < byDay[r.date]) {
-                    byDay[r.date] = r.weight; // per giorno prende il minimo (pesata mattutina)
-                }
+                if (!byDay[r.date] || r.weight < byDay[r.date]) byDay[r.date] = r.weight;
             });
-            var sorted = Object.keys(byDay).sort().map(function(d) {
-                return { date: d, weight: byDay[d] };
-            });
+            var S = Object.keys(byDay).sort().map(function(d) { return { date: d, weight: byDay[d] }; });
 
-            if (sorted.length < 2) return { bestPeriod: null, topPeriods: [], recentTrend: null };
+            var empty = { periods: [], avgRate: null, totalRecords: S.length,
+                firstDate: S[0] ? S[0].date : null, lastDate: S[S.length-1] ? S[S.length-1].date : null,
+                maxWeight: S.length ? Math.max.apply(null, S.map(function(r){return r.weight;})) : 0,
+                minWeight: S.length ? Math.min.apply(null, S.map(function(r){return r.weight;})) : 0 };
+            if (S.length < 4) return empty;
 
-            var periods = [];
-            for (var i = 0; i < sorted.length; i++) {
-                for (var j = i + 1; j < sorted.length; j++) {
-                    var loss = sorted[i].weight - sorted[j].weight;
-                    if (loss <= 0.3) continue; // ignora periodi con perdita trascurabile
-                    var d1 = new Date(sorted[i].date);
-                    var d2 = new Date(sorted[j].date);
-                    var days = (d2 - d1) / 86400000;
-                    if (days < 7) continue; // minimo 1 settimana
-                    var rateWeekly = loss / days * 7;
-                    periods.push({
-                        from: sorted[i].date,
-                        to: sorted[j].date,
-                        fromWeight: sorted[i].weight,
-                        toWeight: sorted[j].weight,
-                        loss: loss,
-                        days: Math.round(days),
-                        weeklyRate: rateWeekly
-                    });
+            // Finestra per rilevare estremi locali: 5 vicini per lato (o meno se il dataset è corto)
+            var WIN = Math.min(5, Math.floor(S.length / 4));
+
+            // Massimi locali: S[i] > tutti i WIN vicini a sinistra e destra
+            var maxIdxs = [];
+            for (var i = WIN; i < S.length - WIN; i++) {
+                var ok = true;
+                for (var k = i - WIN; k <= i + WIN && ok; k++) {
+                    if (k !== i && S[k].weight >= S[i].weight) ok = false;
                 }
+                if (ok) maxIdxs.push(i);
             }
 
-            // Ordina per ritmo settimanale DESC
-            periods.sort(function(a, b) { return b.weeklyRate - a.weeklyRate; });
-
-            // Top 5 periodi non sovrapposti
-            var topPeriods = [];
-            for (var k = 0; k < periods.length && topPeriods.length < 5; k++) {
-                var p = periods[k];
-                // Salta periodi che sono sotto-insiemi di uno già inserito
-                var overlap = false;
-                for (var t = 0; t < topPeriods.length; t++) {
-                    if (p.from >= topPeriods[t].from && p.to <= topPeriods[t].to) { overlap = true; break; }
-                    if (p.from <= topPeriods[t].from && p.to >= topPeriods[t].to) { overlap = true; break; }
+            // Minimi locali: S[i] < tutti i WIN vicini a sinistra e destra
+            var minIdxs = [];
+            for (var i = WIN; i < S.length - WIN; i++) {
+                var ok = true;
+                for (var k = i - WIN; k <= i + WIN && ok; k++) {
+                    if (k !== i && S[k].weight <= S[i].weight) ok = false;
                 }
-                if (!overlap) topPeriods.push(p);
+                if (ok) minIdxs.push(i);
             }
 
-            // Tendenza recente: dal record più vecchio degli ultimi 28 giorni all'ultimo
-            var cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - 28);
-            var cutoffStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth()+1).padStart(2,'0') + '-' + String(cutoff.getDate()).padStart(2,'0');
-            var recent = sorted.filter(function(r) { return r.date >= cutoffStr; });
-            var recentTrend = null;
-            if (recent.length >= 2) {
-                var rLoss = recent[0].weight - recent[recent.length - 1].weight;
-                var rDays = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 86400000;
-                recentTrend = {
-                    from: recent[0].date,
-                    to: recent[recent.length-1].date,
-                    fromWeight: recent[0].weight,
-                    toWeight: recent[recent.length-1].weight,
-                    loss: rLoss,
-                    days: Math.round(rDays),
-                    weeklyRate: rDays > 0 ? (rLoss / rDays * 7) : 0
-                };
+            // Accoppia ogni massimo locale con il PROSSIMO minimo locale (allargando sino al minimo)
+            var caloPeriods = [];
+            for (var mi = 0; mi < maxIdxs.length; mi++) {
+                var maxIdx = maxIdxs[mi];
+                // Cerca il primo minimo locale che viene DOPO questo massimo
+                var nextMinIdx = null;
+                for (var mn = 0; mn < minIdxs.length; mn++) {
+                    if (minIdxs[mn] > maxIdx) { nextMinIdx = minIdxs[mn]; break; }
+                }
+                if (nextMinIdx === null) continue;
+
+                var days = (new Date(S[nextMinIdx].date) - new Date(S[maxIdx].date)) / 86400000;
+                var loss = S[maxIdx].weight - S[nextMinIdx].weight;
+
+                // Filtra: almeno 21 giorni (3 settimane) e perdita effettiva
+                if (days < 21 || loss <= 0) continue;
+
+                caloPeriods.push({
+                    from: S[maxIdx].date,
+                    to: S[nextMinIdx].date,
+                    fromWeight: S[maxIdx].weight,
+                    toWeight: S[nextMinIdx].weight,
+                    loss: loss,
+                    days: Math.round(days),
+                    weeklyRate: loss / days * 7
+                });
             }
 
+            // Ordina cronologicamente
+            caloPeriods.sort(function(a, b) { return a.from < b.from ? -1 : 1; });
+
+            // Media dei ritmi settimanali
+            var avgRate = null;
+            if (caloPeriods.length > 0) {
+                avgRate = caloPeriods.reduce(function(acc, p) { return acc + p.weeklyRate; }, 0) / caloPeriods.length;
+            }
+
+            var allW = S.map(function(r) { return r.weight; });
             return {
-                bestPeriod: topPeriods[0] || null,
-                topPeriods: topPeriods,
-                recentTrend: recentTrend,
-                totalRecords: sorted.length,
-                firstDate: sorted[0].date,
-                lastDate: sorted[sorted.length - 1].date,
-                maxWeight: Math.max.apply(null, sorted.map(function(r) { return r.weight; })),
-                minWeight: Math.min.apply(null, sorted.map(function(r) { return r.weight; }))
+                periods: caloPeriods,
+                avgRate: avgRate,
+                totalRecords: S.length,
+                firstDate: S[0].date,
+                lastDate: S[S.length-1].date,
+                maxWeight: Math.max.apply(null, allW),
+                minWeight: Math.min.apply(null, allW)
             };
         }
 
         // Costruisce il testo del prompt da dare all'AI
         function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo) {
             var da_perdere = pesoAttuale && pesoObiettivo ? (pesoAttuale - pesoObiettivo).toFixed(1) : null;
+            var rateRef = analisi.avgRate ? analisi.avgRate.toFixed(2) : '~0.5';
             var lines = [];
 
             lines.push('Sei un nutrizionista esperto. Ho bisogno di un piano alimentare personalizzato basato sui miei dati reali di peso.');
@@ -5045,7 +5050,7 @@
             lines.push('═══════════════════════════════════════');
             lines.push('DATI PERSONALI E OBIETTIVO');
             lines.push('═══════════════════════════════════════');
-            if (pesoAttuale)  lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
+            if (pesoAttuale)   lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
             if (pesoObiettivo) lines.push('• Peso obiettivo: ' + pesoObiettivo.toFixed(1) + ' kg' + (nomeObiettivo ? '  (' + nomeObiettivo + ')' : ''));
             if (da_perdere && parseFloat(da_perdere) > 0) lines.push('• Da perdere:     ' + da_perdere + ' kg');
             lines.push('');
@@ -5059,39 +5064,29 @@
             lines.push('• Peso minimo:        ' + analisi.minWeight.toFixed(1) + ' kg');
             lines.push('');
 
-            if (analisi.bestPeriod) {
-                var bp = analisi.bestPeriod;
+            if (analisi.periods.length > 0) {
                 lines.push('═══════════════════════════════════════');
-                lines.push('RITMO MASSIMO DI PERDITA PESO (storico)');
+                lines.push('PERIODI DI CALO REALE (≥ 3 settimane, picco → minimo locale)');
                 lines.push('═══════════════════════════════════════');
-                lines.push('Il mio ritmo massimo DOCUMENTATO è stato:');
-                lines.push('• Periodo:      ' + fmtDateIt(bp.from) + ' → ' + fmtDateIt(bp.to) + ' (' + bp.days + ' giorni)');
-                lines.push('• Peso iniziale: ' + bp.fromWeight.toFixed(1) + ' kg');
-                lines.push('• Peso finale:   ' + bp.toWeight.toFixed(1) + ' kg');
-                lines.push('• Perdita:       −' + bp.loss.toFixed(1) + ' kg');
-                lines.push('• Ritmo:         −' + bp.weeklyRate.toFixed(2) + ' kg/settimana  (−' + (bp.loss / bp.days).toFixed(3) + ' kg/giorno)');
+                lines.push('Ho identificato ' + analisi.periods.length + ' periodo/i di calo documentato:');
                 lines.push('');
-            }
-
-            if (analisi.topPeriods.length > 1) {
-                lines.push('Altri periodi di perdita significativi:');
-                analisi.topPeriods.slice(1).forEach(function(p, idx) {
-                    lines.push('  ' + (idx+2) + '. ' + fmtDateIt(p.from) + ' → ' + fmtDateIt(p.to) +
-                        '  (−' + p.loss.toFixed(1) + ' kg in ' + p.days + 'gg, −' + p.weeklyRate.toFixed(2) + ' kg/sett)');
+                analisi.periods.forEach(function(p, idx) {
+                    lines.push('  Periodo ' + (idx+1) + ':');
+                    lines.push('    Dal ' + fmtDateIt(p.from) + ' (' + p.fromWeight.toFixed(1) + ' kg)');
+                    lines.push('    Al  ' + fmtDateIt(p.to)   + ' (' + p.toWeight.toFixed(1)   + ' kg)');
+                    lines.push('    Durata: ' + p.days + ' giorni  |  Perdita: −' + p.loss.toFixed(1) + ' kg  |  Ritmo: −' + p.weeklyRate.toFixed(2) + ' kg/sett');
+                    lines.push('');
                 });
-                lines.push('');
-            }
-
-            if (analisi.recentTrend) {
-                var rt = analisi.recentTrend;
+                lines.push('RITMO MEDIO DI PERDITA (media di tutti i periodi):');
+                lines.push('  → −' + rateRef + ' kg/settimana');
+            } else {
                 lines.push('═══════════════════════════════════════');
-                lines.push('TENDENZA RECENTE (ultimi 28 giorni)');
+                lines.push('PERIODI DI CALO');
                 lines.push('═══════════════════════════════════════');
-                lines.push('• Periodo:   ' + fmtDateIt(rt.from) + ' → ' + fmtDateIt(rt.to));
-                lines.push('• Variazione: ' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.loss).toFixed(1) + ' kg');
-                if (rt.days > 0) lines.push('• Ritmo:      ' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.weeklyRate).toFixed(2) + ' kg/settimana');
-                lines.push('');
+                lines.push('Non sono stati trovati periodi di calo ≥ 3 settimane nello storico.');
+                lines.push('Utilizza un ritmo di perdita prudenziale di −0.5 kg/settimana.');
             }
+            lines.push('');
 
             lines.push('═══════════════════════════════════════');
             lines.push('COSA TI CHIEDO');
@@ -5100,7 +5095,7 @@
             lines.push('');
             lines.push('1. ANALISI DEL MIO METABOLISMO');
             lines.push('   - Stima del TDEE (fabbisogno calorico totale giornaliero)');
-            lines.push('   - Deficit calorico sostenibile coerente con il mio ritmo massimo documentato');
+            lines.push('   - Deficit calorico sostenibile coerente con il mio ritmo medio documentato (−' + rateRef + ' kg/sett)');
             lines.push('');
             lines.push('2. PIANO ALIMENTARE SETTIMANALE (7 giorni)');
             lines.push('   - Apporto calorico giornaliero target');
@@ -5113,8 +5108,7 @@
             lines.push('   - Date intermedie di controllo suggerite');
             lines.push('');
             lines.push('4. CONSIGLI PRATICI');
-            lines.push('   - Strategie specifiche per mantenere il ritmo di −' +
-                (analisi.bestPeriod ? analisi.bestPeriod.weeklyRate.toFixed(2) : '~0.5') + ' kg/settimana');
+            lines.push('   - Strategie specifiche per mantenere il ritmo di −' + rateRef + ' kg/settimana');
             lines.push('   - Segnali di allerta da monitorare');
             lines.push('   - Frequenza di pesata consigliata');
 
@@ -5152,30 +5146,61 @@
                     var pesoObiettivo = obj ? parseFloat(obj.end_weight) : null;
                     var nomeObiettivo = obj ? obj.objective_name : null;
 
-                    // Riepilogo analisi nel card
+                    // --- Card analisi ---
                     var analisiHtml = '';
-                    if (analisi.bestPeriod) {
-                        var bp = analisi.bestPeriod;
-                        analisiHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">' +
-                            '<div style="background:#f0fdf4; border:1px solid #86efac; padding:10px; text-align:center;">' +
-                            '<div style="font-size:1.5rem; font-weight:bold; color:#16a34a;">−' + bp.weeklyRate.toFixed(2) + '</div>' +
-                            '<div style="font-size:0.75rem; color:#166534;">kg/settimana (max)</div></div>' +
-                            '<div style="background:#f0f9ff; border:1px solid #7dd3fc; padding:10px; text-align:center;">' +
-                            '<div style="font-size:1.5rem; font-weight:bold; color:#0369a1;">−' + bp.loss.toFixed(1) + '</div>' +
-                            '<div style="font-size:0.75rem; color:#0c4a6e;">kg in ' + bp.days + ' giorni (miglior periodo)</div></div>' +
-                            '</div>';
-                        analisiHtml += '<div style="font-size:0.82rem; color:#555; margin-bottom:4px;">📅 Periodo: <strong>' +
-                            fmtDateIt(bp.from) + ' → ' + fmtDateIt(bp.to) + '</strong>' +
-                            '  (' + bp.fromWeight.toFixed(1) + ' kg → ' + bp.toWeight.toFixed(1) + ' kg)</div>';
+
+                    // Riga superiore: media ritmo + n. periodi trovati
+                    analisiHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">';
+                    if (analisi.avgRate != null) {
+                        analisiHtml += '<div style="background:#f0fdf4; border:1px solid #86efac; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.5rem; font-weight:bold; color:#16a34a;">−' + analisi.avgRate.toFixed(2) + '</div>' +
+                            '<div style="font-size:0.75rem; color:#166534;">kg/sett (ritmo medio)</div></div>';
+                    } else {
+                        analisiHtml += '<div style="background:#fef9c3; border:1px solid #fde047; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.2rem; font-weight:bold; color:#854d0e;">n/d</div>' +
+                            '<div style="font-size:0.75rem; color:#713f12;">ritmo medio</div></div>';
                     }
-                    if (analisi.recentTrend) {
-                        var rt = analisi.recentTrend;
-                        var rtColor = rt.loss >= 0 ? '#16a34a' : '#dc2626';
-                        analisiHtml += '<div style="font-size:0.82rem; color:#555; margin-top:8px;">📈 Ultimi 28gg: <strong style="color:' + rtColor + ';">' +
-                            (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.loss).toFixed(1) + ' kg</strong>' +
-                            ' (' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.weeklyRate).toFixed(2) + ' kg/sett)</div>';
+                    analisiHtml += '<div style="background:#f0f9ff; border:1px solid #7dd3fc; padding:10px; text-align:center;">' +
+                        '<div style="font-size:1.5rem; font-weight:bold; color:#0369a1;">' + analisi.periods.length + '</div>' +
+                        '<div style="font-size:0.75rem; color:#0c4a6e;">periodi di calo ≥ 3 sett</div></div>';
+                    analisiHtml += '</div>';
+
+                    // Tabella periodi
+                    if (analisi.periods.length > 0) {
+                        analisiHtml += '<div style="overflow-x:auto; margin-bottom:10px;">';
+                        analisiHtml += '<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">';
+                        analisiHtml += '<thead><tr style="background:#f3f4f6;">' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">#</th>' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">Dal</th>' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">Al</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">Gg</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">−kg</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">kg/sett</th>' +
+                            '</tr></thead><tbody>';
+                        analisi.periods.forEach(function(p, idx) {
+                            var rowBg = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+                            analisiHtml += '<tr style="background:' + rowBg + ';">' +
+                                '<td style="padding:5px 6px; color:#888;">' + (idx+1) + '</td>' +
+                                '<td style="padding:5px 6px;">' + fmtDateIt(p.from) + '<br><span style="color:#888;font-size:0.75rem;">' + p.fromWeight.toFixed(1) + ' kg</span></td>' +
+                                '<td style="padding:5px 6px;">' + fmtDateIt(p.to) + '<br><span style="color:#888;font-size:0.75rem;">' + p.toWeight.toFixed(1) + ' kg</span></td>' +
+                                '<td style="padding:5px 6px; text-align:right;">' + p.days + '</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#dc2626; font-weight:bold;">−' + p.loss.toFixed(1) + '</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#16a34a; font-weight:bold;">−' + p.weeklyRate.toFixed(2) + '</td>' +
+                                '</tr>';
+                        });
+                        // Riga media
+                        if (analisi.avgRate != null) {
+                            analisiHtml += '<tr style="background:#f0fdf4; font-weight:bold;">' +
+                                '<td colspan="5" style="padding:5px 6px; color:#166534;">Media ritmo</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#16a34a;">−' + analisi.avgRate.toFixed(2) + '</td>' +
+                                '</tr>';
+                        }
+                        analisiHtml += '</tbody></table></div>';
+                    } else {
+                        analisiHtml += '<div style="font-size:0.84rem; color:#888; padding:10px 0;">Nessun periodo di calo ≥ 3 settimane trovato nello storico.</div>';
                     }
-                    analisiHtml += '<div style="font-size:0.8rem; color:#888; margin-top:8px;">📦 ' + analisi.totalRecords + ' giorni di dati · ' +
+
+                    analisiHtml += '<div style="font-size:0.78rem; color:#aaa; margin-top:6px;">📦 ' + analisi.totalRecords + ' giorni · ' +
                         fmtDateIt(analisi.firstDate) + ' → ' + fmtDateIt(analisi.lastDate) + '</div>';
 
                     document.getElementById('dietaAnalisiContent').innerHTML = analisiHtml;
@@ -5185,7 +5210,7 @@
 
                     statusEl.style.display = 'none';
                     risultatoEl.style.display = 'block';
-                    log('Genera Dieta: analisi completata su ' + weights.length + ' record');
+                    log('Genera Dieta: ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
                 })
                 .catch(function(e) {
                     statusEl.textContent = '❌ Errore: ' + e.message;
