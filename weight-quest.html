@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.43</title>
+    <title>Weight Quest v3.5.44</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -759,6 +759,9 @@
             <div class="icon-nav-item" data-page="statistiche">
                 <span class="icon">📉</span>
             </div>
+            <div class="icon-nav-item" data-page="dieta">
+                <span class="icon">🥗</span>
+            </div>
             <div class="icon-nav-item" data-action="sync">
                 <span class="icon">🔄</span>
             </div>
@@ -777,6 +780,10 @@
                     <div class="sidebar-nav-item" data-page="statistiche">
                         <span class="nav-icon">📉</span>
                         <span>Statistiche</span>
+                    </div>
+                    <div class="sidebar-nav-item" data-page="dieta">
+                        <span class="nav-icon">🥗</span>
+                        <span>Genera Dieta</span>
                     </div>
                     <div class="sidebar-nav-item" data-action="sync">
                         <span class="nav-icon">🔄</span>
@@ -1010,6 +1017,39 @@
                 </div>
 
             </div>
+
+            <!-- PAGE 3: GENERA DIETA -->
+            <div id="dietaPage" class="page">
+                <div class="card" style="margin-bottom:1.5rem;">
+                    <h3 style="margin-bottom:12px;">🥗 Genera Prompt Dieta</h3>
+                    <p style="color:#666;font-size:0.92rem;line-height:1.5;margin-bottom:16px;">
+                        Analizza le tue pesate storiche per individuare il ritmo massimo di perdita di peso
+                        e genera un prompt personalizzato da usare con un AI (ChatGPT, Claude, ecc.) per ottenere un piano alimentare su misura.
+                    </p>
+                    <div id="dietaAnalisiStatus" style="display:none; padding:10px; background:#f9fafb; border:1px solid #E5E7EB; margin-bottom:12px; font-size:0.88rem; color:#555;"></div>
+                    <button onclick="generaDieta()" style="width:100%; background:linear-gradient(135deg,#00B894,#00cec9); font-size:1rem; padding:14px;">🔍 Analizza e Genera Prompt</button>
+                </div>
+
+                <div id="dietaRisultato" style="display:none;">
+                    <!-- Riquadro analisi -->
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <h3 style="margin-bottom:12px; font-size:1rem; color:#333;">📊 Analisi Ritmo Perdita Peso</h3>
+                        <div id="dietaAnalisiContent"></div>
+                    </div>
+
+                    <!-- Prompt generato -->
+                    <div class="card">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                            <h3 style="font-size:1rem; color:#333; margin:0;">📋 Prompt da copiare</h3>
+                            <button onclick="copiaDietaPrompt()" style="background:#2563EB; color:white; padding:8px 16px; font-size:0.85rem; border:none; cursor:pointer;">📋 Copia</button>
+                        </div>
+                        <textarea id="dietaPromptText" readonly
+                            style="width:100%; min-height:380px; padding:12px; font-size:0.82rem; font-family:'Courier New',monospace; border:2px solid #E5E7EB; background:#f9fafb; resize:vertical; line-height:1.5; color:#333;"></textarea>
+                        <div id="dietaCopiatoMsg" style="display:none; text-align:center; color:#00B894; font-weight:bold; padding:8px 0; font-size:0.9rem;">✅ Copiato negli appunti!</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         </div> <!-- /content-wrapper -->
@@ -1044,8 +1084,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.43';
-        var BUILD_TIME  = '2026-03-24T10:30:00Z';
+        var APP_VERSION = 'v3.5.44';
+        var BUILD_TIME  = '2026-03-26T12:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1788,7 +1828,8 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'statistiche': 'Statistiche'
+                            'statistiche': 'Statistiche',
+                            'dieta': 'Genera Dieta'
                         };
                         var elTitle = document.getElementById('topTitle'); if (elTitle) elTitle.textContent = titles[pageName] || 'Weight Quest';
 
@@ -1819,7 +1860,8 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'statistiche': 'Statistiche'
+                            'statistiche': 'Statistiche',
+                            'dieta': 'Genera Dieta'
                         };
                         var elTitle2 = document.getElementById('topTitle'); if (elTitle2) elTitle2.textContent = titles[pageName] || 'Weight Quest';
 
@@ -4891,6 +4933,281 @@
                     }
                 }
             });
+        }
+
+        // ==========================================
+        // GENERA DIETA — analisi ritmo perdita peso
+        // ==========================================
+
+        // Formatta una data ISO "YYYY-MM-DD" come "DD/MM/YYYY"
+        function fmtDateIt(isoStr) {
+            if (!isoStr) return '?';
+            var p = isoStr.split('-');
+            return (p[2] || '??') + '/' + (p[1] || '??') + '/' + (p[0] || '????');
+        }
+
+        // Analizza l'array di pesate e restituisce:
+        //   bestPeriod: il periodo con il ritmo massimo di perdita
+        //   topPeriods: i top-5 periodi ordinati per ritmo
+        //   recentTrend: andamento ultime 4 settimane
+        function analizzaRitmoPerditaPeso(weights) {
+            // Ordina per data ASC e prendi un record per giorno (media)
+            var byDay = {};
+            weights.forEach(function(r) {
+                if (!r.date || r.weight == null || !isFinite(r.weight)) return;
+                if (!byDay[r.date] || r.weight < byDay[r.date]) {
+                    byDay[r.date] = r.weight; // per giorno prende il minimo (pesata mattutina)
+                }
+            });
+            var sorted = Object.keys(byDay).sort().map(function(d) {
+                return { date: d, weight: byDay[d] };
+            });
+
+            if (sorted.length < 2) return { bestPeriod: null, topPeriods: [], recentTrend: null };
+
+            var periods = [];
+            for (var i = 0; i < sorted.length; i++) {
+                for (var j = i + 1; j < sorted.length; j++) {
+                    var loss = sorted[i].weight - sorted[j].weight;
+                    if (loss <= 0.3) continue; // ignora periodi con perdita trascurabile
+                    var d1 = new Date(sorted[i].date);
+                    var d2 = new Date(sorted[j].date);
+                    var days = (d2 - d1) / 86400000;
+                    if (days < 7) continue; // minimo 1 settimana
+                    var rateWeekly = loss / days * 7;
+                    periods.push({
+                        from: sorted[i].date,
+                        to: sorted[j].date,
+                        fromWeight: sorted[i].weight,
+                        toWeight: sorted[j].weight,
+                        loss: loss,
+                        days: Math.round(days),
+                        weeklyRate: rateWeekly
+                    });
+                }
+            }
+
+            // Ordina per ritmo settimanale DESC
+            periods.sort(function(a, b) { return b.weeklyRate - a.weeklyRate; });
+
+            // Top 5 periodi non sovrapposti
+            var topPeriods = [];
+            for (var k = 0; k < periods.length && topPeriods.length < 5; k++) {
+                var p = periods[k];
+                // Salta periodi che sono sotto-insiemi di uno già inserito
+                var overlap = false;
+                for (var t = 0; t < topPeriods.length; t++) {
+                    if (p.from >= topPeriods[t].from && p.to <= topPeriods[t].to) { overlap = true; break; }
+                    if (p.from <= topPeriods[t].from && p.to >= topPeriods[t].to) { overlap = true; break; }
+                }
+                if (!overlap) topPeriods.push(p);
+            }
+
+            // Tendenza recente: dal record più vecchio degli ultimi 28 giorni all'ultimo
+            var cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 28);
+            var cutoffStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth()+1).padStart(2,'0') + '-' + String(cutoff.getDate()).padStart(2,'0');
+            var recent = sorted.filter(function(r) { return r.date >= cutoffStr; });
+            var recentTrend = null;
+            if (recent.length >= 2) {
+                var rLoss = recent[0].weight - recent[recent.length - 1].weight;
+                var rDays = (new Date(recent[recent.length-1].date) - new Date(recent[0].date)) / 86400000;
+                recentTrend = {
+                    from: recent[0].date,
+                    to: recent[recent.length-1].date,
+                    fromWeight: recent[0].weight,
+                    toWeight: recent[recent.length-1].weight,
+                    loss: rLoss,
+                    days: Math.round(rDays),
+                    weeklyRate: rDays > 0 ? (rLoss / rDays * 7) : 0
+                };
+            }
+
+            return {
+                bestPeriod: topPeriods[0] || null,
+                topPeriods: topPeriods,
+                recentTrend: recentTrend,
+                totalRecords: sorted.length,
+                firstDate: sorted[0].date,
+                lastDate: sorted[sorted.length - 1].date,
+                maxWeight: Math.max.apply(null, sorted.map(function(r) { return r.weight; })),
+                minWeight: Math.min.apply(null, sorted.map(function(r) { return r.weight; }))
+            };
+        }
+
+        // Costruisce il testo del prompt da dare all'AI
+        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo) {
+            var da_perdere = pesoAttuale && pesoObiettivo ? (pesoAttuale - pesoObiettivo).toFixed(1) : null;
+            var lines = [];
+
+            lines.push('Sei un nutrizionista esperto. Ho bisogno di un piano alimentare personalizzato basato sui miei dati reali di peso.');
+            lines.push('');
+            lines.push('═══════════════════════════════════════');
+            lines.push('DATI PERSONALI E OBIETTIVO');
+            lines.push('═══════════════════════════════════════');
+            if (pesoAttuale)  lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
+            if (pesoObiettivo) lines.push('• Peso obiettivo: ' + pesoObiettivo.toFixed(1) + ' kg' + (nomeObiettivo ? '  (' + nomeObiettivo + ')' : ''));
+            if (da_perdere && parseFloat(da_perdere) > 0) lines.push('• Da perdere:     ' + da_perdere + ' kg');
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('STORICO PESATE');
+            lines.push('═══════════════════════════════════════');
+            lines.push('• Misurazioni totali: ' + analisi.totalRecords + ' giorni distinti');
+            lines.push('• Periodo coperto:    ' + fmtDateIt(analisi.firstDate) + ' → ' + fmtDateIt(analisi.lastDate));
+            lines.push('• Peso massimo:       ' + analisi.maxWeight.toFixed(1) + ' kg');
+            lines.push('• Peso minimo:        ' + analisi.minWeight.toFixed(1) + ' kg');
+            lines.push('');
+
+            if (analisi.bestPeriod) {
+                var bp = analisi.bestPeriod;
+                lines.push('═══════════════════════════════════════');
+                lines.push('RITMO MASSIMO DI PERDITA PESO (storico)');
+                lines.push('═══════════════════════════════════════');
+                lines.push('Il mio ritmo massimo DOCUMENTATO è stato:');
+                lines.push('• Periodo:      ' + fmtDateIt(bp.from) + ' → ' + fmtDateIt(bp.to) + ' (' + bp.days + ' giorni)');
+                lines.push('• Peso iniziale: ' + bp.fromWeight.toFixed(1) + ' kg');
+                lines.push('• Peso finale:   ' + bp.toWeight.toFixed(1) + ' kg');
+                lines.push('• Perdita:       −' + bp.loss.toFixed(1) + ' kg');
+                lines.push('• Ritmo:         −' + bp.weeklyRate.toFixed(2) + ' kg/settimana  (−' + (bp.loss / bp.days).toFixed(3) + ' kg/giorno)');
+                lines.push('');
+            }
+
+            if (analisi.topPeriods.length > 1) {
+                lines.push('Altri periodi di perdita significativi:');
+                analisi.topPeriods.slice(1).forEach(function(p, idx) {
+                    lines.push('  ' + (idx+2) + '. ' + fmtDateIt(p.from) + ' → ' + fmtDateIt(p.to) +
+                        '  (−' + p.loss.toFixed(1) + ' kg in ' + p.days + 'gg, −' + p.weeklyRate.toFixed(2) + ' kg/sett)');
+                });
+                lines.push('');
+            }
+
+            if (analisi.recentTrend) {
+                var rt = analisi.recentTrend;
+                lines.push('═══════════════════════════════════════');
+                lines.push('TENDENZA RECENTE (ultimi 28 giorni)');
+                lines.push('═══════════════════════════════════════');
+                lines.push('• Periodo:   ' + fmtDateIt(rt.from) + ' → ' + fmtDateIt(rt.to));
+                lines.push('• Variazione: ' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.loss).toFixed(1) + ' kg');
+                if (rt.days > 0) lines.push('• Ritmo:      ' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.weeklyRate).toFixed(2) + ' kg/settimana');
+                lines.push('');
+            }
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('COSA TI CHIEDO');
+            lines.push('═══════════════════════════════════════');
+            lines.push('Basandoti ESCLUSIVAMENTE sui miei dati reali sopra riportati, genera:');
+            lines.push('');
+            lines.push('1. ANALISI DEL MIO METABOLISMO');
+            lines.push('   - Stima del TDEE (fabbisogno calorico totale giornaliero)');
+            lines.push('   - Deficit calorico sostenibile coerente con il mio ritmo massimo documentato');
+            lines.push('');
+            lines.push('2. PIANO ALIMENTARE SETTIMANALE (7 giorni)');
+            lines.push('   - Apporto calorico giornaliero target');
+            lines.push('   - Distribuzione macronutrienti (proteine / carboidrati / grassi in grammi)');
+            lines.push('   - Colazione, pranzo, cena e 1-2 spuntini per ogni giorno');
+            lines.push('   - Preferenza per alimenti della cucina italiana');
+            lines.push('');
+            lines.push('3. PROIEZIONE TEMPORALE');
+            lines.push('   - Stima delle settimane necessarie per raggiungere il peso obiettivo');
+            lines.push('   - Date intermedie di controllo suggerite');
+            lines.push('');
+            lines.push('4. CONSIGLI PRATICI');
+            lines.push('   - Strategie specifiche per mantenere il ritmo di −' +
+                (analisi.bestPeriod ? analisi.bestPeriod.weeklyRate.toFixed(2) : '~0.5') + ' kg/settimana');
+            lines.push('   - Segnali di allerta da monitorare');
+            lines.push('   - Frequenza di pesata consigliata');
+
+            return lines.join('\n');
+        }
+
+        // Entry point: carica i dati e genera il prompt
+        function generaDieta() {
+            var statusEl = document.getElementById('dietaAnalisiStatus');
+            var risultatoEl = document.getElementById('dietaRisultato');
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Caricamento pesate storiche…';
+            risultatoEl.style.display = 'none';
+
+            fetchAllWeights('date', true)
+                .then(function(res) {
+                    if (res.error) {
+                        statusEl.textContent = '❌ Errore caricamento dati: ' + (res.error.message || res.error);
+                        return;
+                    }
+                    var weights = res.data || [];
+                    if (weights.length < 2) {
+                        statusEl.textContent = '⚠️ Non ci sono abbastanza pesate per l\'analisi (minimo 2 record con date diverse).';
+                        return;
+                    }
+
+                    var analisi = analizzaRitmoPerditaPeso(weights);
+
+                    // Peso attuale = ultima pesata
+                    var weightsSorted = weights.slice().sort(function(a, b) { return a.date > b.date ? -1 : 1; });
+                    var pesoAttuale = weightsSorted[0] ? parseFloat(weightsSorted[0].weight) : null;
+
+                    // Obiettivo attivo
+                    var obj = userData.currentObjective;
+                    var pesoObiettivo = obj ? parseFloat(obj.end_weight) : null;
+                    var nomeObiettivo = obj ? obj.objective_name : null;
+
+                    // Riepilogo analisi nel card
+                    var analisiHtml = '';
+                    if (analisi.bestPeriod) {
+                        var bp = analisi.bestPeriod;
+                        analisiHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">' +
+                            '<div style="background:#f0fdf4; border:1px solid #86efac; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.5rem; font-weight:bold; color:#16a34a;">−' + bp.weeklyRate.toFixed(2) + '</div>' +
+                            '<div style="font-size:0.75rem; color:#166534;">kg/settimana (max)</div></div>' +
+                            '<div style="background:#f0f9ff; border:1px solid #7dd3fc; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.5rem; font-weight:bold; color:#0369a1;">−' + bp.loss.toFixed(1) + '</div>' +
+                            '<div style="font-size:0.75rem; color:#0c4a6e;">kg in ' + bp.days + ' giorni (miglior periodo)</div></div>' +
+                            '</div>';
+                        analisiHtml += '<div style="font-size:0.82rem; color:#555; margin-bottom:4px;">📅 Periodo: <strong>' +
+                            fmtDateIt(bp.from) + ' → ' + fmtDateIt(bp.to) + '</strong>' +
+                            '  (' + bp.fromWeight.toFixed(1) + ' kg → ' + bp.toWeight.toFixed(1) + ' kg)</div>';
+                    }
+                    if (analisi.recentTrend) {
+                        var rt = analisi.recentTrend;
+                        var rtColor = rt.loss >= 0 ? '#16a34a' : '#dc2626';
+                        analisiHtml += '<div style="font-size:0.82rem; color:#555; margin-top:8px;">📈 Ultimi 28gg: <strong style="color:' + rtColor + ';">' +
+                            (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.loss).toFixed(1) + ' kg</strong>' +
+                            ' (' + (rt.loss >= 0 ? '−' : '+') + Math.abs(rt.weeklyRate).toFixed(2) + ' kg/sett)</div>';
+                    }
+                    analisiHtml += '<div style="font-size:0.8rem; color:#888; margin-top:8px;">📦 ' + analisi.totalRecords + ' giorni di dati · ' +
+                        fmtDateIt(analisi.firstDate) + ' → ' + fmtDateIt(analisi.lastDate) + '</div>';
+
+                    document.getElementById('dietaAnalisiContent').innerHTML = analisiHtml;
+
+                    var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo);
+                    document.getElementById('dietaPromptText').value = prompt;
+
+                    statusEl.style.display = 'none';
+                    risultatoEl.style.display = 'block';
+                    log('Genera Dieta: analisi completata su ' + weights.length + ' record');
+                })
+                .catch(function(e) {
+                    statusEl.textContent = '❌ Errore: ' + e.message;
+                });
+        }
+
+        // Copia il prompt negli appunti
+        function copiaDietaPrompt() {
+            var ta = document.getElementById('dietaPromptText');
+            if (!ta || !ta.value) return;
+            var msg = document.getElementById('dietaCopiatoMsg');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(ta.value).then(function() {
+                    msg.style.display = 'block';
+                    setTimeout(function() { msg.style.display = 'none'; }, 2500);
+                });
+            } else {
+                ta.select();
+                document.execCommand('copy');
+                msg.style.display = 'block';
+                setTimeout(function() { msg.style.display = 'none'; }, 2500);
+            }
         }
 
         // Carica TUTTI i dati storici (senza filtro data) e aggiorna le statistiche
