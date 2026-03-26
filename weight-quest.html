@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.45</title>
+    <title>Weight Quest v3.5.46</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1084,8 +1084,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.45';
-        var BUILD_TIME  = '2026-03-26T13:00:00Z';
+        var APP_VERSION = 'v3.5.46';
+        var BUILD_TIME  = '2026-03-26T13:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5089,27 +5089,71 @@
             lines.push('');
 
             lines.push('═══════════════════════════════════════');
+            lines.push('PATOLOGIE E FARMACI IN CORSO');
+            lines.push('═══════════════════════════════════════');
+            lines.push('⚠️  IMPORTANTE: il piano deve tenere conto obbligatoriamente di queste condizioni:');
+            lines.push('');
+            lines.push('• Ipertensione arteriosa (trattata farmacologicamente)');
+            lines.push('• Ipercolesterolemia (trattata farmacologicamente, ottimo compenso)');
+            lines.push('');
+            lines.push('Farmaci attualmente assunti:');
+            lines.push('  - BIVIS 20mg+5mg       (amlodipina + olmesartan — antipertensivo)');
+            lines.push('  - CHOLECOMB 5mg+10mg   (rosuvastatina + ezetimibe — ipolipidemizzante)');
+            lines.push('');
+            lines.push('Vincoli dietetici derivanti dalle patologie e dai farmaci:');
+            lines.push('  - Sodio ridotto (< 1500 mg/die): evitare salumi, formaggi stagionati, cibi in scatola');
+            lines.push('  - Potassio adeguato (frutta, verdura, legumi) per supportare il controllo pressorio');
+            lines.push('  - Grassi saturi limitati; privilegiare grassi insaturi (olio EVO, pesce azzurro, frutta secca)');
+            lines.push('  - Eliminare o ridurre al minimo alcol e liquirizia (interferiscono con gli antipertensivi)');
+            lines.push('  - Succo di pompelmo VIETATO (inibisce il CYP3A4, interagisce con amlodipina e statine)');
+            lines.push('  - Fibra solubile alta (avena, legumi, verdure) per potenziare l\'effetto di ezetimibe');
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('PROTOCOLLO ALIMENTARE RICHIESTO: OMAD');
+            lines.push('═══════════════════════════════════════');
+            lines.push('Tipo di dieta: OMAD — One Meal A Day (un unico pasto al giorno)');
+            lines.push('');
+            lines.push('Caratteristiche obbligatorie del piano:');
+            lines.push('  • UN SOLO PASTO GIORNALIERO (finestra alimentare 1-2 ore, es. 13:00-14:00)');
+            lines.push('  • BASSO CONTENUTO DI CARBOIDRATI: max 50-80 g/die di carboidrati netti');
+            lines.push('    → eliminare pane bianco, pasta, riso, zucchero, dolci');
+            lines.push('    → ammessi in piccole quantità: verdure a basso indice glicemico, legumi');
+            lines.push('  • ALTO CONTENUTO DI PROTEINE: almeno 1,6-2,0 g per kg di peso corporeo');
+            lines.push('    → carne magra, pesce, uova, latticini magri, legumi');
+            lines.push('  • GRASSI SANI come fonte energetica principale:');
+            lines.push('    → olio extravergine di oliva, avocado, frutta secca (noci, mandorle)');
+            lines.push('    → pesce grasso (salmone, sgombro, sardine) — beneficio anche per il colesterolo');
+            lines.push('    → EVITARE grassi saturi di origine animale in eccesso (burro, insaccati, carni grasse)');
+            lines.push('  • Acqua, tè/caffè non zuccherati liberi durante la finestra di digiuno');
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
             lines.push('COSA TI CHIEDO');
             lines.push('═══════════════════════════════════════');
-            lines.push('Basandoti ESCLUSIVAMENTE sui miei dati reali sopra riportati, genera:');
+            lines.push('Basandoti ESCLUSIVAMENTE sui miei dati reali e sui vincoli sopra riportati, genera:');
             lines.push('');
             lines.push('1. ANALISI DEL MIO METABOLISMO');
             lines.push('   - Stima del TDEE (fabbisogno calorico totale giornaliero)');
-            lines.push('   - Deficit calorico sostenibile coerente con il mio ritmo medio documentato (−' + rateRef + ' kg/sett)');
+            lines.push('   - Apporto calorico target per il PASTO UNICO OMAD, compatibile con il deficit');
+            lines.push('   - Deficit calorico coerente con il mio ritmo medio documentato (−' + rateRef + ' kg/sett)');
             lines.push('');
-            lines.push('2. PIANO ALIMENTARE SETTIMANALE (7 giorni)');
-            lines.push('   - Apporto calorico giornaliero target');
-            lines.push('   - Distribuzione macronutrienti (proteine / carboidrati / grassi in grammi)');
-            lines.push('   - Colazione, pranzo, cena e 1-2 spuntini per ogni giorno');
-            lines.push('   - Preferenza per alimenti della cucina italiana');
+            lines.push('2. PIANO OMAD SETTIMANALE (7 giorni)');
+            lines.push('   - Un pasto completo per ogni giorno (con orario suggerito)');
+            lines.push('   - Composizione: proteine + grassi sani + verdure + carboidrati minimi');
+            lines.push('   - Grammature precise degli alimenti principali');
+            lines.push('   - Macronutrienti del pasto (proteine / carboidrati netti / grassi / calorie totali)');
+            lines.push('   - Menu con ingredienti della cucina italiana, pratici da preparare');
+            lines.push('   - Specificare quali alimenti evitare per le interazioni farmacologiche');
             lines.push('');
             lines.push('3. PROIEZIONE TEMPORALE');
             lines.push('   - Stima delle settimane necessarie per raggiungere il peso obiettivo');
             lines.push('   - Date intermedie di controllo suggerite');
             lines.push('');
             lines.push('4. CONSIGLI PRATICI');
-            lines.push('   - Strategie specifiche per mantenere il ritmo di −' + rateRef + ' kg/settimana');
-            lines.push('   - Segnali di allerta da monitorare');
+            lines.push('   - Come gestire il digiuno prolungato con i farmaci antipertensivi');
+            lines.push('   - Idratazione ottimale durante il digiuno (con ipertensione)');
+            lines.push('   - Segnali di allerta da monitorare (pressione, lipidi, glicemia)');
             lines.push('   - Frequenza di pesata consigliata');
 
             return lines.join('\n');
