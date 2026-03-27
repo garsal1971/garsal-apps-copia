@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.51</title>
+    <title>Weight Quest v3.5.52</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1120,8 +1120,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.51';
-        var BUILD_TIME  = '2026-03-27T10:00:00Z';
+        var APP_VERSION = 'v3.5.52';
+        var BUILD_TIME  = '2026-03-27T10:30:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5461,7 +5461,7 @@
                     throw new Error(errMsg);
                 }
 
-                statusEl.textContent = '⚡ Ricezione risposta in streaming…';
+                statusEl.textContent = '⚡ Ricezione risposta…';
                 boxEl.style.display = 'block';
 
                 var reader  = response.body.getReader();
@@ -5469,27 +5469,52 @@
                 var fullText = '';
                 var buffer   = '';
 
-                while (true) {
-                    var chunk = await reader.read();
-                    if (chunk.done) break;
-                    buffer += decoder.decode(chunk.value, { stream: true });
-                    var lines = buffer.split('\n');
-                    buffer = lines.pop(); // mantieni riga incompleta
+                function parseSSEBuffer(buf) {
+                    var lines = buf.split('\n');
+                    var remaining = lines.pop(); // ultima riga potenzialmente incompleta
                     for (var i = 0; i < lines.length; i++) {
                         var line = lines[i].trim();
                         if (!line.startsWith('data: ')) continue;
-                        var data = line.slice(6);
-                        if (data === '[DONE]') continue;
+                        var data = line.slice(6).trim();
+                        if (!data || data === '[DONE]') continue;
                         try {
                             var parsed = JSON.parse(data);
                             if (parsed.type === 'content_block_delta' &&
                                 parsed.delta && parsed.delta.type === 'text_delta') {
                                 fullText += parsed.delta.text;
-                                preEl.textContent = fullText;
-                                preEl.scrollTop = preEl.scrollHeight;
+                            } else if (parsed.type === 'message' && parsed.content) {
+                                // fallback: risposta non-streaming wrappata in stream
+                                parsed.content.forEach(function(b) {
+                                    if (b.type === 'text') fullText += b.text;
+                                });
                             }
-                        } catch(e) { /* riga SSE non JSON, ignora */ }
+                        } catch(e) { /* riga SSE non JSON */ }
                     }
+                    return remaining;
+                }
+
+                while (true) {
+                    var chunk = await reader.read();
+                    if (chunk.done) {
+                        // flush decoder e processa buffer rimanente
+                        buffer += decoder.decode();
+                        parseSSEBuffer(buffer + '\n');
+                        break;
+                    }
+                    buffer += decoder.decode(chunk.value, { stream: true });
+                    buffer = parseSSEBuffer(buffer);
+                    if (fullText) {
+                        preEl.textContent = fullText;
+                        preEl.scrollTop = preEl.scrollHeight;
+                    }
+                }
+
+                // aggiorna una volta finale con tutto il testo
+                if (fullText) {
+                    preEl.textContent = fullText;
+                    preEl.scrollTop = preEl.scrollHeight;
+                } else {
+                    preEl.textContent = '(Nessun testo ricevuto — controlla la API key e riprova)';
                 }
 
                 statusEl.style.display = 'none';
