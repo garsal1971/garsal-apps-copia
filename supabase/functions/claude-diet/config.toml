@@ -1,0 +1,2 @@
+[functions.claude-diet]
+verify_jwt = false
