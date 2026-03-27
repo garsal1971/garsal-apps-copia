@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.56</title>
+    <title>Weight Quest v3.5.57</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1110,8 +1110,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.56';
-        var BUILD_TIME  = '2026-03-27T14:00:00Z';
+        var APP_VERSION = 'v3.5.57';
+        var BUILD_TIME  = '2026-03-27T15:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5067,7 +5067,9 @@
         }
 
         // Costruisce il testo del prompt da dare all'AI
-        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo) {
+        // profile: { altezza_cm, eta, patologie, farmaci } (tutti opzionali)
+        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, profile) {
+            profile = profile || {};
             var da_perdere = pesoAttuale && pesoObiettivo ? (pesoAttuale - pesoObiettivo).toFixed(1) : null;
             var rateRef = analisi.avgRate ? analisi.avgRate.toFixed(2) : '~0.5';
             var lines = [];
@@ -5088,6 +5090,8 @@
             lines.push('═══════════════════════════════════════');
             lines.push('DATI PERSONALI E OBIETTIVO');
             lines.push('═══════════════════════════════════════');
+            if (profile.eta)       lines.push('• Età:            ' + profile.eta + ' anni');
+            if (profile.altezza_cm) lines.push('• Altezza:        ' + profile.altezza_cm + ' cm');
             if (pesoAttuale)   lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
             if (pesoObiettivo) lines.push('• Peso obiettivo: ' + pesoObiettivo.toFixed(1) + ' kg' + (nomeObiettivo ? '  (' + nomeObiettivo + ')' : ''));
             if (da_perdere && parseFloat(da_perdere) > 0) lines.push('• Da perdere:     ' + da_perdere + ' kg');
@@ -5107,19 +5111,27 @@
             lines.push('');
 
             if (analisi.periods.length > 0) {
+                // Mostra solo gli ultimi 3 periodi più recenti
+                var totPeriodi = analisi.periods.length;
+                var periodiDaMostrare = analisi.periods.slice(-3);
                 lines.push('═══════════════════════════════════════');
                 lines.push('PERIODI DI CALO REALE (≥ 3 settimane, picco → minimo locale)');
                 lines.push('═══════════════════════════════════════');
-                lines.push('Ho identificato ' + analisi.periods.length + ' periodo/i di calo documentato:');
+                if (totPeriodi > 3) {
+                    lines.push('Ho identificato ' + totPeriodi + ' periodi di calo documentati (mostro i 3 più recenti):');
+                } else {
+                    lines.push('Ho identificato ' + totPeriodi + ' periodo/i di calo documentato:');
+                }
                 lines.push('');
-                analisi.periods.forEach(function(p, idx) {
-                    lines.push('  Periodo ' + (idx+1) + ':');
+                periodiDaMostrare.forEach(function(p, idx) {
+                    var numPeriodo = totPeriodi > 3 ? (totPeriodi - 3 + idx + 1) : (idx + 1);
+                    lines.push('  Periodo ' + numPeriodo + ':');
                     lines.push('    Dal ' + fmtDateIt(p.from) + ' (' + p.fromWeight.toFixed(1) + ' kg)');
                     lines.push('    Al  ' + fmtDateIt(p.to)   + ' (' + p.toWeight.toFixed(1)   + ' kg)');
                     lines.push('    Durata: ' + p.days + ' giorni  |  Perdita: −' + p.loss.toFixed(1) + ' kg  |  Ritmo: −' + p.weeklyRate.toFixed(2) + ' kg/sett');
                     lines.push('');
                 });
-                lines.push('RITMO MEDIO DI PERDITA (media di tutti i periodi):');
+                lines.push('RITMO MEDIO DI PERDITA (media di tutti i ' + totPeriodi + ' periodi):');
                 lines.push('  → −' + rateRef + ' kg/settimana');
             } else {
                 lines.push('═══════════════════════════════════════');
@@ -5135,20 +5147,24 @@
             lines.push('═══════════════════════════════════════');
             lines.push('⚠️  IMPORTANTE: il piano deve tenere conto obbligatoriamente di queste condizioni:');
             lines.push('');
-            lines.push('• Ipertensione arteriosa (trattata farmacologicamente)');
-            lines.push('• Ipercolesterolemia (trattata farmacologicamente, ottimo compenso)');
+            if (profile.patologie) {
+                profile.patologie.split('\n').forEach(function(riga) {
+                    riga = riga.trim();
+                    if (riga) lines.push('• ' + riga);
+                });
+            } else {
+                lines.push('(nessuna patologia indicata nel profilo)');
+            }
             lines.push('');
             lines.push('Farmaci attualmente assunti:');
-            lines.push('  - BIVIS 20mg+5mg       (amlodipina + olmesartan — antipertensivo)');
-            lines.push('  - CHOLECOMB 5mg+10mg   (rosuvastatina + ezetimibe — ipolipidemizzante)');
-            lines.push('');
-            lines.push('Vincoli dietetici derivanti dalle patologie e dai farmaci:');
-            lines.push('  - Sodio ridotto (< 1500 mg/die): evitare salumi, formaggi stagionati, cibi in scatola');
-            lines.push('  - Potassio adeguato (frutta, verdura, legumi) per supportare il controllo pressorio');
-            lines.push('  - Grassi saturi limitati; privilegiare grassi insaturi (olio EVO, pesce azzurro, frutta secca)');
-            lines.push('  - Eliminare o ridurre al minimo alcol e liquirizia (interferiscono con gli antipertensivi)');
-            lines.push('  - Succo di pompelmo VIETATO (inibisce il CYP3A4, interagisce con amlodipina e statine)');
-            lines.push('  - Fibra solubile alta (avena, legumi, verdure) per potenziare l\'effetto di ezetimibe');
+            if (profile.farmaci) {
+                profile.farmaci.split('\n').forEach(function(riga) {
+                    riga = riga.trim();
+                    if (riga) lines.push('  - ' + riga);
+                });
+            } else {
+                lines.push('  (nessun farmaco indicato nel profilo)');
+            }
             lines.push('');
 
             lines.push('═══════════════════════════════════════');
@@ -5336,12 +5352,40 @@
 
                     document.getElementById('dietaAnalisiContent').innerHTML = analisiHtml;
 
-                    var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo);
-                    document.getElementById('dietaPromptText').value = prompt;
-
-                    statusEl.style.display = 'none';
-                    risultatoEl.style.display = 'block';
-                    log('Genera Dieta: ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
+                    // Carica dati profilo (altezza, età, patologie, farmaci) da cm_profile
+                    var profileUrl = supabase.url + '/rest/v1/cm_profile?select=altezza_cm,data_nascita,patologie,farmaci&limit=1';
+                    fetch(profileUrl, { headers: supabase.headers })
+                        .then(function(r) { return r.json(); })
+                        .then(function(profileData) {
+                            var profile = {};
+                            if (Array.isArray(profileData) && profileData.length > 0) {
+                                var p = profileData[0];
+                                if (p.altezza_cm) profile.altezza_cm = p.altezza_cm;
+                                if (p.data_nascita) {
+                                    var nascita = new Date(p.data_nascita);
+                                    var oggi = new Date();
+                                    var eta = oggi.getFullYear() - nascita.getFullYear();
+                                    var m = oggi.getMonth() - nascita.getMonth();
+                                    if (m < 0 || (m === 0 && oggi.getDate() < nascita.getDate())) eta--;
+                                    profile.eta = eta;
+                                }
+                                if (p.patologie) profile.patologie = p.patologie;
+                                if (p.farmaci)   profile.farmaci   = p.farmaci;
+                            }
+                            var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, profile);
+                            document.getElementById('dietaPromptText').value = prompt;
+                            statusEl.style.display = 'none';
+                            risultatoEl.style.display = 'block';
+                            log('Genera Dieta: ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
+                        })
+                        .catch(function() {
+                            // Profilo non caricabile: genera prompt senza dati profilo
+                            var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, {});
+                            document.getElementById('dietaPromptText').value = prompt;
+                            statusEl.style.display = 'none';
+                            risultatoEl.style.display = 'block';
+                            log('Genera Dieta (senza profilo): ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
+                        });
                 })
                 .catch(function(e) {
                     statusEl.textContent = '❌ Errore: ' + e.message;
