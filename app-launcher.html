@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.69</title>
+<title>AppSphere v1.5.70</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1146,6 +1146,141 @@
   }
   .rw-btn-save:hover { opacity: 0.88; }
 
+  /* ── PROFILO MODAL ── */
+  #profilo-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.48);
+    z-index: 700;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #profilo-overlay.open { display: flex; }
+  #profilo-modal {
+    background: #fff;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #profilo-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+  }
+  #profilo-modal-header h2 { font-size: 16px; font-weight: 600; color: #222; }
+  #profilo-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    padding: 4px 8px;
+  }
+  #profilo-body { padding: 16px 20px 32px; }
+  .profilo-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  #profilo-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e5e7eb;
+    border: 2px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  #profilo-avatar-initials {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,#0081C8,#00A651);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .profilo-email { font-size: 13px; color: #888; }
+  .profilo-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #0081C8;
+    margin: 20px 0 10px;
+  }
+  .profilo-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .profilo-field { margin-bottom: 10px; }
+  .profilo-field label {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .profilo-field input,
+  .profilo-field select,
+  .profilo-field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #222;
+    background: #fafafa;
+    box-sizing: border-box;
+  }
+  .profilo-field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .profilo-field input:focus,
+  .profilo-field select:focus,
+  .profilo-field textarea:focus {
+    outline: none;
+    border-color: #0081C8;
+    background: #fff;
+  }
+  #profilo-save-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg,#0081C8,#00A651);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  #profilo-save-btn:active { opacity: 0.85; }
+  #profilo-saved-msg {
+    display: none;
+    text-align: center;
+    color: #00A651;
+    font-weight: 700;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
   /* ── INSERIMENTO CODICE NASCOSTO ── */
   #code-entry {
     position: fixed;
@@ -1239,10 +1374,82 @@
 
 <!-- HAMBURGER DROPDOWN -->
 <div id="hamburger-menu">
+  <button class="hm-item" onclick="closeHamburgerMenu(); openProfilo();">👤 Profilo</button>
   <button class="hm-item" onclick="closeHamburgerMenu(); openBadgeSettings();">⚙ Badge</button>
   <button class="hm-item" onclick="closeHamburgerMenu(); openNotifiche();">🔔 Notifiche</button>
   <button class="hm-item" onclick="closeHamburgerMenu(); openNqv();">⚡ Notifica al Volo</button>
   <button class="hm-item danger" onclick="closeHamburgerMenu(); logout();">↩ Esci</button>
+</div>
+
+<!-- PROFILO MODAL -->
+<div id="profilo-overlay" onclick="handleProfiloOverlayClick(event)">
+  <div id="profilo-modal">
+    <div id="profilo-modal-header">
+      <h2>👤 Profilo</h2>
+      <button id="profilo-modal-close" onclick="closeProfilo()">✕</button>
+    </div>
+    <div id="profilo-body">
+
+      <!-- Avatar + email -->
+      <div class="profilo-avatar-row">
+        <div id="profilo-avatar-initials">?</div>
+        <div>
+          <div id="profilo-display-name" style="font-weight:700; font-size:15px; color:#222;"></div>
+          <div class="profilo-email" id="profilo-display-email"></div>
+        </div>
+      </div>
+
+      <!-- Anagrafica -->
+      <div class="profilo-section-title">Anagrafica</div>
+      <div class="profilo-row">
+        <div class="profilo-field">
+          <label>Nome</label>
+          <input type="text" id="pf-nome" placeholder="Mario">
+        </div>
+        <div class="profilo-field">
+          <label>Cognome</label>
+          <input type="text" id="pf-cognome" placeholder="Rossi">
+        </div>
+      </div>
+      <div class="profilo-row">
+        <div class="profilo-field">
+          <label>Data di nascita</label>
+          <input type="date" id="pf-data-nascita">
+        </div>
+        <div class="profilo-field">
+          <label>Sesso</label>
+          <select id="pf-sesso">
+            <option value="">—</option>
+            <option value="M">Maschio</option>
+            <option value="F">Femmina</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="profilo-field" style="max-width:140px;">
+        <label>Altezza (cm)</label>
+        <input type="number" id="pf-altezza" placeholder="175" min="50" max="300">
+      </div>
+
+      <!-- Clinica -->
+      <div class="profilo-section-title">Informazioni Cliniche</div>
+      <div class="profilo-field">
+        <label>Patologie (una per riga)</label>
+        <textarea id="pf-patologie" placeholder="Es.&#10;Ipertensione arteriosa&#10;Ipercolesterolemia"></textarea>
+      </div>
+      <div class="profilo-field">
+        <label>Farmaci assunti (uno per riga)</label>
+        <textarea id="pf-farmaci" placeholder="Es.&#10;Amlodipina 5mg — antipertensivo&#10;Rosuvastatina 5mg — statina"></textarea>
+      </div>
+      <div class="profilo-field">
+        <label>Note mediche</label>
+        <textarea id="pf-note" placeholder="Altre informazioni utili…"></textarea>
+      </div>
+
+      <button id="profilo-save-btn" onclick="saveProfilo()">💾 Salva profilo</button>
+      <div id="profilo-saved-msg">✅ Profilo salvato!</div>
+    </div>
+  </div>
 </div>
 
 <!-- NOTIFICHE MODAL -->
@@ -1421,8 +1628,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.69';
-const BUILD_TIME  = '2026-03-20T17:45:00Z';
+const APP_VERSION = 'v1.5.70';
+const BUILD_TIME  = '2026-03-27T14:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2194,6 +2401,114 @@ document.addEventListener('click', e => {
     menu.classList.remove('open');
   }
 });
+
+// ── PROFILO ──
+async function openProfilo() {
+  document.getElementById('profilo-overlay').classList.add('open');
+  await loadProfilo();
+}
+function closeProfilo() {
+  document.getElementById('profilo-overlay').classList.remove('open');
+}
+function handleProfiloOverlayClick(e) {
+  if (e.target === document.getElementById('profilo-overlay')) closeProfilo();
+}
+
+async function loadProfilo() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) return;
+
+  // Pre-carica dati Google (nome, email, avatar)
+  const user = await getUserInfo();
+  if (user) {
+    const meta = user.user_metadata || {};
+    const fullName = meta.full_name || '';
+    const parts    = fullName.trim().split(' ');
+    const email    = user.email || '';
+    const avatar   = meta.avatar_url || meta.picture || '';
+    const initials = parts.map(p => p[0]).join('').substring(0, 2).toUpperCase() || '?';
+
+    document.getElementById('profilo-display-name').textContent = fullName || email;
+    document.getElementById('profilo-display-email').textContent = email;
+    document.getElementById('profilo-avatar-initials').textContent = initials;
+
+    // Pre-riempi nome/cognome solo se i campi sono vuoti
+    if (!document.getElementById('pf-nome').value && parts[0])
+      document.getElementById('pf-nome').value = parts[0];
+    if (!document.getElementById('pf-cognome').value && parts.length > 1)
+      document.getElementById('pf-cognome').value = parts.slice(1).join(' ');
+  }
+
+  // Carica profilo salvato da cm_profile
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_profile?select=*&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows.length) return;
+    const p = rows[0];
+    if (p.nome)          document.getElementById('pf-nome').value         = p.nome;
+    if (p.cognome)       document.getElementById('pf-cognome').value      = p.cognome;
+    if (p.data_nascita)  document.getElementById('pf-data-nascita').value = p.data_nascita;
+    if (p.sesso)         document.getElementById('pf-sesso').value        = p.sesso;
+    if (p.altezza_cm)    document.getElementById('pf-altezza').value      = p.altezza_cm;
+    if (p.patologie)     document.getElementById('pf-patologie').value    = p.patologie;
+    if (p.farmaci)       document.getElementById('pf-farmaci').value      = p.farmaci;
+    if (p.note_mediche)  document.getElementById('pf-note').value         = p.note_mediche;
+  } catch(e) {
+    console.warn('Errore caricamento profilo:', e);
+  }
+}
+
+async function saveProfilo() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) { alert('Sessione scaduta, rieffettua il login.'); return; }
+
+  const user = await getUserInfo();
+  const meta = user?.user_metadata || {};
+
+  const payload = {
+    user_id:      user?.id,
+    nome:         document.getElementById('pf-nome').value.trim()         || null,
+    cognome:      document.getElementById('pf-cognome').value.trim()      || null,
+    email:        user?.email || null,
+    avatar_url:   meta.avatar_url || meta.picture || null,
+    data_nascita: document.getElementById('pf-data-nascita').value        || null,
+    sesso:        document.getElementById('pf-sesso').value               || null,
+    altezza_cm:   parseInt(document.getElementById('pf-altezza').value)   || null,
+    patologie:    document.getElementById('pf-patologie').value.trim()    || null,
+    farmaci:      document.getElementById('pf-farmaci').value.trim()      || null,
+    note_mediche: document.getElementById('pf-note').value.trim()         || null,
+  };
+
+  const btn = document.getElementById('profilo-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_profile`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'HTTP ' + res.status);
+    }
+    const msg = document.getElementById('profilo-saved-msg');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  } catch(e) {
+    alert('Errore salvataggio profilo: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 // ── NOTIFICHE ──
 async function openNotifiche() {
