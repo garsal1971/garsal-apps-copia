@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.55</title>
+    <title>Weight Quest v3.5.56</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1110,8 +1110,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.55';
-        var BUILD_TIME  = '2026-03-27T13:00:00Z';
+        var APP_VERSION = 'v3.5.56';
+        var BUILD_TIME  = '2026-03-27T14:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -5416,8 +5416,9 @@
             }, 600);
 
             try {
-                // Chiama la Netlify function (server-side → nessun blocco firewall)
-                var response = await fetch('/.netlify/functions/claude-diet', {
+                // Chiama la Supabase Edge Function (timeout 150s, nessun blocco firewall)
+                var claudeEndpoint = CONFIG.supabaseUrl + '/functions/v1/claude-diet';
+                var response = await fetch(claudeEndpoint, {
                     method: 'POST',
                     headers: { 'content-type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
