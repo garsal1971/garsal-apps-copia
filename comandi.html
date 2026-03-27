@@ -156,15 +156,16 @@ GRANT ALL ON TABLE cm_profile TO service_role;</pre>
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
   </div>
 
-  <!-- 1b. Fix GRANT se tabella già creata senza grant -->
+  <!-- 1b. Fix completo RLS cm_profile -->
   <div class="item" id="item-cm-profile-grant">
     <div class="item-header">
       <div class="check">!</div>
       <div class="item-body">
-        <div class="item-title">FIX — GRANT su cm_profile (se tabella già esistente)</div>
+        <div class="item-title">FIX — RLS cm_profile (esegui questo se hai già la tabella)</div>
         <div class="item-desc">
-          Se hai già creato la tabella ma ottieni <em>"new row violates row-level security policy"</em>,
-          significa che mancano i GRANT al ruolo <code>authenticated</code>. Esegui solo questo blocco.
+          Risolve <em>"new row violates row-level security policy"</em>.<br>
+          Aggiunge GRANT, imposta <code>DEFAULT auth.uid()</code> su user_id
+          e ricrea le policy RLS in modo sicuro.
         </div>
         <div class="tags">
           <span class="tag sql-t">SQL</span>
@@ -175,8 +176,34 @@ GRANT ALL ON TABLE cm_profile TO service_role;</pre>
     </div>
     <div class="code-block" id="cb-cm-profile-grant">
       <button class="copy-btn" onclick="copyCode('cb-cm-profile-grant', this)">Copia</button>
-      <pre>GRANT ALL ON TABLE cm_profile TO authenticated;
-GRANT ALL ON TABLE cm_profile TO service_role;</pre>
+      <pre>-- 1. GRANT ruolo authenticated
+GRANT ALL ON TABLE cm_profile TO authenticated;
+GRANT ALL ON TABLE cm_profile TO service_role;
+
+-- 2. user_id si imposta automaticamente dal JWT (non serve mandarlo dal frontend)
+ALTER TABLE cm_profile ALTER COLUMN user_id SET DEFAULT auth.uid();
+
+-- 3. Ricrea policy RLS (DROP + CREATE per sicurezza)
+DROP POLICY IF EXISTS "profilo: lettura proprio record"    ON cm_profile;
+DROP POLICY IF EXISTS "profilo: inserimento proprio record" ON cm_profile;
+DROP POLICY IF EXISTS "profilo: aggiornamento proprio record" ON cm_profile;
+DROP POLICY IF EXISTS "profilo: eliminazione proprio record" ON cm_profile;
+
+CREATE POLICY "profilo: lettura proprio record"
+  ON cm_profile FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "profilo: inserimento proprio record"
+  ON cm_profile FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "profilo: aggiornamento proprio record"
+  ON cm_profile FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "profilo: eliminazione proprio record"
+  ON cm_profile FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);</pre>
     </div>
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
   </div>
