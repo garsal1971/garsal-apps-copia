@@ -3,16 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.2.2</title>
+    <title>Weight Quest v3.5.58</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f0f0f0;
+            background: #ffffff;
+            padding-top: 56px;
+        }
+
+        /* ── GARSAL TOP BAR ── */
+        #garsal-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0081C8;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            z-index: 3000;
+        }
+        #garsal-top-bar-icon {
+            width: 22px;
+            height: 22px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        #garsal-top-bar-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
         }
 
         /* TOP BAR PINK */
@@ -28,7 +63,7 @@
         .date-calendar {
             background: white;
             color: #333;
-            border-radius: 8px;
+            border-radius: 0;
             padding: 8px 12px;
             min-width: 90px;
             text-align: center;
@@ -57,45 +92,36 @@
 
         /* ICON NAVIGATION */
         .icon-nav {
-            background: white;
+            background: #F3F4F6;
             display: flex;
             justify-content: space-around;
-            padding: 15px 0;
-            border-bottom: 2px solid #eee;
+            align-items: center;
+            padding: 0.1rem 0;
+            border-bottom: 2px solid #E5E7EB;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .icon-nav-item {
             flex: 1;
             text-align: center;
             cursor: pointer;
-            padding: 10px;
-            transition: all 0.2s;
-            border-bottom: 3px solid transparent;
+            padding: 0.15rem 0.1rem;
+            transition: all 0.3s ease;
+            border-radius: 0;
         }
 
         .icon-nav-item:hover {
-            background: #f9f9f9;
+            background: rgba(255,255,255,0.6);
         }
 
         .icon-nav-item.active {
-            border-bottom-color: #FF3366;
+            background: #FF3366;
+            border-radius: 0;
         }
 
         .icon-nav-item .icon {
-            font-size: 36px;
+            font-size: 2.2rem;
             display: block;
-            margin-bottom: 5px;
-        }
-
-        .icon-nav-item .label {
-            font-size: 11px;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .icon-nav-item.active .label {
-            color: #FF3366;
-            font-weight: bold;
         }
 
         /* MAIN CONTENT */
@@ -107,20 +133,27 @@
             display: none;
             padding: 20px;
             min-height: calc(100vh - 200px);
+            background: #ffffff;
         }
 
         .page.active {
             display: block;
         }
 
+        :root {
+            --card-bg: #FFFFFF;
+            --border: #E5E7EB;
+        }
+
         /* SIDEBAR FLOATING BUTTON */
         /* CARDS */
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            background: var(--card-bg);
+            border-radius: 0;
+            padding: 0.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
         }
 
         .card h3 {
@@ -142,10 +175,10 @@
             flex: 1;
             min-width: 0;
             background: white;
-            border-radius: 12px;
+            border-radius: 0;
             padding: 10px 6px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
         }
 
         .stat-box.gradient {
@@ -189,7 +222,7 @@
             padding: 12px;
             font-size: 15px;
             border: 2px solid #ddd;
-            border-radius: 8px;
+            border-radius: 0;
             margin: 8px 0;
             font-family: inherit;
         }
@@ -204,7 +237,7 @@
             background: #FF3366;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 0;
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
@@ -255,7 +288,7 @@
             overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
             width: 100%;
-            border-radius: 4px;
+            border-radius: 0;
         }
         #chartContainer {
             /* la larghezza viene impostata via JS */
@@ -279,7 +312,7 @@
                 background: rgba(0, 0, 0, 0.45);
                 color: #fff;
                 border: none;
-                border-radius: 6px;
+                border-radius: 0;
                 font-size: 20px;
                 cursor: pointer;
                 user-select: none;
@@ -332,26 +365,55 @@
 
         /* AUTH */
         #authSection {
-            min-height: 100vh;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(10, 10, 20, 0.93);
+            backdrop-filter: blur(4px);
         }
 
         .auth-card {
-            background: white;
-            padding: 40px;
+            background: #16161e;
+            border: 1px solid #2a2a3a;
+            padding: 48px 40px;
             border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
             text-align: center;
-            max-width: 400px;
+            max-width: 420px;
+            width: 90%;
         }
 
-        .auth-card h1 {
-            color: #FF3366;
-            margin-bottom: 20px;
-            font-size: 32px;
+        .auth-card h2 {
+            color: #ffffff;
+            margin-bottom: 12px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .auth-card p {
+            color: #9ca3af;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .auth-card .auth-btn {
+            display: inline-block;
+            font-size: 1rem;
+            padding: 0.85rem 2.2rem;
+            background: #FF3366;
+            color: #fff;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: background 0.2s;
+        }
+
+        .auth-card .auth-btn:hover {
+            background: #e0274f;
         }
 
         /* RESPONSIVE */
@@ -372,11 +434,13 @@
         .content-wrapper {
             display: flex;
             align-items: flex-start;
+            background: #ffffff;
         }
 
         .main-content {
             flex: 1;
             min-width: 0;
+            background: #ffffff;
         }
 
         /* DESKTOP LAYOUT WITH FIXED SIDEBAR */
@@ -392,15 +456,9 @@
             }
 
             .sidebar-desktop {
-                display: flex;
-                flex-direction: column;
-                width: 280px;
                 background: #F3F4F6;
-                border-right: 1px solid #E5E7EB;
                 padding: 1.0rem 0.75rem;
-                position: sticky;
-                top: 0;
-                height: calc(100vh - 80px);
+                border-right: 1px solid var(--border);
             }
             .sidebar-logo {
                 display: none;
@@ -437,15 +495,255 @@
                 display: none;
             }
         }
+        /* STATISTICHE PAGE */
+        .stat-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-summary-card {
+            background: white;
+            border-radius: 0;
+            padding: 16px 10px;
+            text-align: center;
+        }
+        .stat-summary-card .ssv {
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .stat-summary-card .ssl {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .diet-period-card {
+            border-left: 4px solid #00B894;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-radius: 0;
+            background: #f0faf7;
+        }
+        .diet-period-card .dp-header {
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #00B894;
+        }
+        .diet-period-card .dp-meta {
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .stats-loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 16px;
+        }
+        /* STAT TABS */
+        .btn {
+            padding: 0.4rem 0.75rem;
+            border-radius: 0;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary {
+            background: #FF3366;
+            color: white;
+        }
+        .btn-secondary {
+            background: #E5E7EB;
+            color: #1F2937;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: #6B7280;
+            color: white;
+        }
+        .stat-tab-panel { display: none; }
+        .stat-tab-panel.active { display: block; }
+        /* Tabella dati storici */
+        #statDataContent table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        #statDataContent thead th { background: #f5f5f5; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; border-bottom: 2px solid #e0e0e0; }
+        #statDataContent tbody tr:nth-child(even) { background: #fafafa; }
+        #statDataContent tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+        .stat-filter-bar { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .stat-filter-bar label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+        .stat-filter-bar input[type="date"] { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 0; font-size: 14px; font-family: inherit; }
+        .stat-filter-btn { padding: 8px 16px; border: none; border-radius: 0; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 14px; }
+
+
+        /* ── Milestone Progress Bar ─────────────────────────────────── */
+        #milestoneProgressBar {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding: 8px 2px 10px;
+            margin: 8px 0 14px;
+            scrollbar-width: thin;
+        }
+        .ms-th {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+            padding: 7px 5px 5px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            background: #fafafa;
+            transition: all 0.4s;
+        }
+        .ms-th.reached {
+            border-color: #FFD700;
+            background: linear-gradient(135deg, #fff8dc, #ffeaa7);
+            box-shadow: 0 2px 8px rgba(255,215,0,0.35);
+        }
+        .ms-th-icon  { font-size: 20px; line-height: 1.2; }
+        .ms-th-label { font-size: 9px; color: #aaa; margin-top: 3px; font-weight: 600; }
+        .ms-th-pts   { font-size: 10px; color: #bbb; font-weight: 700; }
+        .ms-th.reached .ms-th-label { color: #b8860b; }
+        .ms-th.reached .ms-th-pts   { color: #c9960c; }
+
+        /* ── Milestone Stamp (timbro data raggiungimento) ───────────── */
+        .ms-th { position: relative; }
+        .ms-stamp {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-12deg);
+            background: #c0392b;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* ── Milestone Points Distribution ──────────────────────────── */
+        #milestonePtsDistrib {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        /* ── Milestone Celebration Overlay ─────────────────────────── */
+        #milestoneOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        #milestoneCard {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 2px solid #00B894;
+            border-radius: 24px;
+            padding: 40px 56px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0,184,148,0.4);
+            animation: cardSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+            min-width: 280px;
+            overflow: visible;
+        }
+        #milestoneStars {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .ms-star {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0;
+            animation: starPop 1.8s ease-out infinite;
+        }
+        #milestoneArrow {
+            font-size: 64px;
+            color: #00B894;
+            line-height: 1;
+            animation: arrowBounce 0.8s ease-in-out infinite alternate;
+            text-shadow: 0 0 20px rgba(0,184,148,0.8);
+        }
+        #milestoneKg {
+            font-size: 42px;
+            font-weight: 900;
+            color: #fff;
+            margin: 8px 0 4px;
+            letter-spacing: -1px;
+        }
+        #milestoneLabel {
+            font-size: 13px;
+            font-weight: 700;
+            color: #00B894;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+        #milestoneSub {
+            font-size: 12px;
+            color: #666;
+            margin-top: 12px;
+        }
+        @keyframes cardSlideIn {
+            from { transform: scale(0.5) translateY(-60px); opacity: 0; }
+            to   { transform: scale(1) translateY(0);       opacity: 1; }
+        }
+        @keyframes arrowBounce {
+            from { transform: translateY(0);    }
+            to   { transform: translateY(10px); }
+        }
+        @keyframes starPop {
+            0%   { transform: scale(0)   rotate(0deg);   opacity: 0; }
+            20%  { transform: scale(1.4) rotate(30deg);  opacity: 1; }
+            70%  { transform: scale(1)   rotate(-10deg); opacity: 0.9; }
+            100% { transform: scale(0)   rotate(45deg);  opacity: 0; }
+        }
     </style>
 </head>
 <body>
-    <!-- AUTH SECTION -->
+
+    <!-- GARSAL TOP BAR -->
+    <div id="garsal-top-bar">
+        <a href="app-launcher.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="15" r="7" fill="rgba(255,255,255,0.85)"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg>
+            <div id="garsal-top-bar-text">Garsal Apps</div>
+        </a>
+    </div>
+
+    <!-- AUTH SECTION — richiede AppSphere -->
     <div id="authSection">
         <div class="auth-card">
-            <h1>⚖️ WEIGHT QUEST</h1>
-            <p style="margin-bottom: 30px; color: #666;">Dashboard gestione peso e obiettivi</p>
-            <button id="btnLogin" style="font-size: 16px; padding: 15px 40px;">🔐 Accedi con Google</button>
+            <div style="font-size:3rem; margin-bottom:1.2rem;">🔐</div>
+            <h2>Accesso richiesto</h2>
+            <p>Apri <strong style="color:#FF3366;">Weight Quest</strong> da AppSphere per accedere con il tuo account Google.</p>
+            <a href="app-launcher.html" class="auth-btn">Vai ad AppSphere</a>
         </div>
     </div>
 
@@ -456,20 +754,16 @@
         <!-- ICON NAVIGATION -->
         <div class="icon-nav">
             <div class="icon-nav-item active" data-page="obiettivi">
-                <span class="icon">⚙️</span>
-                <span class="label">Obiettivi</span>
+                <span class="icon">🎯</span>
             </div>
-            <div class="icon-nav-item" data-page="tabella">
-                <span class="icon">📊</span>
-                <span class="label">Tabella</span>
+            <div class="icon-nav-item" data-page="statistiche">
+                <span class="icon">📉</span>
             </div>
-            <div class="icon-nav-item" data-page="grafico">
-                <span class="icon">📈</span>
-                <span class="label">Grafico</span>
+            <div class="icon-nav-item" data-page="dieta">
+                <span class="icon">🥗</span>
             </div>
             <div class="icon-nav-item" data-action="sync">
                 <span class="icon">🔄</span>
-                <span class="label">Sync</span>
             </div>
         </div>
 
@@ -480,16 +774,16 @@
                 <div class="sidebar-logo">⚖️ Weight</div>
                 <nav>
                     <div class="sidebar-nav-item active" data-page="obiettivi">
-                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-icon">🎯</span>
                         <span>Obiettivi</span>
                     </div>
-                    <div class="sidebar-nav-item" data-page="tabella">
-                        <span class="nav-icon">📊</span>
-                        <span>Tabella</span>
+                    <div class="sidebar-nav-item" data-page="statistiche">
+                        <span class="nav-icon">📉</span>
+                        <span>Statistiche</span>
                     </div>
-                    <div class="sidebar-nav-item" data-page="grafico">
-                        <span class="nav-icon">📈</span>
-                        <span>Grafico</span>
+                    <div class="sidebar-nav-item" data-page="dieta">
+                        <span class="nav-icon">🥗</span>
+                        <span>Genera Dieta</span>
                     </div>
                     <div class="sidebar-nav-item" data-action="sync">
                         <span class="nav-icon">🔄</span>
@@ -500,140 +794,288 @@
 
             <!-- MAIN CONTENT -->
             <div class="content main-content">
-            <!-- PAGE 1: OBIETTIVI -->
+            <!-- PAGE 1: OBIETTIVI (con tab interni) -->
             <div id="obiettiviPage" class="page active">
-                <!-- Stats + Peso su una sola riga -->
-                <div class="stats-grid">
-                    <div class="stat-box" style="background: linear-gradient(135deg, #FF3366, #ff6b9d); color: white;">
-                        <div class="stat-value" id="weightValue" style="color: white;">--</div>
-                        <div class="stat-label" style="color: rgba(255,255,255,0.85);">⚖️ Peso kg</div>
-                    </div>
-                    <div class="stat-box" style="border: 3px solid #F39C12;">
-                        <div class="stat-value" id="avgScoreValue" style="color: #F39C12;">-</div>
-                        <div class="stat-label" style="color: #F39C12;">Kg alla fine</div>
-                    </div>
-                    <div class="stat-box teal">
-                        <div class="stat-value" id="statsCompleted">0</div>
-                        <div class="stat-label">Completati</div>
-                    </div>
-                    <div class="stat-box red">
-                        <div class="stat-value" id="statsFailed">0</div>
-                        <div class="stat-label">Falliti</div>
-                    </div>
-                    <div class="stat-box yellow">
-                        <div class="stat-value" id="statsActive">0</div>
-                        <div class="stat-label">Attivi</div>
-                    </div>
-                    <div class="stat-box gradient">
-                        <div class="stat-value" id="statsScore">0</div>
-                        <div class="stat-label">Punteggio</div>
-                    </div>
-                    <div class="stat-box" style="border: 3px solid #FF3366;">
-                        <div class="stat-value" id="scoreValue" style="color: #FF3366;">-</div>
-                        <div class="stat-label" style="color: #FF3366;">Punti oggi</div>
+
+                <!-- Tab bar -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="objTabBtn1" class="btn btn-primary" onclick="switchObjTab(1)" style="flex: 1; min-width: 0;">Obiettivi</button>
+                        <button id="objTabBtn2" class="btn btn-secondary" onclick="switchObjTab(2)" style="flex: 1; min-width: 0;">Tabella</button>
+                        <button id="objTabBtn3" class="btn btn-secondary" onclick="switchObjTab(3)" style="flex: 1; min-width: 0;">Grafico</button>
                     </div>
                 </div>
 
-                <!-- Gestione Obiettivo Corrente -->
-                <div class="card">
-                    <h3>🎯 Gestione Obiettivo</h3>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Seleziona Obiettivo</label>
-                        <select id="objectiveSelect"></select>
-                    </div>
-
-                    <div id="objectiveStatusBar" class="hidden" style="padding: 10px; margin: 10px 0; border-radius: 8px; text-align: center; font-weight: bold;"></div>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Nome Obiettivo</label>
-                        <input type="text" id="objectiveName" placeholder="Es: Dieta Primavera 2026">
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Giornaliero</label>
-                            <input type="number" id="objectiveDailyBonus" value="10">
+                <!-- Tab 1: Obiettivi -->
+                <div id="objTabPanel1" class="stat-tab-panel active">
+                    <!-- Stats + Peso su una sola riga -->
+                    <div class="stats-grid">
+                        <div class="stat-box" style="background: linear-gradient(135deg, #FF3366, #ff6b9d); color: white;">
+                            <div class="stat-value" id="weightValue" style="color: white;">--</div>
+                            <div class="stat-label" style="color: rgba(255,255,255,0.85);">Minimo oggi</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Giornaliero</label>
-                            <input type="number" id="objectiveDailyMalus" value="5">
+                        <div class="stat-box" style="border: 3px solid #00B894;">
+                            <div class="stat-value" id="pesoTargetValue" style="color: #00B894;">-</div>
+                            <div class="stat-label" style="color: #00B894;">Target oggi</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Finale</label>
-                            <input type="number" id="objectiveFinalBonus" value="100">
+                        <div class="stat-box" style="border: 3px solid #6C5CE7;">
+                            <div class="stat-value" id="dailyTargetValue" style="color: #6C5CE7;">-</div>
+                            <div class="stat-label" style="color: #6C5CE7;">Mancano al target</div>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Finale</label>
-                            <input type="number" id="objectiveFinalMalus" value="50">
+                        <div class="stat-box" style="border: 3px solid #F39C12;">
+                            <div class="stat-value" id="avgScoreValue" style="color: #F39C12;">-</div>
+                            <div class="stat-label" style="color: #F39C12;">Kg alla fine</div>
+                        </div>
+
+                        <div class="stat-box gradient">
+                            <div class="stat-value" id="statsScore">0</div>
+                            <div class="stat-label">Punteggio</div>
+                        </div>
+                        <div class="stat-box" style="border: 3px solid #FF3366;">
+                            <div class="stat-value" id="scoreValue" style="color: #FF3366;">-</div>
+                            <div class="stat-label" style="color: #FF3366;">Punti oggi</div>
                         </div>
                     </div>
 
-                    <div id="multiplierDisplay" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 13px;"></div>
+                    <!-- Gestione Obiettivo Corrente -->
+                    <div class="card">
+                        <h3>🎯 Gestione Obiettivo</h3>
 
-                    <h4 style="margin: 20px 0 10px 0;">Milestone Progressive</h4>
-                    <div id="milestoneList" style="margin-bottom: 15px;"></div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Seleziona Obiettivo</label>
+                            <select id="objectiveSelect"></select>
+                        </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <input type="date" id="newMilestoneDate" placeholder="Data">
-                        <input type="number" step="0.1" id="newMilestoneWeight" placeholder="Peso (kg)">
-                    </div>
-                    <button id="btnAddMilestone">➕ Aggiungi Milestone</button>
+                        <div id="objectiveStatusBar" class="hidden" style="padding: 10px; margin: 10px 0; border-radius: 0; text-align: center; font-weight: bold;"></div>
 
-                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Nome Obiettivo</label>
+                            <input type="text" id="objectiveName" placeholder="Es: Dieta Primavera 2026">
+                        </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button id="btnSaveObjective">💾 Salva</button>
-                        <button id="btnCloseSuccess" style="background: #00B894;">🏆 Successo</button>
-                        <button id="btnCloseFailed" style="background: #E74C3C;">💀 Fallito</button>
-                        <button id="btnDeleteObjective" style="background: #666;">🗑️ Elimina</button>
-                    </div>
-                </div>
+                        <!-- Barra traguardi intermedi con stelle -->
+                        <div id="milestoneProgressBar" style="display:none;"></div>
 
-            </div>
-
-            <!-- PAGE 2: TABELLA -->
-            <div id="tabellaPage" class="page">
-                <div class="card">
-                    <h3>📊 Storico Pesate</h3>
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Target</th>
-                                    <th>Peso MIN</th>
-                                    <th>Peso MAX</th>
-                                    <th>Punti</th>
-                                    <th>Cumul.</th>
-                                </tr>
-                            </thead>
-                            <tbody id="weightTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PAGE 3: GRAFICO -->
-            <div id="graficoPage" class="page">
-                <div class="card">
-                    <h3>📈 Andamento Peso</h3>
-                    <div id="chartNavWrapper">
-                        <button class="chart-scroll-btn" id="chartScrollLeft">&#8249;</button>
-                        <div id="chartScrollWrapper">
-                            <div id="chartContainer" style="position: relative; height: 400px;">
-                                <canvas id="weightChart" width="1000" height="400"></canvas>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Giornaliero</label>
+                                <input type="number" id="objectiveDailyBonus" value="10">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Giornaliero</label>
+                                <input type="number" id="objectiveDailyMalus" value="5">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Bonus Finale</label>
+                                <input type="number" id="objectiveFinalBonus" value="100">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">Punti Malus Finale</label>
+                                <input type="number" id="objectiveFinalMalus" value="50">
                             </div>
                         </div>
-                        <button class="chart-scroll-btn" id="chartScrollRight">&#8250;</button>
+
+                        <!-- Punti totali per traguardi intermedi di peso -->
+                        <div style="margin: 10px 0 16px;">
+                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 5px;">⭐ Punti Totali Traguardi Intermedi</label>
+                            <input type="number" id="objectiveMilestonePts" value="0" min="0"
+                                   style="width:100%; box-sizing:border-box;"
+                                   oninput="updateMilestoneProgressBar()">
+                            <div id="milestonePtsDistrib"></div>
+                        </div>
+
+                        <h4 style="margin: 20px 0 10px 0;">Milestone Progressive</h4>
+                        <div id="milestoneList" style="margin-bottom: 15px;"></div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <input type="date" id="newMilestoneDate" placeholder="Data">
+                            <input type="number" step="0.1" id="newMilestoneWeight" placeholder="Peso (kg)">
+                        </div>
+                        <button id="btnAddMilestone">➕ Aggiungi Milestone</button>
+
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button id="btnSaveObjective">💾 Salva</button>
+                            <button id="btnCloseSuccess" style="background: #00B894;">🏆 Successo</button>
+                            <button id="btnCloseFailed" style="background: #E74C3C;">💀 Fallito</button>
+                            <button id="btnDeleteObjective" style="background: #666;">🗑️ Elimina</button>
+                        </div>
                     </div>
-                    <div style="margin-top: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <button id="btnZoomIn" style="padding: 10px 20px;">🔍 Zoom In</button>
-                        <button id="btnResetZoom" style="padding: 10px 20px; background: #666;">⟲ Reset</button>
-                        <button id="btnZoomOut" style="padding: 10px 20px;">🔍 Zoom Out</button>
+                </div>
+
+                <!-- Tab 2: Tabella -->
+                <div id="objTabPanel2" class="stat-tab-panel">
+                    <div class="card">
+                        <h3>📊 Storico Pesate</h3>
+                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+                            <input type="text" id="tableSearchDate" placeholder="Cerca data (es. 2025-03)"
+                                   style="flex:1; min-width:140px; padding:8px 12px; border:1px solid #ddd; border-radius: 0; font-size:14px;"
+                                   oninput="tableSearch()">
+                            <select id="tableRowsPerPage" onchange="tableChangeRows()" style="padding:8px; border:1px solid #ddd; border-radius: 0; font-size:14px;">
+                                <option value="20">20 righe</option>
+                                <option value="50">50 righe</option>
+                                <option value="100">100 righe</option>
+                            </select>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Target</th>
+                                        <th>Peso MIN</th>
+                                        <th>Peso MAX</th>
+                                        <th>Punti</th>
+                                        <th>Cumul.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weightTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="tablePagination" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap;">
+                            <button id="tablePrevBtn" onclick="tableGoPage(tablePage-1)" style="padding:7px 14px; border:1px solid #ddd; border-radius: 0; background:white; cursor:pointer; font-size:14px;">◀</button>
+                            <span id="tablePageInfo" style="font-size:14px; color:#555;"></span>
+                            <button id="tableNextBtn" onclick="tableGoPage(tablePage+1)" style="padding:7px 14px; border:1px solid #ddd; border-radius: 0; background:white; cursor:pointer; font-size:14px;">▶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Grafico -->
+                <div id="objTabPanel3" class="stat-tab-panel">
+                    <div class="card">
+                        <h3>📈 Andamento Peso</h3>
+                        <div id="chartNavWrapper">
+                            <button class="chart-scroll-btn" id="chartScrollLeft">&#8249;</button>
+                            <div id="chartScrollWrapper">
+                                <div id="chartContainer" style="position: relative; height: 400px;">
+                                    <canvas id="weightChart" width="1000" height="400"></canvas>
+                                </div>
+                            </div>
+                            <button class="chart-scroll-btn" id="chartScrollRight">&#8250;</button>
+                        </div>
+                        <div style="margin-top: 15px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button id="btnZoomIn" style="padding: 10px 20px;">🔍 Zoom In</button>
+                            <button id="btnResetZoom" style="padding: 10px 20px; background: #666;">⟲ Reset</button>
+                            <button id="btnZoomOut" style="padding: 10px 20px;">🔍 Zoom Out</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PAGE 2: STATISTICHE -->
+            <div id="statistichePage" class="page">
+
+                <!-- Tab bar -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="statTabBtn1" class="btn btn-primary" onclick="switchStatTab(1)" style="flex: 1; min-width: 0;">Riepilogo</button>
+                        <button id="statTabBtn2" class="btn btn-secondary" onclick="switchStatTab(2)" style="flex: 1; min-width: 0;">Dati</button>
+                        <button id="statTabBtn3" class="btn btn-secondary" onclick="switchStatTab(3)" style="flex: 1; min-width: 0;">Grafico</button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: riepilogo (contenuto attuale) -->
+                <div id="statTabPanel1" class="stat-tab-panel active">
+                    <div id="statsContent">
+                        <div class="stats-loading">Seleziona "Statistiche" per caricare i dati.</div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: tabella dati con filtri -->
+                <div id="statTabPanel2" class="stat-tab-panel">
+                    <div class="card" style="margin-bottom:15px">
+                        <div class="stat-filter-bar">
+                            <div><label>Dal</label><input type="date" id="statFilterFrom"></div>
+                            <div><label>Al</label><input type="date" id="statFilterTo"></div>
+                            <button class="stat-filter-btn" style="background:#00B894;color:white" onclick="applyStatFilter()">🔍 Filtra</button>
+                            <button class="stat-filter-btn" style="background:#f0f0f0;color:#555" onclick="resetStatFilter()">✕ Reset</button>
+                            <button id="btnDownloadCSV" class="stat-filter-btn" style="background:#2563EB;color:white" onclick="downloadWeightCSV()">⬇ CSV</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="statDataContent"><div class="stats-loading">Carica le Statistiche per vedere i dati.</div></div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: grafico storico con filtri -->
+                <div id="statTabPanel3" class="stat-tab-panel">
+                    <div class="card" style="margin-bottom:15px">
+                        <div class="stat-filter-bar">
+                            <div><label>Dal</label><input type="date" id="statChartFrom"></div>
+                            <div><label>Al</label><input type="date" id="statChartTo"></div>
+                            <button class="stat-filter-btn" style="background:#00B894;color:white" onclick="applyStatChartFilter()">🔍 Filtra</button>
+                            <button class="stat-filter-btn" style="background:#f0f0f0;color:#555" onclick="resetStatChartFilter()">✕ Reset</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div id="statChartWrapper" style="height:420px;position:relative">
+                            <canvas id="statChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PAGE 3: GENERA DIETA -->
+            <div id="dietaPage" class="page">
+                <div class="card" style="margin-bottom:1.5rem;">
+                    <h3 style="margin-bottom:12px;">🥗 Genera Prompt Dieta</h3>
+                    <p style="color:#666;font-size:0.92rem;line-height:1.5;margin-bottom:16px;">
+                        Analizza le tue pesate storiche per individuare il ritmo massimo di perdita di peso
+                        e genera un prompt personalizzato da usare con un AI (ChatGPT, Claude, ecc.) per ottenere un piano alimentare su misura.
+                    </p>
+                    <div id="dietaAnalisiStatus" style="display:none; padding:10px; background:#f9fafb; border:1px solid #E5E7EB; margin-bottom:12px; font-size:0.88rem; color:#555;"></div>
+                    <button onclick="generaDieta()" style="width:100%; background:linear-gradient(135deg,#00B894,#00cec9); font-size:1rem; padding:14px;">🔍 Analizza e Genera Prompt</button>
+                </div>
+
+                <div id="dietaRisultato" style="display:none;">
+                    <!-- Riquadro analisi -->
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <h3 style="margin-bottom:12px; font-size:1rem; color:#333;">📊 Analisi Ritmo Perdita Peso</h3>
+                        <div id="dietaAnalisiContent"></div>
+                    </div>
+
+                    <!-- Prompt generato -->
+                    <div class="card">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                            <h3 style="font-size:1rem; color:#333; margin:0;">📋 Prompt da copiare</h3>
+                            <button onclick="copiaDietaPrompt()" style="background:#2563EB; color:white; padding:8px 16px; font-size:0.85rem; border:none; cursor:pointer;">📋 Copia</button>
+                        </div>
+                        <textarea id="dietaPromptText" readonly
+                            style="width:100%; min-height:380px; padding:12px; font-size:0.82rem; font-family:'Courier New',monospace; border:2px solid #E5E7EB; background:#f9fafb; resize:vertical; line-height:1.5; color:#333;"></textarea>
+                        <div id="dietaCopiatoMsg" style="display:none; text-align:center; color:#00B894; font-weight:bold; padding:8px 0; font-size:0.9rem;">✅ Copiato negli appunti!</div>
+                    </div>
+
+                    <!-- Card: Invia a Claude API -->
+                    <div class="card" style="margin-top:1.5rem;">
+                        <h3 style="margin-bottom:6px; font-size:1rem; color:#333;">🤖 Invia a Claude</h3>
+                        <p style="font-size:0.78rem; color:#888; margin-bottom:14px;">La richiesta passa attraverso il server Netlify — funziona anche dalla rete aziendale.</p>
+
+                        <!-- Bottone invio -->
+                        <button id="btnInviaAClaude" onclick="inviaAClaudeAPI()"
+                            style="width:100%; background:linear-gradient(135deg,#6C5CE7,#a29bfe); color:white; padding:14px; font-size:1rem; border:none; cursor:pointer; font-weight:bold; margin-bottom:14px;">
+                            🤖 Invia a Claude e ottieni piano dieta
+                        </button>
+
+                        <!-- Stato invio -->
+                        <div id="claudeInvioStatus" style="display:none; padding:10px; background:#f9fafb; border:1px solid #E5E7EB; font-size:0.85rem; color:#555; margin-bottom:12px;"></div>
+
+                        <!-- Risposta Claude -->
+                        <div id="claudeRispostaBox" style="display:none;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                                <span style="font-size:0.88rem; font-weight:bold; color:#6C5CE7;">Risposta di Claude</span>
+                                <button onclick="copiaRispostaClaude()" style="background:#6C5CE7; color:white; padding:6px 14px; font-size:0.8rem; border:none; cursor:pointer;">📋 Copia risposta</button>
+                            </div>
+                            <pre id="claudeRispostaText"
+                                style="white-space:pre-wrap; word-break:break-word; background:#f9fafb; border:2px solid #E5E7EB; padding:14px; font-size:0.82rem; font-family:'Courier New',monospace; line-height:1.6; color:#333; max-height:600px; overflow-y:auto; margin:0;"></pre>
+                            <div id="claudeRispostaCopiatoMsg" style="display:none; text-align:center; color:#6C5CE7; font-weight:bold; padding:8px 0; font-size:0.9rem;">✅ Risposta copiata!</div>
+                        </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
         </div> <!-- /content-wrapper -->
@@ -641,25 +1083,25 @@
 
     <!-- MODAL INSERIMENTO PESO MANUALE -->
     <div id="insertWeightModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:12px; padding:24px; max-width:320px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <div style="background:white; border-radius: 0; padding:24px; max-width:320px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <h3 id="insertWeightModalTitle" style="margin:0 0 8px 0; color:#333;">📝 Inserisci peso reale</h3>
             <p id="insertWeightDateLabel" style="margin:0 0 16px 0; color:#666; font-size:0.9rem;"></p>
             <label style="display:block; font-size:12px; color:#666; margin-bottom:6px;">Peso (kg)</label>
             <input type="number" id="insertWeightInput" step="0.1" min="30" max="300" placeholder="es. 75.3"
-                style="width:100%; padding:10px; border:2px solid #E5E7EB; border-radius:8px; font-size:1.2em; box-sizing:border-box; margin-bottom:16px;">
+                style="width:100%; padding:10px; border:2px solid #E5E7EB; border-radius: 0; font-size:1.2em; box-sizing:border-box; margin-bottom:16px;">
             <div style="display:flex; gap:8px;">
-                <button id="insertWeightSaveBtn" style="flex:1; background:#00B894; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">💾 Salva</button>
-                <button onclick="closeInsertWeightModal()" style="flex:1; background:#f0f0f0; color:#333; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">✕ Annulla</button>
+                <button id="insertWeightSaveBtn" style="flex:1; background:#00B894; color:white; border:none; padding:10px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:0.95em;">💾 Salva</button>
+                <button onclick="closeInsertWeightModal()" style="flex:1; background:#f0f0f0; color:#333; border:none; padding:10px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:0.95em;">✕ Annulla</button>
             </div>
         </div>
     </div>
 
     <!-- ROW DETAIL MODAL (mobile) -->
     <div id="rowDetailModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:2100; align-items:flex-end; justify-content:center;">
-        <div style="background:white; border-radius:16px 16px 0 0; padding:20px 20px 32px; width:100%; max-width:480px; box-shadow:0 -4px 32px rgba(0,0,0,0.25);">
-            <div style="width:40px; height:4px; background:#ddd; border-radius:2px; margin:0 auto 18px;"></div>
+        <div style="background:white; border-radius: 0; padding:20px 20px 32px; width:100%; max-width:480px; box-shadow:0 -4px 32px rgba(0,0,0,0.25);">
+            <div style="width:40px; height:4px; background:#ddd; border-radius: 0; margin:0 auto 18px;"></div>
             <div id="rowDetailContent"></div>
-            <button onclick="closeRowDetailModal()" style="width:100%; margin-top:14px; background:#f0f0f0; color:#333; border:none; padding:13px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1em;">✕ Chiudi</button>
+            <button onclick="closeRowDetailModal()" style="width:100%; margin-top:14px; background:#f0f0f0; color:#333; border:none; padding:13px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:1em;">✕ Chiudi</button>
         </div>
     </div>
 
@@ -668,12 +1110,27 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.3.0';
-        var BUILD_TIME  = '2026-02-25T11:30:00Z';
+        var APP_VERSION = 'v3.5.58';
+        var BUILD_TIME  = '2026-03-27T16:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            var dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        function localDateTimeStr(d) {
+            var dt = d || new Date();
+            return localDateStr(dt) + 'T' +
+                String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
+        }
 
         // Supabase client minimale senza CDN
         class SupabaseClient {
@@ -682,9 +1139,14 @@
                 this.key = key;
                 this.headers = {
                     'apikey': key,
-                    'Authorization': 'Bearer ' + key,
+                    'Authorization': 'Bearer ' + key, // sostituito con JWT utente in setAuthToken()
                     'Content-Type': 'application/json'
                 };
+            }
+
+            // Aggiorna l'header Authorization con il JWT dell'utente autenticato
+            setAuthToken(token) {
+                this.headers['Authorization'] = 'Bearer ' + token;
             }
 
             from(table) {
@@ -723,19 +1185,24 @@
                 };
             }
 
-            _query(table, columns, orderCol, orderOpts, limit) {
+            _query(table, columns, orderCol, orderOpts, limit, offset, filters) {
                 var url = this.url + '/rest/v1/' + table + '?select=' + (columns || '*');
                 if (orderCol) {
                     url += '&order=' + orderCol + '.' + (orderOpts && orderOpts.ascending ? 'asc' : 'desc');
                 }
-                if (limit) {
-                    url += '&limit=' + limit;
-                }
+                if (filters) url += '&' + filters;
+                if (limit)  url += '&limit='  + limit;
+                if (offset) url += '&offset=' + offset;
 
                 return fetch(url, {
                     method: 'GET',
                     headers: this.headers
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return res.json().then(function(data) {
                         return { data: data, error: null };
                     });
@@ -751,6 +1218,11 @@
                     headers: this.headers,
                     body: JSON.stringify(data)
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return res.json().then(function(data) {
                         return { data: data, error: null };
                     });
@@ -790,6 +1262,11 @@
                     headers: this.headers,
                     body: JSON.stringify(data)
                 }).then(function(res) {
+                    if (!res.ok) {
+                        return res.text().then(function(text) {
+                            return { data: null, error: { message: text, status: res.status } };
+                        });
+                    }
                     return { data: null, error: null };
                 }).catch(function(error) {
                     return { data: null, error: error };
@@ -797,10 +1274,19 @@
             }
         }
 
+        // ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+        const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+        const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+                     || (window.location.hostname.endsWith('.netlify.app')
+                        && window.location.hostname.startsWith('dev--'));
         // CONFIG
         var CONFIG = {
-            supabaseUrl: 'https://jajlmmdsjlvzgcxiiypk.supabase.co',
-            supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU',
+            supabaseUrl: _IS_DEV
+                ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
+                : 'https://jajlmmdsjlvzgcxiiypk.supabase.co',
+            supabaseKey: _IS_DEV
+                ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
+                : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU',
             googleClientId: '792683148606-9msthde03l2con90vt5la2u2d2srt89s.apps.googleusercontent.com'
         };
 
@@ -810,6 +1296,37 @@
         var userData = { targetWeight: null, score: 0, weights: [], milestones: [] };
         var isLoadingData = false; // Flag per evitare caricamenti simultanei
         var tempMilestones = []; // Milestone temporanee prima del salvataggio
+        var preSmileWeight = null; // Minimo globale pre-salvataggio (per rilevare soglie intere)
+        var milestoneQueue = [];   // Coda celebrazioni da mostrare in sequenza
+        var milestoneTimer = null; // Timer auto-chiusura overlay
+
+        // Recupera i record da ps_weight_tracking con paginazione automatica
+        // (Supabase PostgREST ha un limite di 1000 record per request)
+        // fromDate: stringa 'YYYY-MM-DD' — se fornita, recupera solo i record >= quella data
+        function fetchAllWeights(orderCol, ascending, fromDate, toDate) {
+            var PAGE = 1000;
+            var allRows = [];
+            function fetchPage(offset) {
+                var filterParts = [];
+                if (fromDate) filterParts.push('date=gte.' + fromDate);
+                if (toDate)   filterParts.push('date=lte.' + toDate);
+                return supabase._query(
+                    'ps_weight_tracking', '*',
+                    orderCol || 'date', { ascending: !!ascending },
+                    PAGE, offset,
+                    filterParts.length ? filterParts.join('&') : null
+                ).then(function(res) {
+                    if (res.error) return Promise.reject(res.error);
+                    var rows = res.data || [];
+                    allRows = allRows.concat(rows);
+                    if (rows.length === PAGE) {
+                        return fetchPage(offset + PAGE);
+                    }
+                    return { data: allRows, error: null };
+                });
+            }
+            return fetchPage(0);
+        }
 
         // LOG FUNCTION
         function log(msg) {
@@ -911,7 +1428,7 @@
         }
 
         function _rdStat(label, value, color) {
-            return '<div style="background:#f5f5f5; border-radius:10px; padding:12px 8px; text-align:center;">'
+            return '<div style="background:#f5f5f5; border-radius: 0; padding:12px 8px; text-align:center;">'
                 + '<div style="color:#999; font-size:0.72em; margin-bottom:4px;">' + label + '</div>'
                 + '<div style="font-weight:bold; font-size:1.05em; color:' + color + ';">' + value + '</div>'
                 + '</div>';
@@ -973,19 +1490,19 @@
             if (info.isInterpolated) {
                 var bIns = document.createElement('button');
                 bIns.textContent = '📝 Inserisci peso reale';
-                bIns.style.cssText = 'width:100%; margin-bottom:8px; background:#00B894; color:white; border:none; padding:13px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1em;';
+                bIns.style.cssText = 'width:100%; margin-bottom:8px; background:#00B894; color:white; border:none; padding:13px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:1em;';
                 bIns.addEventListener('click', function() { closeRowDetailModal(); showInsertWeightModal(info.date); });
                 btnArea.appendChild(bIns);
             } else if (info.hasManual && !info.hasSync) {
                 var bEdit = document.createElement('button');
                 bEdit.textContent = '✏️ Modifica pesata';
-                bEdit.style.cssText = 'width:100%; margin-bottom:8px; background:#2563EB; color:white; border:none; padding:13px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1em;';
+                bEdit.style.cssText = 'width:100%; margin-bottom:8px; background:#2563EB; color:white; border:none; padding:13px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:1em;';
                 bEdit.addEventListener('click', function() { closeRowDetailModal(); showInsertWeightModal(info.date, info.manualEntry.weight); });
                 btnArea.appendChild(bEdit);
 
                 var bDel = document.createElement('button');
                 bDel.textContent = '🗑️ Elimina pesata';
-                bDel.style.cssText = 'width:100%; margin-bottom:8px; background:#E74C3C; color:white; border:none; padding:13px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1em;';
+                bDel.style.cssText = 'width:100%; margin-bottom:8px; background:#E74C3C; color:white; border:none; padding:13px; border-radius: 0; font-weight:bold; cursor:pointer; font-size:1em;';
                 bDel.addEventListener('click', function() { closeRowDetailModal(); deleteManualWeight(info.manualEntry.timestamp, info.date); });
                 btnArea.appendChild(bDel);
             }
@@ -1015,6 +1532,13 @@
 
             log('Salvataggio peso manuale: ' + weight + ' kg per ' + date);
 
+            // Cattura minimo globale prima del salvataggio (per rilevare soglie intere)
+            preSmileWeight = (userData.weights && userData.weights.length > 0)
+                ? Math.min.apply(null, userData.weights
+                    .filter(function(r) { return r.weight != null && isFinite(r.weight); })
+                    .map(function(r) { return r.weight; }))
+                : weight + 1; // Se nessun dato, tratta come primo inserimento
+
             var btn = document.getElementById('insertWeightSaveBtn');
             btn.disabled = true;
             btn.textContent = '⏳ Salvataggio...';
@@ -1023,12 +1547,7 @@
                 var url = supabase.url + '/rest/v1/ps_weight_tracking?on_conflict=timestamp';
                 var response = await fetch(url, {
                     method: 'POST',
-                    headers: {
-                        'apikey': supabase.key,
-                        'Authorization': 'Bearer ' + supabase.key,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'resolution=merge-duplicates,return=minimal'
-                    },
+                    headers: Object.assign({}, supabase.headers, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
                     body: JSON.stringify([record])
                 });
                 if (!response.ok) {
@@ -1053,11 +1572,7 @@
                 var url = supabase.url + '/rest/v1/ps_weight_tracking?timestamp=eq.' + timestamp;
                 var response = await fetch(url, {
                     method: 'DELETE',
-                    headers: {
-                        'apikey': supabase.key,
-                        'Authorization': 'Bearer ' + supabase.key,
-                        'Prefer': 'return=minimal'
-                    }
+                    headers: Object.assign({}, supabase.headers, { 'Prefer': 'return=minimal' })
                 });
                 if (!response.ok) {
                     var text = await response.text();
@@ -1071,6 +1586,225 @@
             }
         }
 
+        // ── Milestone Progress Bar ──────────────────────────────────────
+        function getMilestonePtsKey(obj) {
+            return 'wq_mpts_' + (obj ? obj.id : 'new');
+        }
+
+        // Restituisce array di soglie intere [topT, topT-1, ..., botT] per l'obiettivo corrente
+        function getMilestoneThresholds(obj) {
+            if (!obj) return [];
+            var startW = parseFloat(obj.start_weight);
+            var endW   = parseFloat(obj.end_weight);
+            if (!isFinite(startW) || !isFinite(endW) || startW <= endW) return [];
+            var top = Math.floor(startW) - 1;  // es. startW=79 → top=78 (primo premio = prima volta < 78)
+            var bot = Math.ceil(endW);           // es. 71
+            var thresholds = [];
+            for (var t = top; t >= bot; t--) thresholds.push(t);
+            return thresholds; // es. [78, 77, 76, 75, 74, 73, 72, 71]
+        }
+
+        // Distribuzione punti crescente: milestone più lontana (indice alto) = più punti
+        // thresholds[0] = facile (es. 79), thresholds[last] = difficile (es. 71)
+        function getMilestonePtsDistribution(totalPts, n) {
+            if (n <= 0 || totalPts <= 0) return [];
+            // pts[i] proporzionale a (i+1): i=0 → 1x, i=n-1 → nx
+            var sumFactors = n * (n + 1) / 2;
+            var pts = [];
+            var assigned = 0;
+            for (var i = 0; i < n; i++) {
+                var p = (i < n - 1)
+                    ? Math.round(totalPts * (i + 1) / sumFactors)
+                    : (totalPts - assigned); // ultimo prende il residuo per evitare arrotondamenti
+                pts.push(p);
+                assigned += p;
+            }
+            return pts;
+        }
+
+        // Aggiorna la barra di progresso stelle nell'obiettivo corrente
+        function updateMilestoneProgressBar() {
+            var bar     = document.getElementById('milestoneProgressBar');
+            var distrib = document.getElementById('milestonePtsDistrib');
+            if (!bar) return;
+
+            var obj = userData.currentObjective;
+            var thresholds = getMilestoneThresholds(obj);
+
+            if (thresholds.length === 0) {
+                bar.style.display = 'none';
+                if (distrib) distrib.textContent = '';
+                return;
+            }
+
+            // Punti totali traguardi
+            var totalPts = parseInt((document.getElementById('objectiveMilestonePts') || {}).value) || 0;
+            if (obj) {
+                // Salva in localStorage per persistenza
+                localStorage.setItem(getMilestonePtsKey(obj), totalPts);
+            }
+            var ptsArr = getMilestonePtsDistribution(totalPts, thresholds.length);
+
+            // Pesi durante l'obiettivo (solo da start_date), ordinati per data asc
+            var objStart = obj ? obj.start_date : null;
+            var objWeights = [];
+            if (userData.weights && userData.weights.length > 0) {
+                objWeights = userData.weights.filter(function(r) {
+                    return r.weight != null && isFinite(r.weight) && (!objStart || r.date >= objStart);
+                }).slice().sort(function(a, b) { return a.date < b.date ? -1 : 1; });
+            }
+
+            var globalMin = objWeights.length
+                ? Math.min.apply(null, objWeights.map(function(r) { return r.weight; }))
+                : Infinity;
+
+            // Per ogni soglia, trova la prima data in cui weight < t
+            function firstDateBelow(t) {
+                for (var i = 0; i < objWeights.length; i++) {
+                    if (objWeights[i].weight < t) return objWeights[i].date;
+                }
+                return null;
+            }
+
+            // Costruisce le stelle
+            bar.innerHTML = '';
+            bar.style.display = 'flex';
+            thresholds.forEach(function(t, i) {
+                var reached = isFinite(globalMin) && globalMin < t;
+                var firstDate = reached ? firstDateBelow(t) : null;
+
+                var div = document.createElement('div');
+                div.className = 'ms-th' + (reached ? ' reached' : '');
+                div.title = reached
+                    ? '✓ Prima volta < ' + t + ' kg: ' + (firstDate || '?')
+                    : 'Prima volta < ' + t + ' kg — non ancora raggiunta';
+
+                // Timbro data raggiungimento
+                if (firstDate) {
+                    var stamp = document.createElement('div');
+                    stamp.className = 'ms-stamp';
+                    var p = firstDate.split('-');
+                    stamp.textContent = p[2] + '/' + p[1];
+                    div.appendChild(stamp);
+                }
+
+                var icon = document.createElement('div');
+                icon.className = 'ms-th-icon';
+                icon.textContent = reached ? '⭐' : '☆';
+
+                var label = document.createElement('div');
+                label.className = 'ms-th-label';
+                label.textContent = '< ' + t + ' kg';
+
+                var pts = document.createElement('div');
+                pts.className = 'ms-th-pts';
+                pts.textContent = ptsArr[i] ? '+' + ptsArr[i] : '';
+
+                div.appendChild(icon);
+                div.appendChild(label);
+                div.appendChild(pts);
+                bar.appendChild(div);
+            });
+
+            // Mostra distribuzione punti sotto il campo input
+            if (distrib && totalPts > 0) {
+                var reached = thresholds.filter(function(t, i) {
+                    return isFinite(globalMin) && globalMin < t;
+                }).length;
+                distrib.textContent = ptsArr.map(function(p, i) {
+                    return '< ' + thresholds[i] + ' kg: +' + p + ' pt';
+                }).join('  ·  ');
+            } else if (distrib) {
+                distrib.textContent = '';
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
+        // ── Milestone Weight Celebration ────────────────────────────────
+        function checkMilestoneCelebration(data) {
+            var obj = userData.currentObjective;
+            if (!obj || preSmileWeight === null) return;
+
+            var startW  = parseFloat(obj.start_weight);
+            var endW    = parseFloat(obj.end_weight);
+            if (!isFinite(startW) || !isFinite(endW)) return;
+
+            // Minimo peso attuale su tutti i dati caricati
+            var validWeights = data.filter(function(r) { return r.weight != null && isFinite(r.weight); });
+            if (!validWeights.length) return;
+            var newMin = Math.min.apply(null, validWeights.map(function(r) { return r.weight; }));
+
+            // Soglie intere rilevanti: stessa logica di getMilestoneThresholds
+            var topThreshold  = Math.floor(startW) - 1;  // es. startW=79 → 78
+            var botThreshold  = Math.ceil(endW);          // es. 71
+
+            // Raccogli tutte le soglie T tali che preSmileWeight >= T > newMin
+            var crossed = [];
+            for (var t = topThreshold; t >= botThreshold; t--) {
+                if (preSmileWeight >= t && newMin < t) {
+                    crossed.push(t);
+                }
+            }
+
+            if (crossed.length === 0) return;
+
+            // Mostra le celebrazioni in ordine (prima soglia più alta)
+            crossed.sort(function(a, b) { return b - a; });
+            milestoneQueue = crossed;
+            showNextMilestoneCelebration();
+        }
+
+        function showNextMilestoneCelebration() {
+            if (milestoneQueue.length === 0) return;
+            var threshold = milestoneQueue.shift();
+            showMilestoneCelebration(threshold);
+        }
+
+        function showMilestoneCelebration(threshold) {
+            var overlay = document.getElementById('milestoneOverlay');
+            var kgEl    = document.getElementById('milestoneKg');
+            var starsEl = document.getElementById('milestoneStars');
+            if (!overlay || !kgEl) return;
+
+            // Pulisci stelle precedenti e timer
+            if (milestoneTimer) { clearTimeout(milestoneTimer); milestoneTimer = null; }
+            starsEl.innerHTML = '';
+
+            kgEl.textContent = '< ' + threshold + ' kg ✓';
+
+            // Genera 18 stelle con posizioni e delay casuali
+            var starChars = ['★', '✦', '✧', '⭐', '✨', '💫'];
+            for (var i = 0; i < 18; i++) {
+                var s = document.createElement('span');
+                s.className = 'ms-star';
+                s.textContent = starChars[Math.floor(Math.random() * starChars.length)];
+                s.style.left = (Math.random() * 110 - 5) + '%';
+                s.style.top  = (Math.random() * 110 - 5) + '%';
+                s.style.animationDelay = (Math.random() * 1.2) + 's';
+                s.style.animationDuration = (1.2 + Math.random() * 1.0) + 's';
+                s.style.fontSize = (14 + Math.floor(Math.random() * 16)) + 'px';
+                s.style.color = ['#FFD700','#00B894','#74b9ff','#fd79a8','#fdcb6e'][Math.floor(Math.random() * 5)];
+                starsEl.appendChild(s);
+            }
+
+            overlay.style.display = 'flex';
+
+            // Auto-chiusura dopo 3.5s; se ci sono altre soglie, passa alla prossima
+            milestoneTimer = setTimeout(function() {
+                closeMilestoneOverlay();
+                if (milestoneQueue.length > 0) {
+                    setTimeout(showNextMilestoneCelebration, 400);
+                }
+            }, 3500);
+        }
+
+        function closeMilestoneOverlay() {
+            var overlay = document.getElementById('milestoneOverlay');
+            if (overlay) overlay.style.display = 'none';
+            if (milestoneTimer) { clearTimeout(milestoneTimer); milestoneTimer = null; }
+        }
+        // ────────────────────────────────────────────────────────────────
+
         function init() {
             log('=== INIT START ' + APP_VERSION + ' ===');
             
@@ -1080,7 +1814,6 @@
                 log('Supabase client creato');
 
                 // Event listeners
-                document.getElementById('btnLogin').onclick = loginGoogle;
                 document.getElementById('btnAddMilestone').onclick = addMilestone;
                 document.getElementById('btnSaveObjective').onclick = doSaveMilestones;
                 document.getElementById('btnZoomIn').onclick = zoomIn;
@@ -1091,6 +1824,7 @@
                 document.getElementById('btnDeleteObjective').onclick  = deleteObjective;
                 document.getElementById('objectiveSelect').onchange    = onObjectiveSelectChange;
                 
+
                 log('Event listeners OK');
 
                 // Check token
@@ -1121,20 +1855,13 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso'
+                            'statistiche': 'Statistiche',
+                            'dieta': 'Genera Dieta'
                         };
                         var elTitle = document.getElementById('topTitle'); if (elTitle) elTitle.textContent = titles[pageName] || 'Weight Quest';
 
-                        // Refresh data when switching to tabella or grafico
-                        if (pageName === 'tabella' && userData.weights && userData.weights.length > 0) {
-                            updateWeightTable(userData.weights);
-                        } else if (pageName === 'grafico') {
-                            if (weightChart) {
-                                scrollChartToToday();
-                            } else if (userData.weights && userData.weights.length > 0) {
-                                updateWeightChart(userData.weights);
-                            }
+                        if (pageName === 'statistiche') {
+                            refreshStatistiche();
                         }
                     });
                 });
@@ -1160,20 +1887,13 @@
                         // Update title
                         var titles = {
                             'obiettivi': 'Obiettivi',
-                            'tabella': 'Tabella Pesi',
-                            'grafico': 'Grafico Peso'
+                            'statistiche': 'Statistiche',
+                            'dieta': 'Genera Dieta'
                         };
                         var elTitle2 = document.getElementById('topTitle'); if (elTitle2) elTitle2.textContent = titles[pageName] || 'Weight Quest';
 
-                        // Refresh data
-                        if (pageName === 'tabella' && userData.weights && userData.weights.length > 0) {
-                            updateWeightTable(userData.weights);
-                        } else if (pageName === 'grafico') {
-                            if (weightChart) {
-                                scrollChartToToday();
-                            } else if (userData.weights && userData.weights.length > 0) {
-                                updateWeightChart(userData.weights);
-                            }
+                        if (pageName === 'statistiche') {
+                            refreshStatistiche();
                         }
                     });
                 });
@@ -1194,42 +1914,122 @@
             }
         }
 
+        var sbToken = null; // Supabase JWT — obbligatorio per accedere al DB
+
+        // BroadcastChannel attivo sempre (non dentro checkToken) per catturare il logout
+        // anche quando l'app è già autenticata
+        var _authChannel = new BroadcastChannel('appsphere_auth');
+        _authChannel.onmessage = function(e) {
+            if (!e.data) return;
+            if (e.data.type === 'LOGOUT') {
+                sbToken     = null;
+                googleToken = null;
+                localStorage.removeItem('sb_token');
+                localStorage.removeItem('googleToken');
+                supabase.setAuthToken(CONFIG.supabaseKey); // ripristina anon key
+                document.getElementById('mainSection').classList.add('hidden');
+                document.getElementById('authSection').classList.remove('hidden');
+                log('🔒 Sessione invalidata da AppSphere (logout)');
+            } else if (e.data.type === 'TOKEN_REFRESH' && e.data.sbToken) {
+                var newToken = e.data.sbToken;
+                localStorage.setItem('sb_token', newToken);
+                sbToken = newToken;
+                supabase.setAuthToken(newToken);
+                log('🔄 Token rinnovato silenziosamente (AppSphere)');
+            }
+        };
+
+        // Rileva errori JWT scaduto/non autenticato e mostra la schermata di login.
+        // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+        function handleAuthError(error) {
+            if (!error) return false;
+            var msg = (error.message || '').toLowerCase();
+            var isAuthError = error.status === 401
+                || msg.includes('jwt expired')
+                || msg.includes('invalid jwt')
+                || msg.includes('not authenticated')
+                || msg.includes('pgjwt');
+            if (!isAuthError) return false;
+            log('🔒 Token scaduto — sessione invalidata');
+            sbToken = null;
+            localStorage.removeItem('sb_token');
+            supabase.setAuthToken(CONFIG.supabaseKey);
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+            return true;
+        }
+
         function checkToken() {
             log('Controllo token...');
 
-            // From postMessage (quando lanciata da Apps)
+            // Riceve token dal launcher via postMessage (unico ingresso autorizzato)
             window.addEventListener('message', function(event) {
-                if (event.data && event.data.type === 'GOOGLE_TOKEN' && event.data.token) {
-                    log('Token ricevuto da Apps via postMessage');
+                if (!event.data) return;
+
+                // Google token per Google Fit sync
+                if (event.data.type === 'GOOGLE_TOKEN' && event.data.token) {
+                    log('GOOGLE_TOKEN ricevuto da AppSphere');
                     googleToken = event.data.token;
                     localStorage.setItem('googleToken', googleToken);
+                }
+
+                // Supabase JWT — necessario per DB; se già autenticato, ignora
+                if (event.data.type === 'SB_TOKEN' && event.data.token && !sbToken) {
+                    log('SB_TOKEN ricevuto da AppSphere');
+                    sbToken = event.data.token;
+                    localStorage.setItem('sb_token', sbToken);
+                    supabase.setAuthToken(sbToken);
                     if (document.getElementById('authSection') && !document.getElementById('authSection').classList.contains('hidden')) {
                         showMain();
                     }
                 }
             });
 
-            // From URL
-            var hash = window.location.hash;
-            if (hash.indexOf('access_token') !== -1) {
-                var parts = hash.split('access_token=')[1];
-                googleToken = parts.split('&')[0];
-                localStorage.setItem('googleToken', googleToken);
-                window.history.replaceState({}, document.title, window.location.pathname);
-                log('Token ottenuto da URL');
+            // Fallback: sessione attiva in localStorage
+            var savedSb = localStorage.getItem('sb_token');
+            if (savedSb) {
+                sbToken = savedSb;
+                supabase.setAuthToken(sbToken);
+                log('SB_TOKEN recuperato da localStorage');
+                // Google Fit token: prova entrambe le chiavi (launcher usa 'google_token',
+                // postMessage legacy salva come 'googleToken')
+                var savedGoogle = localStorage.getItem('google_token') || localStorage.getItem('googleToken');
+                if (savedGoogle) {
+                    googleToken = savedGoogle;
+                    showMain();
+                    return;
+                }
+                // google_token assente: tenta di recuperarlo tramite refresh del token Supabase
+                // (Supabase restituisce provider_token nella risposta refresh se disponibile)
+                log('google_token assente — tento recupero via refresh Supabase...');
+                var refreshTok = localStorage.getItem('refresh_token');
+                if (refreshTok) {
+                    fetch(CONFIG.supabaseUrl + '/auth/v1/token?grant_type=refresh_token', {
+                        method: 'POST',
+                        headers: { 'apikey': CONFIG.supabaseKey, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: refreshTok })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.provider_token) {
+                            googleToken = data.provider_token;
+                            localStorage.setItem('google_token', googleToken);
+                            log('google_token recuperato tramite refresh Supabase');
+                        } else {
+                            log('provider_token assente nella risposta refresh — utente deve riautenticarsi');
+                        }
+                    })
+                    .catch(function(e) {
+                        log('Errore recupero google_token via refresh: ' + e.message);
+                    });
+                } else {
+                    log('Nessun refresh_token disponibile — utente deve riautenticarsi');
+                }
                 showMain();
                 return;
             }
 
-            // From storage
-            var saved = localStorage.getItem('googleToken');
-            if (saved) {
-                googleToken = saved;
-                log('Token recuperato da storage');
-                showMain();
-            } else {
-                log('Nessun token trovato - attendo postMessage da Apps');
-            }
+            log('Nessun SB_TOKEN — attendo postMessage da AppSphere');
         }
 
         function showMain() {
@@ -1246,17 +2046,7 @@
                 });
         }
 
-        function loginGoogle() {
-            log('Avvio login Google...');
-            var redirect = window.location.origin + window.location.pathname;
-            var scope = 'https://www.googleapis.com/auth/fitness.body.read';
-            var url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-                'client_id=' + CONFIG.googleClientId +
-                '&redirect_uri=' + encodeURIComponent(redirect) +
-                '&response_type=token' +
-                '&scope=' + encodeURIComponent(scope);
-            window.location.href = url;
-        }
+        // Login diretto rimosso: l'accesso avviene solo tramite AppSphere (Google OAuth via Supabase)
 
         function showMilestoneModal() {
             document.getElementById('milestoneModal').classList.remove('hidden');
@@ -1324,11 +2114,17 @@
                 info.textContent = '📍 ' + m.date + ' → ' + m.weight + ' kg';
                 info.style.fontWeight = 'bold';
                 
+                var isClosed = userData.currentObjective &&
+                    (userData.currentObjective.status === 'success' || userData.currentObjective.status === 'failed');
+
                 var btnRemove = document.createElement('button');
                 btnRemove.textContent = '🗑️';
                 btnRemove.style.padding = '5px 10px';
                 btnRemove.style.fontSize = '14px';
-                btnRemove.style.background = '#E74C3C';
+                btnRemove.style.background = isClosed ? '#aaa' : '#E74C3C';
+                btnRemove.style.opacity = isClosed ? '0.5' : '1';
+                btnRemove.style.cursor = isClosed ? 'not-allowed' : 'pointer';
+                btnRemove.disabled = !!isClosed;
                 btnRemove.onclick = function() {
                     tempMilestones.splice(index, 1);
                     updateMilestoneList();
@@ -1389,12 +2185,7 @@
 
             fetch(url, {
                 method: method,
-                headers: {
-                    'apikey': supabase.key,
-                    'Authorization': 'Bearer ' + supabase.key,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
+                headers: Object.assign({}, supabase.headers, { 'Prefer': 'return=representation' }),
                 body: JSON.stringify(payload)
             })
             .then(function(r) {
@@ -1424,12 +2215,12 @@
         var allObjectives = []; // Cache di tutti gli obiettivi
 
         function loadAllObjectives() {
-            if (!googleToken) return Promise.reject('no token');
+            if (!sbToken) return Promise.reject('no token');
 
             log('Caricamento tutti gli obiettivi...');
 
             return fetch(supabase.url + '/rest/v1/ps_objectives?order=created_at.desc', {
-                headers: { 'apikey': supabase.key, 'Authorization': 'Bearer ' + supabase.key }
+                headers: supabase.headers
             })
             .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(function(data) {
@@ -1470,6 +2261,7 @@
                 loadObjectiveById(allObjectives[0].id);
             } else {
                 loadNewObjectiveForm();
+                loadData(); // Nessun obiettivo: carica comunque i dati peso
             }
         }
 
@@ -1491,10 +2283,12 @@
             document.getElementById('objectiveDailyMalus').value = '5';
             document.getElementById('objectiveFinalBonus').value = '100';
             document.getElementById('objectiveFinalMalus').value = '50';
+            document.getElementById('objectiveMilestonePts').value = '0';
             updateMilestoneList();
             updateObjectiveStatusBar(null);
             updateUILockState('active'); // Abilita tutto per nuovo obiettivo
             updateMultiplierDisplay();
+            updateMilestoneProgressBar();
         }
 
         function loadObjectiveById(id) {
@@ -1514,10 +2308,15 @@
             document.getElementById('objectiveFinalBonus').value = obj.final_bonus || 100;
             document.getElementById('objectiveFinalMalus').value = obj.final_malus || 50;
 
+            // Carica punti traguardi da localStorage
+            var savedPts = localStorage.getItem(getMilestonePtsKey(obj));
+            document.getElementById('objectiveMilestonePts').value = savedPts !== null ? savedPts : 0;
+
             updateMilestoneList();
             updateObjectiveStatusBar(obj.status);
             updateUILockState(obj.status);
             updateMultiplierDisplay();
+            updateMilestoneProgressBar();
 
             log('Obiettivo caricato: "' + obj.objective_name + '" stato=' + obj.status);
             
@@ -1547,29 +2346,32 @@
 
         function updateUILockState(status) {
             var isClosed = (status === 'success' || status === 'failed');
-            
+
             // Disabilita campi di input
             document.getElementById('objectiveName').disabled = isClosed;
             document.getElementById('objectiveDailyBonus').disabled = isClosed;
             document.getElementById('objectiveDailyMalus').disabled = isClosed;
             document.getElementById('objectiveFinalBonus').disabled = isClosed;
             document.getElementById('objectiveFinalMalus').disabled = isClosed;
-            
+            document.getElementById('objectiveMilestonePts').disabled = isClosed;
+            document.getElementById('newMilestoneDate').disabled = isClosed;
+            document.getElementById('newMilestoneWeight').disabled = isClosed;
+
             // Disabilita bottoni di modifica
             document.getElementById('btnAddMilestone').disabled = isClosed;
             document.getElementById('btnSaveObjective').disabled = isClosed;
             document.getElementById('btnCloseSuccess').disabled = isClosed;
             document.getElementById('btnCloseFailed').disabled = isClosed;
-            
+
             // Cambia stile visivo
             var opacity = isClosed ? '0.5' : '1';
             var cursor = isClosed ? 'not-allowed' : 'pointer';
-            
+
             document.getElementById('btnAddMilestone').style.opacity = opacity;
             document.getElementById('btnSaveObjective').style.opacity = opacity;
             document.getElementById('btnCloseSuccess').style.opacity = opacity;
             document.getElementById('btnCloseFailed').style.opacity = opacity;
-            
+
             document.getElementById('btnAddMilestone').style.cursor = cursor;
             document.getElementById('btnSaveObjective').style.cursor = cursor;
             document.getElementById('btnCloseSuccess').style.cursor = cursor;
@@ -1606,7 +2408,7 @@
                 if (today < endDate) {
                     alert('Non puoi chiudere con SUCCESSO prima della data di fine obiettivo!\n\n' +
                           'Data fine: ' + userData.currentObjective.end_date + '\n' +
-                          'Oggi: ' + today.toISOString().split('T')[0] + '\n\n' +
+                          'Oggi: ' + localDateStr(today) + '\n\n' +
                           'Puoi solo chiudere come FALLITO prima della fine.');
                     return;
                 }
@@ -1637,12 +2439,7 @@
 
             fetch(supabase.url + '/rest/v1/ps_objectives?id=eq.' + userData.currentObjective.id, {
                 method: 'PATCH',
-                headers: {
-                    'apikey': supabase.key,
-                    'Authorization': 'Bearer ' + supabase.key,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=minimal'
-                },
+                headers: Object.assign({}, supabase.headers, { 'Prefer': 'return=minimal' }),
                 body: JSON.stringify({ status: newStatus, total_score: finalScore })
             })
             .then(function(r) {
@@ -1672,7 +2469,7 @@
 
             fetch(supabase.url + '/rest/v1/ps_objectives?id=eq.' + userData.currentObjective.id, {
                 method: 'DELETE',
-                headers: { 'apikey': supabase.key, 'Authorization': 'Bearer ' + supabase.key }
+                headers: supabase.headers
             })
             .then(function(r) {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1780,9 +2577,43 @@
             return null;
         }
 
+        function openAuthPopup(onSuccess) {
+            var popup = window.open('app-launcher.html', 'appsphere_auth', 'width=480,height=640,left=200,top=100');
+            if (!popup) {
+                window.location.href = 'app-launcher.html';
+                return;
+            }
+            log('Popup AppSphere aperto — in attesa del token Google...');
+            var storageHandler = function(e) {
+                if (e.key === 'google_token' && e.newValue) {
+                    googleToken = e.newValue;
+                    localStorage.setItem('googleToken', googleToken);
+                    window.removeEventListener('storage', storageHandler);
+                    clearInterval(checkClosed);
+                    try { popup.close(); } catch(ex) {}
+                    log('google_token ricevuto dal popup AppSphere');
+                    if (onSuccess) onSuccess();
+                }
+            };
+            window.addEventListener('storage', storageHandler);
+            var checkClosed = setInterval(function() {
+                try {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        window.removeEventListener('storage', storageHandler);
+                        var tok = localStorage.getItem('google_token') || localStorage.getItem('googleToken');
+                        if (tok && !googleToken) {
+                            googleToken = tok;
+                            if (onSuccess) onSuccess();
+                        }
+                    }
+                } catch(ex) { clearInterval(checkClosed); }
+            }, 500);
+        }
+
         function syncFit() {
             if (!googleToken) {
-                alert('Devi prima effettuare il login!');
+                openAuthPopup(function() { syncFit(); });
                 return;
             }
             if (!userData.milestones || userData.milestones.length < 2) {
@@ -1804,27 +2635,25 @@
                 }
             })
             .then(function(response) {
-                if (!response.ok) throw new Error('Errore nel recupero datasources');
+                if (!response.ok) throw new Error('Errore nel recupero datasources (HTTP ' + response.status + ' — token scaduto?)');
                 return response.json();
             })
             .then(function(sources) {
-                log('DataSources ricevute: ' + sources.dataSource.length);
-                
+                log('DataSources ricevute: ' + (sources.dataSource ? sources.dataSource.length : 0));
+
                 // Trova tutte le fonti di peso
                 var weightSources = sources.dataSource.filter(function(ds) {
                     return ds.dataType && ds.dataType.name === 'com.google.weight';
                 });
-                
+
                 log('Fonti di peso trovate: ' + weightSources.length);
-                
+
                 // Recupera dati da TUTTE le fonti
                 var promises = weightSources.map(function(source) {
                     var datasetId = startTime + '-' + endTime;
-                    var url = 'https://www.googleapis.com/fitness/v1/users/me/dataSources/' + 
+                    var url = 'https://www.googleapis.com/fitness/v1/users/me/dataSources/' +
                               source.dataStreamId + '/datasets/' + datasetId;
-                    
-                    log('Recupero dati da: ' + source.dataStreamName);
-                    
+
                     return fetch(url, {
                         method: 'GET',
                         headers: {
@@ -1832,10 +2661,13 @@
                         }
                     }).then(function(r) {
                         if (!r.ok) {
-                            log('Errore da fonte: ' + source.dataStreamName);
+                            log('Errore da fonte: ' + source.dataStreamName + ' (HTTP ' + r.status + ')');
                             return { point: [] };
                         }
-                        return r.json();
+                        return r.json().then(function(d) {
+                            log('Fonte ' + source.dataStreamName + ': ' + (d.point ? d.point.length : 0) + ' punti');
+                            return d;
+                        });
                     });
                 });
                 
@@ -1856,14 +2688,28 @@
                 
                 return processWeights({ point: allPoints });
             })
-            .then(function() {
+            .then(function(syncInfo) {
                 log('Sync completata!');
-                alert('Sincronizzazione completata!');
+                if (syncInfo && syncInfo.count > 0) {
+                    alert('Sincronizzazione completata!\n' +
+                          syncInfo.count + ' pesate salvate\n' +
+                          'Dal: ' + syncInfo.from + '\nAl: ' + syncInfo.to);
+                } else {
+                    alert('Sincronizzazione completata!');
+                }
                 loadData();
             })
             .catch(function(error) {
                 log('ERROR SYNC: ' + error.message);
-                alert('Errore sincronizzazione: ' + error.message);
+                // Token Google scaduto (401): cancella il token stale e avvisa l'utente
+                if (error.message && error.message.indexOf('401') !== -1) {
+                    googleToken = null;
+                    localStorage.removeItem('googleToken');
+                    localStorage.removeItem('google_token');
+                    openAuthPopup(function() { syncFit(); });
+                } else {
+                    alert('Errore sincronizzazione: ' + error.message);
+                }
             });
         }
 
@@ -1874,23 +2720,30 @@
                 return Promise.resolve();
             }
 
+            log('processWeights: ' + data.point.length + ' punti da elaborare');
+
             var weights = [];
-            
+            var skipped = 0;
+
             // Estrai tutte le singole pesate
             data.point.forEach(function(point) {
-                if (point.value && point.value[0].fpVal) {
+                if (point.value && point.value[0] && point.value[0].fpVal) {
                     var weight = point.value[0].fpVal;
-                    var timestamp = parseInt(point.startTimeNanos) / 1000000; // Converti in millisecondi
+                    var timestamp = parseInt(point.startTimeNanos) / 1000000;
                     var date = new Date(timestamp);
-                    
+
                     weights.push({
-                        date: date.toISOString().split('T')[0],
+                        date: localDateStr(date),
                         time: date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
                         timestamp: Math.floor(timestamp),
                         weight: parseFloat(weight.toFixed(2))
                     });
+                } else {
+                    skipped++;
                 }
             });
+
+            if (skipped > 0) log('Punti saltati (no fpVal): ' + skipped);
 
             // Rimuovi duplicati basati su timestamp
             var uniqueWeights = [];
@@ -1908,15 +2761,13 @@
             });
 
             log('Trovate ' + uniqueWeights.length + ' pesate uniche');
+            if (uniqueWeights.length > 0) {
+                log('Range sync: ' + uniqueWeights[0].date + ' → ' + uniqueWeights[uniqueWeights.length - 1].date);
+            }
 
             // Inserisci usando singole chiamate HTTP dirette
             var url = supabase.url + '/rest/v1/ps_weight_tracking';
-            var headers = {
-                'apikey': supabase.key,
-                'Authorization': 'Bearer ' + supabase.key,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal,resolution=merge-duplicates'
-            };
+            var headers = Object.assign({}, supabase.headers, { 'Prefer': 'return=minimal,resolution=merge-duplicates' });
 
             // Prepara tutti i record
             var records = uniqueWeights.map(function(entry) {
@@ -1940,11 +2791,7 @@
                 log('Sync: rimozione pesata manuale per ' + w.date + ' (ts=' + w.timestamp + ')');
                 return fetch(supabase.url + '/rest/v1/ps_weight_tracking?timestamp=eq.' + w.timestamp, {
                     method: 'DELETE',
-                    headers: {
-                        'apikey': supabase.key,
-                        'Authorization': 'Bearer ' + supabase.key,
-                        'Prefer': 'return=minimal'
-                    }
+                    headers: Object.assign({}, supabase.headers, { 'Prefer': 'return=minimal' })
                 });
             });
 
@@ -1958,17 +2805,44 @@
                 body: JSON.stringify(records)
             })
             .then(function(response) {
+                log('Risposta upsert Supabase: HTTP ' + response.status);
                 if (!response.ok) {
                     return response.text().then(function(text) {
                         log('Errore inserimento: ' + text);
-                        throw new Error('Errore salvataggio: ' + response.status);
+                        throw new Error('Errore salvataggio: ' + response.status + ' — ' + text);
                     });
                 }
                 log('Tutte le pesate salvate! Status: ' + response.status);
-                // Non parsare JSON se la risposta è vuota (return=minimal)
-                return null;
+                // Restituisce info sul range salvato per il messaggio post-sync
+                return {
+                    count: uniqueWeights.length,
+                    from: uniqueWeights.length > 0 ? uniqueWeights[0].date : null,
+                    to: uniqueWeights.length > 0 ? uniqueWeights[uniqueWeights.length - 1].date : null
+                };
             });
             }); // chiude Promise.all(deletePromises)
+        }
+
+        // Calcola la data minima da cui caricare i dati peso:
+        // - obiettivo attivo → 1 mese prima della prima data milestone
+        // - nessun obiettivo attivo → 2 mesi prima di oggi
+        function calcFetchRange() {
+            var obj = userData.currentObjective;
+            if (!obj) {
+                // Nessun obiettivo: ultimi 3 mesi
+                var d = new Date();
+                d.setMonth(d.getMonth() - 3);
+                return { from: localDateStr(d), to: null };
+            }
+            var isClosed = obj.status === 'success' || obj.status === 'failed';
+            if (isClosed) {
+                // Chiuso: esattamente tra start_date e end_date
+                return { from: obj.start_date, to: obj.end_date || null };
+            }
+            // Aperto: start_date - 90 giorni (allineato alla finestra sync Fit) → end_date
+            var startD = new Date(obj.start_date + 'T12:00:00');
+            startD.setDate(startD.getDate() - 90);
+            return { from: localDateStr(startD), to: obj.end_date || null };
         }
 
         function loadData() {
@@ -1979,12 +2853,10 @@
             
             isLoadingData = true;
             log('Caricamento dati da Supabase...');
-            
-            supabase
-                .from('ps_weight_tracking')
-                .select('*')
-                .order('date', { ascending: false })
-                .limit(100)
+
+            var fetchRange = calcFetchRange();
+            log('Range caricamento: ' + fetchRange.from + ' → ' + (fetchRange.to || 'oggi'));
+            fetchAllWeights('date', false, fetchRange.from, fetchRange.to)
                 .then(function(response) {
                     if (response.error) {
                         log('ERROR: ' + response.error.message);
@@ -1995,16 +2867,25 @@
                     if (response.data && response.data.length > 0) {
                         // Salva dati in userData per uso successivo
                         userData.weights = response.data;
-                        
-                        var latest = response.data[0];
-                        document.getElementById('weightValue').textContent = latest.weight.toFixed(1);
-                        
+
+                        // Controlla se sono state superate soglie intere di peso (celebrazione)
+                        if (preSmileWeight !== null) {
+                            checkMilestoneCelebration(response.data);
+                            preSmileWeight = null;
+                        }
+
+                        var todayMin = getTodayMinWeight(response.data);
+                        document.getElementById('weightValue').textContent = (todayMin != null && isFinite(todayMin)) ? todayMin.toFixed(1) : '--';
+
                         // Calcola punteggi totali e medi
                         calculateTotalScores(response.data);
                         
                         // Aggiorna visualizzazione moltiplicatori
                         updateMultiplierDisplay();
-                        
+
+                        // Aggiorna barra progresso traguardi stelle
+                        updateMilestoneProgressBar();
+
                         // Aggiorna tabella e grafico
                         updateWeightTable(response.data);
                         updateWeightChart(response.data);
@@ -2019,31 +2900,31 @@
 
         function reloadWeightData() {
             if (!userData.currentObjective || !userData.milestones || userData.milestones.length < 2) {
-                log('Nessun obiettivo valido per ricaricare i dati');
+                log('Nessun obiettivo valido per ricaricare i dati — carico comunque');
+                loadData();
                 return;
             }
             
             log('Aggiornamento target_weight per nuovo obiettivo...');
-            
-            // Prima rileggi tutti i record esistenti per aggiornarli
-            supabase
-                .from('ps_weight_tracking')
-                .select('*')
-                .order('date', { ascending: false })
-                .limit(100)
+
+            var fetchRange = calcFetchRange();
+            log('Range caricamento: ' + fetchRange.from + ' → ' + (fetchRange.to || 'oggi'));
+
+            // Prima rileggi i record nel range visualizzato per aggiornarli
+            fetchAllWeights('date', false, fetchRange.from, fetchRange.to)
                 .then(function(response) {
                     if (response.error) {
                         log('ERROR reload select: ' + response.error.message);
                         return;
                     }
-                    
+
                     if (!response.data || response.data.length === 0) {
                         log('Nessun dato peso da aggiornare');
                         return;
                     }
-                    
+
                     log('Aggiornamento target su ' + response.data.length + ' record...');
-                    
+
                     // Aggiorna i target_weight in batch - IMPORTANTE: serve TUTTA la riga per l'upsert
                     var updates = response.data.map(function(row) {
                         var newTarget = getInterpolatedTarget(row.date);
@@ -2055,18 +2936,13 @@
                             target_weight: newTarget
                         };
                     });
-                    
+
                     // Esegue UPDATE per ogni record (Supabase upsert con timestamp come chiave)
                     var url = supabase.url + '/rest/v1/ps_weight_tracking?on_conflict=timestamp';
-                    
+
                     return fetch(url, {
                         method: 'POST',
-                        headers: {
-                            'apikey': supabase.key,
-                            'Authorization': 'Bearer ' + supabase.key,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'resolution=merge-duplicates,return=minimal'
-                        },
+                        headers: Object.assign({}, supabase.headers, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
                         body: JSON.stringify(updates)
                     });
                 })
@@ -2076,13 +2952,9 @@
                     } else {
                         log('Target aggiornati nel DB');
                     }
-                    
+
                     // Ora ricarica i dati aggiornati
-                    return supabase
-                        .from('ps_weight_tracking')
-                        .select('*')
-                        .order('date', { ascending: false })
-                        .limit(100);
+                    return fetchAllWeights('date', false, fetchRange.from, fetchRange.to);
                 })
                 .then(function(response) {
                     if (response.error) {
@@ -2091,15 +2963,18 @@
                     }
                     
                     if (response.data && response.data.length > 0) {
-                        var latest = response.data[0];
-                        document.getElementById('weightValue').textContent = latest.weight.toFixed(1);
-                        
+                        userData.weights = response.data; // aggiorna anche qui per barra stelle
+
+                        var todayMin = getTodayMinWeight(response.data);
+                        document.getElementById('weightValue').textContent = (todayMin != null && isFinite(todayMin)) ? todayMin.toFixed(1) : '--';
+
                         // Ricalcola punteggi con il nuovo obiettivo
                         calculateTotalScores(response.data);
                         updateMultiplierDisplay();
+                        updateMilestoneProgressBar(); // aggiorna stelle traguardi
                         updateWeightTable(response.data);
                         updateWeightChart(response.data);
-                        
+
                         log('✓ Dati ricaricati, target e punteggi aggiornati');
                     }
                 })
@@ -2108,23 +2983,41 @@
                 });
         }
 
+        // Restituisce il peso minimo registrato oggi; se nessuna pesata oggi, restituisce l'ultima pesata
+        function getTodayMinWeight(data) {
+            if (!data || data.length === 0) return null;
+            var today = localDateStr(); // YYYY-MM-DD ora locale
+            var todayRecords = data.filter(function(r) { return r.date === today && r.weight != null; });
+            if (todayRecords.length > 0) {
+                var minVal = Math.min.apply(null, todayRecords.map(function(r) { return r.weight; }));
+                return isFinite(minVal) ? minVal : null;
+            }
+            // fallback: prima pesata disponibile con weight valido
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].weight != null && isFinite(data[i].weight)) return data[i].weight;
+            }
+            return null;
+        }
+
         function calculateTotalScores(data) {
             var scoreEl = document.getElementById('scoreValue');
             var kgEl    = document.getElementById('avgScoreValue');
 
-            // Nessun obiettivo attivo → trattino su entrambi i badge
+            // Nessun obiettivo attivo → trattino su tutti i badge
             var obj = userData.currentObjective;
             var isActive = obj && obj.status !== 'success' && obj.status !== 'failed';
             if (!isActive || !userData.milestones || userData.milestones.length < 2) {
                 if (scoreEl) scoreEl.textContent = '-';
                 if (kgEl)    kgEl.textContent    = '-';
+                var _ptEl = document.getElementById('pesoTargetValue');
+                if (_ptEl) _ptEl.textContent = '-';
+                var _dtEl = document.getElementById('dailyTargetValue');
+                if (_dtEl) _dtEl.textContent = '-';
                 return;
             }
 
             var dailyBonus  = obj.daily_bonus  || 10;
             var dailyMalus  = obj.daily_malus  || 5;
-            var finalBonus  = obj.final_bonus  || 100;
-            var finalMalus  = obj.final_malus  || 50;
             var startDateStr = obj.start_date;
             var endDateStr   = obj.end_date;
 
@@ -2139,14 +3032,14 @@
                 });
             }
 
-            var todayStr  = new Date().toISOString().split('T')[0];
+            var todayStr  = localDateStr();
             var endLoop   = endDateStr < todayStr ? endDateStr : todayStr;
 
             // Individua giorni interpolati (nel range obiettivo, senza pesata reale)
             var interpolatedDays = {};
             var cursor = new Date(startDateStr);
             while (true) {
-                var dateStr = cursor.toISOString().split('T')[0];
+                var dateStr = localDateStr(cursor);
                 if (dateStr > endLoop) break;
                 if (!dayGroups[dateStr] && getInterpolatedTarget(dateStr) !== null) {
                     interpolatedDays[dateStr] = true;
@@ -2177,31 +3070,41 @@
 
                 if (target === null || effectiveWeight === null) return;
 
-                var isLastDay = (date === endDateStr);
-                var daily;
-                if (effectiveWeight <= target) {
-                    daily = dailyBonus;
-                    if (isLastDay) daily += finalBonus;
-                } else {
-                    daily = -dailyMalus;
-                    if (isLastDay) daily -= finalMalus;
-                }
+                var daily = effectiveWeight <= target ? dailyBonus : -dailyMalus;
                 totalScore += daily;
             });
 
             if (scoreEl) scoreEl.textContent = totalScore;
 
+            // --- Badge "Peso target": target interpolato di oggi ---
+            var pesoTargetEl   = document.getElementById('pesoTargetValue');
+            var currentWeight  = getTodayMinWeight(data);
+            var targetToday    = getInterpolatedTarget(todayStr);
+            if (targetToday != null && isFinite(targetToday)) {
+                if (pesoTargetEl) pesoTargetEl.textContent = targetToday.toFixed(1);
+            } else {
+                if (pesoTargetEl) pesoTargetEl.textContent = '-';
+            }
+
+            // --- Badge "Target giornaliero": peso attuale − target interpolato di oggi ---
+            var dailyTargetEl  = document.getElementById('dailyTargetValue');
+            if (currentWeight != null && targetToday != null && isFinite(currentWeight) && isFinite(targetToday)) {
+                var kgDailyDiff = currentWeight - targetToday;
+                if (dailyTargetEl) dailyTargetEl.textContent = kgDailyDiff.toFixed(1);
+            } else {
+                if (dailyTargetEl) dailyTargetEl.textContent = '-';
+            }
+
             // --- Badge "Kg alla fine": peso attuale − target alla data fine obiettivo ---
-            var currentWeight  = data && data.length > 0 ? data[0].weight : null;
             var targetAtEnd    = getInterpolatedTarget(endDateStr);
-            if (currentWeight !== null && targetAtEnd !== null) {
+            if (currentWeight != null && targetAtEnd != null && isFinite(currentWeight) && isFinite(targetAtEnd)) {
                 var kgMancanti = currentWeight - targetAtEnd;
                 if (kgEl) kgEl.textContent = kgMancanti.toFixed(1);
             } else {
                 if (kgEl) kgEl.textContent = '-';
             }
 
-            log('Badge — Punti oggi: ' + totalScore + ' | Kg alla fine: ' + (kgEl ? kgEl.textContent : '-'));
+            log('Badge — Punti oggi: ' + totalScore + ' | Target giornaliero: ' + (dailyTargetEl ? dailyTargetEl.textContent : '-') + ' | Kg alla fine: ' + (kgEl ? kgEl.textContent : '-'));
         }
 
         var weightChart = null;
@@ -2231,7 +3134,7 @@
             // Itera solo sui giorni dentro l'intervallo delle milestone
             var currentDate = new Date(milestoneStartDate);
             while (currentDate <= milestoneEndDate) {
-                var dateStr = currentDate.toISOString().split('T')[0];
+                var dateStr = localDateStr(currentDate);
                 
                 // Se non ci sono pesate per questo giorno, interpola
                 if (!filledGroups[dateStr]) {
@@ -2377,7 +3280,13 @@
             var maxWeightData = [];
             var minWeightEstimatedData = [];
             var maxWeightEstimatedData = [];
-            
+
+            // Per obiettivi chiusi: pre-filtra i dati al range [start-1mese, end+1mese]
+            var _objRange = objectiveClosedRange(userData.currentObjective);
+            if (_objRange && data) {
+                data = data.filter(function(r) { return r.date >= _objRange.from && r.date <= _objRange.to; });
+            }
+
             // Aggrega i dati per giorno
             var dayGroups = {};
             if (data && data.length > 0) {
@@ -2395,8 +3304,8 @@
             if (allDataDates.length === 0 && milestoneStartDate && milestoneEndDate) {
                 // Se non ci sono dati ma ci sono milestone, usa l'intervallo milestone
                 allDataDates = [
-                    milestoneStartDate.toISOString().split('T')[0],
-                    milestoneEndDate.toISOString().split('T')[0]
+                    localDateStr(milestoneStartDate),
+                    localDateStr(milestoneEndDate)
                 ];
             }
             
@@ -2411,16 +3320,27 @@
                 if (milestoneEndDate && lastDataDate < milestoneEndDate) {
                     lastDataDate = milestoneEndDate;
                 }
-                
+
+                // Per obiettivi chiusi: espandi a [start-1mese, end+1mese]
+                if (_objRange) {
+                    var _objFrom = new Date(_objRange.from + 'T12:00:00');
+                    if (firstDataDate > _objFrom) firstDataDate = _objFrom;
+                }
+
                 // Genera TUTTE le date dal primo giorno fino a OGGI (o all'ultimo dato se più recente)
                 var todayForRange = new Date();
                 todayForRange.setHours(0, 0, 0, 0);
+                // Per obiettivi chiusi: non andare oltre end+1mese
+                if (_objRange) {
+                    var _objTo = new Date(_objRange.to + 'T12:00:00');
+                    if (_objTo < todayForRange) todayForRange = _objTo;
+                }
                 var rangeEnd = lastDataDate > todayForRange ? lastDataDate : todayForRange;
                 var currentDate = new Date(firstDataDate);
                 var allCalendarDates = [];
 
                 while (currentDate <= rangeEnd) {
-                    allCalendarDates.push(currentDate.toISOString().split('T')[0]);
+                    allCalendarDates.push(localDateStr(currentDate));
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
                 
@@ -2589,7 +3509,7 @@
                                         
                                         ctx.save();
                                         
-                                        if (minValue === maxValue) {
+                                        if (Math.abs(minValue - maxValue) < 0.1) {
                                             // Stesso peso: pallino metà rosso/metà verde
                                             var y = point.y;
                                             
@@ -2659,7 +3579,7 @@
 
                                     ctx.save();
 
-                                    if (minEstimated !== null && maxEstimated !== null && minEstimated === maxEstimated) {
+                                    if (minEstimated !== null && maxEstimated !== null && Math.abs(minEstimated - maxEstimated) < 0.1) {
                                         // MIN = MAX: diamante (rombo) rosso+verde
                                         var yCenter = chart.scales.y.getPixelForValue(minEstimated);
 
@@ -2781,9 +3701,9 @@
                             borderWidth: 2,
                             borderDash: [3, 3],
                             showLine: false,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointStyle: 'triangle',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            pointHitRadius: 8,
                             tension: 0.3,
                             spanGaps: false,
                             order: 2
@@ -2796,9 +3716,9 @@
                             borderWidth: 2,
                             borderDash: [3, 3],
                             showLine: false,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointStyle: 'triangle',
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            pointHitRadius: 8,
                             tension: 0.3,
                             spanGaps: false,
                             order: 2
@@ -3069,17 +3989,22 @@
             }(0));
         }
 
-        function updateWeightTable(data) {
-            var tbody = document.getElementById('weightTableBody');
-            tbody.innerHTML = '';
+        // --- STATO PAGINAZIONE TABELLA ---
+        var tablePage         = 1;
+        var tableRowsPerPage  = 20;
+        var tableAllDays      = [];   // tutte le date ordinate desc (reali + interpolate)
+        var tableDayGroups    = {};
+        var tableInterpDays   = {};
+        var tableCumulMap     = {};
+        var tableDailyScoreMap= {};
+        var tableObj          = null;
 
+        function updateWeightTable(data) {
             var obj          = userData.currentObjective || null;
             var startDateStr = obj ? obj.start_date : null;
             var endDateStr   = obj ? obj.end_date   : null;
             var dailyBonus   = obj ? (obj.daily_bonus || 10)  : 10;
             var dailyMalus   = obj ? (obj.daily_malus || 5)   : 5;
-            var finalBonus   = obj ? (obj.final_bonus || 100) : 100;
-            var finalMalus   = obj ? (obj.final_malus || 50)  : 50;
 
             // Aggrega i dati per giorno (MIN e MAX)
             var dayGroups = {};
@@ -3094,11 +4019,11 @@
             // Giorni dell'obiettivo senza pesate reali → mostra peso interpolato
             var interpolatedDays = {};
             if (obj && startDateStr && endDateStr) {
-                var todayStr = new Date().toISOString().split('T')[0];
+                var todayStr = localDateStr();
                 var d = new Date(startDateStr);
                 var endLoop = endDateStr < todayStr ? endDateStr : todayStr;
                 while (true) {
-                    var dateStr = d.toISOString().split('T')[0];
+                    var dateStr = localDateStr(d);
                     if (dateStr > endLoop) break;
                     if (!dayGroups[dateStr] && getInterpolatedTarget(dateStr) !== null) {
                         interpolatedDays[dateStr] = true;
@@ -3109,22 +4034,12 @@
 
             var allDays = Object.keys(dayGroups).concat(Object.keys(interpolatedDays));
 
-            if (allDays.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="padding: 20px; text-align: center; color: #999;">Nessun dato disponibile</td></tr>';
-                return;
-            }
-
-            // Ordina per data decrescente (per display)
-            var sortedDays = allDays.sort(function(a, b) { return b.localeCompare(a); });
-
             // Costruisce mappa data→punteggio cumulativo in ordine cronologico
-            // (pesate reali + giorni interpolati, entrambi contribuiscono al punteggio)
             var cumulativeMap = {};
             var dailyScoreMap = {};
             var cumulative = 0;
 
             if (obj) {
-                // Unisce giorni reali e interpolati, ordina cronologicamente
                 var allDaysAsc = Object.keys(dayGroups)
                     .concat(Object.keys(interpolatedDays))
                     .filter(function(d) { return d >= startDateStr && d <= endDateStr; })
@@ -3147,27 +4062,137 @@
 
                     if (target === null || effectiveWeight === null) return;
 
-                    var isLastDay = (date === endDateStr);
-                    var daily;
-
-                    if (effectiveWeight <= target) {
-                        daily = dailyBonus;
-                        if (isLastDay) daily += finalBonus;
-                    } else {
-                        daily = -dailyMalus;
-                        if (isLastDay) daily -= finalMalus;
-                    }
-
+                    var daily = effectiveWeight <= target ? dailyBonus : -dailyMalus;
                     cumulative += daily;
                     dailyScoreMap[date] = daily;
                     cumulativeMap[date] = cumulative;
                 });
             }
 
-            // Render righe in ordine decrescente
-            sortedDays.forEach(function(date) {
-                var isInterpolated = !!interpolatedDays[date];
-                var dayData  = isInterpolated ? null : dayGroups[date];
+            // Salva stato globale per paginazione
+            tableDayGroups     = dayGroups;
+            tableInterpDays    = interpolatedDays;
+            tableCumulMap      = cumulativeMap;
+            tableDailyScoreMap = dailyScoreMap;
+            tableObj           = obj;
+            tableAllDays       = allDays.sort(function(a, b) { return b.localeCompare(a); });
+
+            tablePage = 1;
+            tableRenderPage();
+        }
+
+        function tableSearch() {
+            tablePage = 1;
+            tableRenderPage();
+        }
+
+        function tableChangeRows() {
+            tableRowsPerPage = parseInt(document.getElementById('tableRowsPerPage').value, 10);
+            tablePage = 1;
+            tableRenderPage();
+        }
+
+        function tableGoPage(n) {
+            var filtered = tableFilteredDays();
+            var total = Math.ceil(filtered.length / tableRowsPerPage) || 1;
+            tablePage = Math.max(1, Math.min(n, total));
+            tableRenderPage();
+        }
+
+        // Restituisce {from, to} per obiettivi chiusi (±1 mese), null per obiettivi aperti/assenti
+        function objectiveClosedRange(obj) {
+            if (!obj || !obj.start_date || !obj.end_date) return null;
+            if (obj.status === 'active') return null;
+            function shiftMonth(dateStr, months) {
+                var d = new Date(dateStr + 'T12:00:00');
+                d.setMonth(d.getMonth() + months);
+                return localDateStr(d);
+            }
+            return { from: shiftMonth(obj.start_date, -1), to: shiftMonth(obj.end_date, 1) };
+        }
+
+        function tableFilteredDays() {
+            var q = (document.getElementById('tableSearchDate') ? document.getElementById('tableSearchDate').value : '').trim().toLowerCase();
+            var days = tableAllDays;
+            var range = objectiveClosedRange(tableObj);
+            if (range) {
+                days = days.filter(function(d) { return d >= range.from && d <= range.to; });
+            }
+            if (!q) return days;
+            return days.filter(function(d) { return d.toLowerCase().indexOf(q) !== -1; });
+        }
+
+        function downloadWeightCSV() {
+            var btn = document.getElementById('btnDownloadCSV');
+            btn.disabled = true;
+            btn.textContent = '⏳ Download...';
+            fetchAllWeights('date', true, null, null).then(function(res) {
+                if (res.error) {
+                    alert('Errore nel recupero dati: ' + (res.error.message || res.error));
+                    btn.disabled = false;
+                    btn.textContent = '⬇ CSV';
+                    return;
+                }
+                var rows = res.data || [];
+                var csvLines = ['timestamp,date,time,weight,target_weight'];
+                rows.forEach(function(r) {
+                    var ts   = r.timestamp   !== undefined && r.timestamp   !== null ? r.timestamp   : '';
+                    var date = r.date        !== undefined && r.date        !== null ? r.date        : '';
+                    var time = r.time        !== undefined && r.time        !== null ? r.time        : '';
+                    var w    = r.weight      !== undefined && r.weight      !== null ? r.weight      : '';
+                    var tw   = r.target_weight !== undefined && r.target_weight !== null ? r.target_weight : '';
+                    csvLines.push([ts, date, time, w, tw].join(','));
+                });
+                var blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                var url  = URL.createObjectURL(blob);
+                var a    = document.createElement('a');
+                var fileName = 'pesate_' + new Date().toISOString().slice(0, 10) + '.csv';
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                log('CSV scaricato: ' + rows.length + ' record → ' + fileName);
+            }).catch(function(err) {
+                alert('Errore: ' + (err.message || err));
+                log('Errore download CSV: ' + (err.message || err));
+            }).finally(function() {
+                btn.disabled = false;
+                btn.textContent = '⬇ CSV';
+            });
+        }
+
+        function tableRenderPage() {
+            var tbody = document.getElementById('weightTableBody');
+            tbody.innerHTML = '';
+
+            var filtered = tableFilteredDays();
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">Nessun dato disponibile</td></tr>';
+                document.getElementById('tablePageInfo').textContent = '';
+                document.getElementById('tablePrevBtn').disabled = true;
+                document.getElementById('tableNextBtn').disabled = true;
+                return;
+            }
+
+            var totalPages = Math.ceil(filtered.length / tableRowsPerPage);
+            if (tablePage > totalPages) tablePage = totalPages;
+
+            var start    = (tablePage - 1) * tableRowsPerPage;
+            var end      = Math.min(start + tableRowsPerPage, filtered.length);
+            var pageDays = filtered.slice(start, end);
+
+            var obj          = tableObj;
+            var startDateStr = obj ? obj.start_date : null;
+            var endDateStr   = obj ? obj.end_date   : null;
+
+            var fragment = document.createDocumentFragment();
+
+            pageDays.forEach(function(date) {
+                var isInterpolated = !!tableInterpDays[date];
+                var dayData  = isInterpolated ? null : tableDayGroups[date];
 
                 var minEntry = dayData ? dayData.reduce(function(a, b) { return a.weight < b.weight ? a : b; }) : null;
                 var maxEntry = dayData ? dayData.reduce(function(a, b) { return a.weight > b.weight ? a : b; }) : null;
@@ -3180,17 +4205,15 @@
                     ? (minEntry.target_weight || getInterpolatedTarget(date))
                     : getInterpolatedTarget(date);
 
-                // Per i giorni senza pesate: peso stimato dall'andamento della serie reale
                 var interpWeight = isInterpolated
-                    ? getInterpolatedWeightFromSeries(date, dayGroups)
+                    ? getInterpolatedWeightFromSeries(date, tableDayGroups)
                     : null;
 
                 var inRange   = obj && (date >= startDateStr && date <= endDateStr);
                 var isLastDay = obj && (date === endDateStr);
 
-                // Punteggio giornaliero (pesate reali e giorni interpolati)
-                var dailyScore = (inRange && dailyScoreMap[date] !== undefined)
-                    ? dailyScoreMap[date]
+                var dailyScore = (inRange && tableDailyScoreMap[date] !== undefined)
+                    ? tableDailyScoreMap[date]
                     : null;
 
                 var tr = document.createElement('tr');
@@ -3198,7 +4221,6 @@
                 tr.style.borderBottom = '1px solid #eee';
 
                 if (isInterpolated) {
-                    // Riga senza pesata reale: sfondo leggermente diverso, corsivo
                     tr.style.background = '#f9f9f9';
                     tr.style.fontStyle = 'italic';
                     tr.style.opacity = '0.7';
@@ -3206,12 +4228,11 @@
                     tr.style.opacity = '0.4';
                 }
 
-                // -- DATA --
+                // DATA
                 var tdDate = document.createElement('td');
                 tdDate.style.padding = '10px';
                 tdDate.style.fontWeight = 'bold';
 
-                // Precalcola tipo pesata
                 var hasSync = false, hasManual = false, manualEntry = null;
                 if (!isInterpolated) {
                     hasSync     = dayData.some(function(e) { return e.time !== 'Manuale'; });
@@ -3219,7 +4240,6 @@
                     manualEntry = hasManual ? dayData.find(function(e) { return e.time === 'Manuale'; }) : null;
                 }
 
-                // -- ICONA TIPO (prima della data, sempre visibile) --
                 var iconInline = document.createElement('span');
                 if (isInterpolated) {
                     var badge = document.createElement('span');
@@ -3241,18 +4261,15 @@
                     iconInline.appendChild(manBadge);
                 }
                 tdDate.appendChild(iconInline);
-
-                // -- TESTO DATA --
                 tdDate.appendChild(document.createTextNode(date));
 
-                // -- BOTTONI AZIONE (dopo la data, solo desktop) --
                 var btnInline = document.createElement('span');
                 btnInline.className = 'row-detail-inline';
                 if (isInterpolated) {
                     var insertBtn = document.createElement('button');
                     insertBtn.textContent = '📝';
                     insertBtn.title = 'Inserisci peso reale per questo giorno';
-                    insertBtn.style.cssText = 'margin-left:6px; background:none; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
+                    insertBtn.style.cssText = 'margin-left:6px; background:none; border:1px solid #ddd; border-radius: 0; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
                     insertBtn.addEventListener('click', (function(d) {
                         return function(e) { e.stopPropagation(); showInsertWeightModal(d); };
                     })(date));
@@ -3261,7 +4278,7 @@
                     var editBtn = document.createElement('button');
                     editBtn.textContent = '✏️';
                     editBtn.title = 'Modifica questa pesata';
-                    editBtn.style.cssText = 'margin-left:4px; background:none; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
+                    editBtn.style.cssText = 'margin-left:4px; background:none; border:1px solid #ddd; border-radius: 0; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
                     editBtn.addEventListener('click', (function(d, w) {
                         return function(e) { e.stopPropagation(); showInsertWeightModal(d, w); };
                     })(date, manualEntry.weight));
@@ -3270,7 +4287,7 @@
                     var delBtn = document.createElement('button');
                     delBtn.textContent = '🗑️';
                     delBtn.title = 'Elimina e ripristina interpolazione';
-                    delBtn.style.cssText = 'margin-left:2px; background:none; border:1px solid #ffcccc; border-radius:4px; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
+                    delBtn.style.cssText = 'margin-left:2px; background:none; border:1px solid #ffcccc; border-radius: 0; cursor:pointer; font-size:0.75em; padding:1px 4px; opacity:0.6; vertical-align:middle;';
                     delBtn.addEventListener('click', (function(ts, d) {
                         return function(e) { e.stopPropagation(); deleteManualWeight(ts, d); };
                     })(manualEntry.timestamp, date));
@@ -3278,7 +4295,6 @@
                 }
                 tdDate.appendChild(btnInline);
 
-                // -- CLICK SU RIGA → popup mobile --
                 tr.addEventListener('click', (function(rowInfo) {
                     return function() {
                         if (window.innerWidth <= 768) showWeightRowDetail(rowInfo);
@@ -3296,12 +4312,12 @@
                     maxTime: maxTime,
                     interpWeight: interpWeight,
                     dailyScore: dailyScore,
-                    cumulativeScore: cumulativeMap[date]
+                    cumulativeScore: tableCumulMap[date]
                 }));
 
                 tr.appendChild(tdDate);
 
-                // -- TARGET --
+                // TARGET
                 var tdTarget = document.createElement('td');
                 tdTarget.style.padding = '10px';
                 tdTarget.style.textAlign = 'center';
@@ -3310,41 +4326,39 @@
                 tdTarget.textContent = target ? target.toFixed(1) + ' kg' : '--';
                 tr.appendChild(tdTarget);
 
-                // -- PESO MIN --
+                // PESO MIN
                 var tdMin = document.createElement('td');
                 tdMin.style.padding = '10px';
                 tdMin.style.textAlign = 'center';
                 tdMin.style.fontWeight = 'bold';
                 tdMin.style.fontSize = '1.1em';
                 if (isInterpolated) {
-                    // Peso stimato dall'andamento della serie (non dal target milestone)
-                    tdMin.textContent = interpWeight !== null ? interpWeight.toFixed(1) + ' kg' : '—';
+                    tdMin.textContent = interpWeight != null ? interpWeight.toFixed(1) + ' kg' : '—';
                     tdMin.style.color = '#aaa';
                     tdMin.style.fontStyle = 'italic';
                 } else {
                     tdMin.style.color = (target && minWeight <= target) ? '#00B894' : '#E74C3C';
-                    tdMin.textContent = minWeight.toFixed(1) + ' kg';
+                    tdMin.textContent = minWeight != null ? minWeight.toFixed(1) + ' kg' : '--';
                 }
                 tr.appendChild(tdMin);
 
-                // -- PESO MAX --
+                // PESO MAX
                 var tdMax = document.createElement('td');
                 tdMax.style.padding = '10px';
                 tdMax.style.textAlign = 'center';
                 tdMax.style.fontWeight = 'bold';
                 tdMax.style.fontSize = '1.1em';
                 if (isInterpolated) {
-                    // Peso stimato dall'andamento della serie (non dal target milestone)
-                    tdMax.textContent = interpWeight !== null ? interpWeight.toFixed(1) + ' kg' : '—';
+                    tdMax.textContent = interpWeight != null ? interpWeight.toFixed(1) + ' kg' : '—';
                     tdMax.style.color = '#aaa';
                     tdMax.style.fontStyle = 'italic';
                 } else {
                     tdMax.style.color = (target && maxWeight <= target) ? '#00B894' : '#E74C3C';
-                    tdMax.textContent = maxWeight.toFixed(1) + ' kg';
+                    tdMax.textContent = maxWeight != null ? maxWeight.toFixed(1) + ' kg' : '--';
                 }
                 tr.appendChild(tdMax);
 
-                // -- PUNTI GIORNALIERI --
+                // PUNTI
                 var tdScore = document.createElement('td');
                 tdScore.style.padding = '10px';
                 tdScore.style.textAlign = 'center';
@@ -3362,14 +4376,14 @@
                 }
                 tr.appendChild(tdScore);
 
-                // -- PUNTEGGIO CUMULATIVO --
+                // CUMULATIVO
                 var tdCumulative = document.createElement('td');
                 tdCumulative.style.padding = '10px';
                 tdCumulative.style.textAlign = 'center';
                 tdCumulative.style.fontWeight = 'bold';
                 tdCumulative.style.fontSize = '1.1em';
-                if (cumulativeMap[date] !== undefined) {
-                    var cum = cumulativeMap[date];
+                if (tableCumulMap[date] !== undefined) {
+                    var cum = tableCumulMap[date];
                     tdCumulative.textContent = (cum > 0 ? '+' : '') + cum;
                     tdCumulative.style.color = cum >= 0 ? '#00B894' : '#E74C3C';
                 } else {
@@ -3378,8 +4392,16 @@
                 }
                 tr.appendChild(tdCumulative);
 
-                tbody.appendChild(tr);
+                fragment.appendChild(tr);
             });
+
+            tbody.appendChild(fragment);
+
+            // Aggiorna controlli paginazione
+            var info = 'Pagina ' + tablePage + ' / ' + totalPages + '  (' + filtered.length + ' giorni)';
+            document.getElementById('tablePageInfo').textContent = info;
+            document.getElementById('tablePrevBtn').disabled = (tablePage <= 1);
+            document.getElementById('tableNextBtn').disabled = (tablePage >= totalPages);
         }
 
         var initialChartWidth = null; // Salva larghezza iniziale
@@ -3520,6 +4542,976 @@
             }
         })();
 
+        // ============================================================
+        // STATISTICHE
+        // ============================================================
+
+        // Individua periodi di dieta: calo >= 5 kg dal picco al vero minimo locale
+        // (minimo prima della ripresa stabile del peso).
+        // Algoritmo: peak-to-valley sulla media mobile a 7 giorni;
+        // la fine del periodo è il minimo reale prima che il peso risalga
+        // di almeno REBOUND_KG per almeno REBOUND_PTS punti consecutivi.
+        function detectDietPeriods(data) {
+            if (!data || data.length < 10) return [];
+
+            // Medie giornaliere
+            var dayMap = {};
+            data.forEach(function(r) {
+                if (!dayMap[r.date]) dayMap[r.date] = { sum: 0, n: 0 };
+                dayMap[r.date].sum += r.weight;
+                dayMap[r.date].n++;
+            });
+            var days = Object.keys(dayMap).sort().map(function(d) {
+                return { date: d, w: dayMap[d].sum / dayMap[d].n };
+            });
+            if (days.length < 5) return [];
+
+            // Media mobile a 7 giorni per ridurre il rumore
+            var smoothed = days.map(function(_, i) {
+                var lo = Math.max(0, i - 3), hi = Math.min(days.length - 1, i + 3);
+                var sum = 0, cnt = 0;
+                for (var k = lo; k <= hi; k++) { sum += days[k].w; cnt++; }
+                return { date: days[i].date, w: sum / cnt };
+            });
+
+            var MIN_DROP    = 5.0;  // calo minimo (kg) per qualificare come dieta
+            var REBOUND_KG  = 1.0;  // risalita minima oltre il minimo per considerare ripresa
+            var REBOUND_PTS = 7;    // punti consecutivi sopra soglia per confermare la ripresa
+            var periods     = [];
+
+            for (var i = 0; i < smoothed.length; i++) {
+                // Picco locale: massimo nella finestra di ±7 punti
+                var isPeak = true;
+                for (var k = Math.max(0, i - 7); k <= Math.min(smoothed.length - 1, i + 7); k++) {
+                    if (k !== i && smoothed[k].w > smoothed[i].w) { isPeak = false; break; }
+                }
+                if (!isPeak) continue;
+
+                // Scansiona in avanti per trovare il VERO minimo locale,
+                // cioè il punto più basso prima che il peso risalga in modo stabile.
+                var minW = smoothed[i].w;
+                var minJ = i;
+                var risingCnt = 0;
+
+                for (var j = i + 1; j < smoothed.length; j++) {
+                    if (smoothed[j].w <= minW) {
+                        // Nuovo minimo — aggiorna e azzera il contatore ripresa
+                        minW = smoothed[j].w;
+                        minJ = j;
+                        risingCnt = 0;
+                    } else if (smoothed[j].w > minW + REBOUND_KG) {
+                        // Peso sopra la soglia di ripresa
+                        risingCnt++;
+                        if (risingCnt >= REBOUND_PTS) break; // ripresa confermata
+                    } else {
+                        // Oscillazione minore: non conta come ripresa
+                        risingCnt = 0;
+                    }
+                }
+
+                var drop = smoothed[i].w - smoothed[minJ].w;
+                if (drop < MIN_DROP || minJ === i) continue;
+
+                // Evita duplicati ravvicinati (< 30 giorni di distanza dal picco)
+                var tooClose = periods.some(function(p) {
+                    return Math.abs(new Date(p.startDate) - new Date(smoothed[i].date)) < 30 * 86400000;
+                });
+                if (tooClose) continue;
+
+                var durDays = Math.round((new Date(days[minJ].date) - new Date(days[i].date)) / 86400000);
+                periods.push({
+                    startDate:   days[i].date,
+                    endDate:     days[minJ].date,
+                    startWeight: Math.round(smoothed[i].w * 10) / 10,
+                    endWeight:   Math.round(smoothed[minJ].w * 10) / 10,
+                    drop:        Math.round(drop * 10) / 10,
+                    days:        durDays
+                });
+            }
+
+            // Ordina dal più recente al più vecchio
+            return periods.sort(function(a, b) { return new Date(b.startDate) - new Date(a.startDate); });
+        }
+
+        function updateStatistiche(data) {
+            var el = document.getElementById('statsContent');
+            if (!el) return;
+            _statAllData = data || []; // cache per i tab Dati e Grafico
+            if (!data || data.length === 0) {
+                el.innerHTML = '<div class="stats-loading">Nessun dato disponibile.</div>';
+                return;
+            }
+
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+
+            // ── Riepilogo ───────────────────────────────────────────
+            var n = data.length;
+            var daySet = {};
+            data.forEach(function(r) { daySet[r.date] = true; });
+            var uniqueDays = Object.keys(daySet).sort();
+            var nDays     = uniqueDays.length;
+            var firstDate = uniqueDays[0];
+            var lastDate  = uniqueDays[uniqueDays.length - 1];
+            var spanDays  = Math.round((new Date(lastDate) - new Date(firstDate)) / 86400000);
+            var nYears    = new Date(lastDate).getFullYear() - new Date(firstDate).getFullYear() + 1;
+
+            var weights = data.map(function(r) { return r.weight; });
+            var wMin = Math.min.apply(null, weights);
+            var wMax = Math.max.apply(null, weights);
+            var wAvg = weights.reduce(function(s, w) { return s + w; }, 0) / weights.length;
+
+            // Variazione totale: confronto prima vs ultima settimana con dati
+            var firstWeekCut = new Date(firstDate); firstWeekCut.setDate(firstWeekCut.getDate() + 7);
+            var lastWeekCut  = new Date(lastDate);  lastWeekCut.setDate(lastWeekCut.getDate() - 7);
+            var firstW = data.filter(function(r) { return new Date(r.date) <= firstWeekCut; });
+            var lastW  = data.filter(function(r) { return new Date(r.date) >= lastWeekCut;  });
+            var firstAvg = firstW.length ? firstW.reduce(function(s, r) { return s + r.weight; }, 0) / firstW.length : null;
+            var lastAvg  = lastW.length  ? lastW.reduce(function(s, r)  { return s + r.weight; }, 0) / lastW.length  : null;
+            var totalDelta  = (firstAvg !== null && lastAvg !== null) ? (lastAvg - firstAvg) : null;
+            var deltaStr    = totalDelta !== null
+                ? '<span style="color:' + (totalDelta < 0 ? '#00B894' : '#E74C3C') + '">' +
+                  (totalDelta < 0 ? '▼' : '▲') + ' ' + Math.abs(totalDelta).toFixed(1) + ' kg</span>'
+                : '-';
+
+            // ── Anno per Anno ────────────────────────────────────────
+            var yearMap = {};
+            data.forEach(function(r) {
+                var y = r.date.substring(0, 4);
+                if (!yearMap[y]) yearMap[y] = [];
+                yearMap[y].push(r.weight);
+            });
+            var years = Object.keys(yearMap).sort();
+            var yearRows = years.map(function(y, idx) {
+                var ws  = yearMap[y];
+                var avg = ws.reduce(function(s, w) { return s + w; }, 0) / ws.length;
+                var mn  = Math.min.apply(null, ws);
+                var mx  = Math.max.apply(null, ws);
+                var prevWs  = idx > 0 ? yearMap[years[idx - 1]] : null;
+                var prevAvg = prevWs ? prevWs.reduce(function(s, w) { return s + w; }, 0) / prevWs.length : null;
+                return { year: y, n: ws.length, avg: avg, min: mn, max: mx, delta: prevAvg !== null ? avg - prevAvg : null };
+            });
+
+            // ── Periodi di dieta ─────────────────────────────────────
+            var periods = detectDietPeriods(data);
+
+            // ── Render ───────────────────────────────────────────────
+            var html = '';
+
+            // Riepilogo overview
+            html += '<div class="stat-summary-grid">';
+            html += '<div class="stat-summary-card" style="border:3px solid#667eea"><div class="ssv" style="color:#667eea">' + n + '</div><div class="ssl">Misurazioni</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#764ba2"><div class="ssv" style="color:#764ba2">' + nDays + '</div><div class="ssl">Giorni pesati</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#FF3366"><div class="ssv" style="color:#FF3366">' + nYears + '</div><div class="ssl">Anni di dati</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#00B894"><div class="ssv" style="color:#00B894">' + wMin.toFixed(1) + '</div><div class="ssl">Min storico</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#E74C3C"><div class="ssv" style="color:#E74C3C">' + wMax.toFixed(1) + '</div><div class="ssl">Max storico</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#F39C12"><div class="ssv" style="color:#F39C12">' + wAvg.toFixed(1) + '</div><div class="ssl">Media globale</div></div>';
+            html += '<div class="stat-summary-card" style="border:3px solid#636e72"><div class="ssv">' + deltaStr + '</div><div class="ssl">Variazione totale</div></div>';
+            html += '</div>';
+
+            // Periodo coperto
+            html += '<div class="card" style="margin-bottom:15px">';
+            html += '<p style="color:#555;font-size:14px;margin:0">📅 Dal <strong>' + fmt(firstDate) + '</strong> al <strong>' + fmt(lastDate) + '</strong> — ' + spanDays + ' giorni · ' + nYears + ' ann' + (nYears === 1 ? 'o' : 'i') + '</p>';
+            html += '</div>';
+
+            // Tabella anno per anno
+            html += '<div class="card">';
+            html += '<h3>📅 Anno per Anno</h3>';
+            html += '<div style="overflow-x:auto"><table>';
+            html += '<thead><tr><th>Anno</th><th>Pesate</th><th>Media</th><th>Min</th><th>Max</th><th>Δ anno prec.</th></tr></thead><tbody>';
+            yearRows.forEach(function(r) {
+                var dStr = '-';
+                if (r.delta !== null) {
+                    var sign  = r.delta < 0 ? '▼' : '▲';
+                    var color = r.delta < 0 ? '#00B894' : '#E74C3C';
+                    dStr = '<span style="color:' + color + ';font-weight:bold">' + sign + ' ' + Math.abs(r.delta).toFixed(1) + ' kg</span>';
+                }
+                html += '<tr>';
+                html += '<td><strong>' + r.year + '</strong></td>';
+                html += '<td>' + r.n + '</td>';
+                html += '<td>' + r.avg.toFixed(1) + ' kg</td>';
+                html += '<td style="color:#00B894">' + r.min.toFixed(1) + '</td>';
+                html += '<td style="color:#E74C3C">' + r.max.toFixed(1) + '</td>';
+                html += '<td>' + dStr + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table></div></div>';
+
+            // Periodi di dieta
+            html += '<div class="card">';
+            html += '<h3>🏃 Periodi di Dieta <small style="font-size:13px;font-weight:normal;color:#888">(calo ≥ 5 kg dal picco al minimo reale)</small></h3>';
+            if (periods.length === 0) {
+                html += '<p style="color:#888;font-size:14px">Nessun periodo con calo ≥ 5 kg rilevato.</p>';
+            } else {
+                periods.forEach(function(p, idx) {
+                    var ratePM = (p.drop / Math.max(p.days / 30, 0.1)).toFixed(2);
+                    html += '<div class="diet-period-card" style="cursor:pointer" title="Clicca per filtrare Dati e Grafico su questo periodo"'
+                          + ' onclick="applyDietPeriodFilter(\'' + p.startDate + '\',\'' + p.endDate + '\')">';
+                    html += '<div class="dp-header">#' + (idx + 1) + ' — −' + p.drop.toFixed(1) + ' kg <span style="font-size:11px;font-weight:normal;color:#80d5c4;margin-left:8px">↗ filtra dati/grafico</span></div>';
+                    html += '<div class="dp-meta">';
+                    html += '<span>📅 ' + fmt(p.startDate) + ' → ' + fmt(p.endDate) + '</span>';
+                    html += '<span>⏱ ' + p.days + ' giorni</span>';
+                    html += '<span>⚖️ ' + p.startWeight.toFixed(1) + ' → ' + p.endWeight.toFixed(1) + ' kg</span>';
+                    html += '<span>📈 ' + ratePM + ' kg/mese</span>';
+                    html += '</div></div>';
+                });
+            }
+            html += '</div>';
+
+            el.innerHTML = html;
+        }
+
+        // ── Cache globale per i tab Dati e Grafico ────────────────
+        var _statAllData = [];
+        var _statChartInst = null;
+
+        // Imposta i filtri Dal/Al su tutti i tab e passa al tab Dati
+        function applyDietPeriodFilter(from, to) {
+            // Tab 2 — Dati
+            document.getElementById('statFilterFrom').value = from;
+            document.getElementById('statFilterTo').value   = to;
+            // Tab 3 — Grafico
+            document.getElementById('statChartFrom').value  = from;
+            document.getElementById('statChartTo').value    = to;
+            // Passa al tab 2 e applica il filtro
+            switchStatTab(2);
+            var filtered = _statAllData.filter(function(r) {
+                return r.date >= from && r.date <= to;
+            });
+            renderStatDataTable(filtered);
+        }
+
+        function switchStatTab(n) {
+            [1, 2, 3].forEach(function(i) {
+                document.getElementById('statTabBtn'   + i).className = i === n ? 'btn btn-primary' : 'btn btn-secondary';
+                document.getElementById('statTabPanel' + i).classList.toggle('active', i === n);
+            });
+            if (n === 2 && _statAllData.length) renderStatDataTable(_statAllData);
+            if (n === 3 && _statAllData.length) renderStatChart(_statAllData);
+        }
+
+        function switchObjTab(n) {
+            [1, 2, 3].forEach(function(i) {
+                document.getElementById('objTabBtn'   + i).className = i === n ? 'btn btn-primary' : 'btn btn-secondary';
+                document.getElementById('objTabPanel' + i).classList.toggle('active', i === n);
+            });
+            if (n === 2 && userData.weights && userData.weights.length > 0) {
+                updateWeightTable(userData.weights);
+            } else if (n === 3) {
+                if (weightChart) {
+                    scrollChartToToday();
+                } else if (userData.weights && userData.weights.length > 0) {
+                    updateWeightChart(userData.weights);
+                }
+            }
+        }
+
+        // ── Filtri tab 2 ──────────────────────────────────────────
+        function applyStatFilter() {
+            var from = document.getElementById('statFilterFrom').value;
+            var to   = document.getElementById('statFilterTo').value;
+            var filtered = _statAllData.filter(function(r) {
+                return (!from || r.date >= from) && (!to || r.date <= to);
+            });
+            renderStatDataTable(filtered);
+        }
+        function resetStatFilter() {
+            document.getElementById('statFilterFrom').value = '';
+            document.getElementById('statFilterTo').value   = '';
+            renderStatDataTable(_statAllData);
+        }
+
+        // ── Filtri tab 3 ──────────────────────────────────────────
+        function applyStatChartFilter() {
+            var from = document.getElementById('statChartFrom').value;
+            var to   = document.getElementById('statChartTo').value;
+            var filtered = _statAllData.filter(function(r) {
+                return (!from || r.date >= from) && (!to || r.date <= to);
+            });
+            renderStatChart(filtered);
+        }
+        function resetStatChartFilter() {
+            document.getElementById('statChartFrom').value = '';
+            document.getElementById('statChartTo').value   = '';
+            renderStatChart(_statAllData);
+        }
+
+        // ── Tabella dati storici ──────────────────────────────────
+        function renderStatDataTable(data) {
+            var el = document.getElementById('statDataContent');
+            if (!data || data.length === 0) {
+                el.innerHTML = '<div class="stats-loading">Nessun dato nel periodo selezionato.</div>';
+                return;
+            }
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+            // Ordina per data decrescente, poi timestamp decrescente
+            var sorted = data.slice().sort(function(a, b) {
+                var dc = b.date.localeCompare(a.date);
+                return dc !== 0 ? dc : ((b.timestamp || 0) - (a.timestamp || 0));
+            });
+            var html = '<p style="font-size:13px;color:#888;margin:0 0 12px">' + sorted.length + ' misurazioni</p>';
+            html += '<div style="overflow-x:auto"><table>';
+            html += '<thead><tr><th>Data</th><th>Peso</th><th>Sorgente</th></tr></thead><tbody>';
+            sorted.forEach(function(r) {
+                var src = r.source || r.time || '—';
+                html += '<tr>';
+                html += '<td><strong>' + fmt(r.date) + '</strong></td>';
+                html += '<td style="font-weight:bold;color:#00B894">' + parseFloat(r.weight).toFixed(1) + ' kg</td>';
+                html += '<td style="color:#888;font-size:13px">' + src + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+        }
+
+        // ── Grafico storico ───────────────────────────────────────
+        function renderStatChart(data) {
+            var wrapper = document.getElementById('statChartWrapper');
+            if (!wrapper) return;
+            if (_statChartInst) { _statChartInst.destroy(); _statChartInst = null; }
+            if (!data || data.length === 0) {
+                wrapper.innerHTML = '<div class="stats-loading">Nessun dato nel periodo selezionato.</div>';
+                return;
+            }
+            // Assicura che il canvas esista
+            if (!wrapper.querySelector('canvas')) {
+                wrapper.innerHTML = '<canvas id="statChartCanvas"></canvas>';
+            }
+            var canvas = document.getElementById('statChartCanvas');
+            // Medie giornaliere, ordinate ASC
+            var dayMap = {};
+            data.forEach(function(r) {
+                if (!dayMap[r.date]) dayMap[r.date] = { sum: 0, n: 0 };
+                dayMap[r.date].sum += r.weight;
+                dayMap[r.date].n++;
+            });
+            var days = Object.keys(dayMap).sort().map(function(d) {
+                return { date: d, w: dayMap[d].sum / dayMap[d].n };
+            });
+            var fmt = function(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+            var labels  = days.map(function(d) { return fmt(d.date); });
+            var weights = days.map(function(d) { return parseFloat(d.w.toFixed(2)); });
+            // Media mobile 7 giorni
+            var maData = days.map(function(_, i) {
+                var lo = Math.max(0, i - 3), hi = Math.min(days.length - 1, i + 3);
+                var s = 0, c = 0;
+                for (var k = lo; k <= hi; k++) { s += days[k].w; c++; }
+                return parseFloat((s / c).toFixed(2));
+            });
+            var dense = days.length > 180;
+            _statChartInst = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Peso (media giornaliera)',
+                            data: weights,
+                            borderColor: '#00B894',
+                            backgroundColor: 'rgba(0,184,148,0.08)',
+                            borderWidth: dense ? 1 : 1.5,
+                            pointRadius: dense ? 0 : 3,
+                            pointHoverRadius: 5,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Media mobile 7gg',
+                            data: maData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' kg';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 14, maxRotation: 45 } },
+                        y: {
+                            ticks: {
+                                callback: function(v) { return v.toFixed(1) + ' kg'; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // GENERA DIETA — analisi ritmo perdita peso
+        // ==========================================
+
+        // Formatta una data ISO "YYYY-MM-DD" come "DD/MM/YYYY"
+        function fmtDateIt(isoStr) {
+            if (!isoStr) return '?';
+            var p = isoStr.split('-');
+            return (p[2] || '??') + '/' + (p[1] || '??') + '/' + (p[0] || '????');
+        }
+
+        // Analizza l'array di pesate:
+        //   - un record per giorno (peso minimo)
+        //   - trova massimi e minimi locali (finestra WIN vicini per lato)
+        //   - accoppia ogni massimo locale con il PROSSIMO minimo locale
+        //   - tiene solo coppie con durata >= 21 giorni e perdita > 0
+        //   - calcola il ritmo medio di tutti questi periodi
+        function analizzaRitmoPerditaPeso(weights) {
+            // Un record per giorno: peso minimo della giornata
+            var byDay = {};
+            weights.forEach(function(r) {
+                if (!r.date || r.weight == null || !isFinite(r.weight)) return;
+                if (!byDay[r.date] || r.weight < byDay[r.date]) byDay[r.date] = r.weight;
+            });
+            var S = Object.keys(byDay).sort().map(function(d) { return { date: d, weight: byDay[d] }; });
+
+            var empty = { periods: [], avgRate: null, totalRecords: S.length,
+                firstDate: S[0] ? S[0].date : null, lastDate: S[S.length-1] ? S[S.length-1].date : null,
+                maxWeight: S.length ? Math.max.apply(null, S.map(function(r){return r.weight;})) : 0,
+                minWeight: S.length ? Math.min.apply(null, S.map(function(r){return r.weight;})) : 0 };
+            if (S.length < 4) return empty;
+
+            // Finestra per rilevare estremi locali: 5 vicini per lato (o meno se il dataset è corto)
+            var WIN = Math.min(5, Math.floor(S.length / 4));
+
+            // Massimi locali: S[i] > tutti i WIN vicini a sinistra e destra
+            var maxIdxs = [];
+            for (var i = WIN; i < S.length - WIN; i++) {
+                var ok = true;
+                for (var k = i - WIN; k <= i + WIN && ok; k++) {
+                    if (k !== i && S[k].weight >= S[i].weight) ok = false;
+                }
+                if (ok) maxIdxs.push(i);
+            }
+
+            // Minimi locali: S[i] < tutti i WIN vicini a sinistra e destra
+            var minIdxs = [];
+            for (var i = WIN; i < S.length - WIN; i++) {
+                var ok = true;
+                for (var k = i - WIN; k <= i + WIN && ok; k++) {
+                    if (k !== i && S[k].weight <= S[i].weight) ok = false;
+                }
+                if (ok) minIdxs.push(i);
+            }
+
+            // Accoppia ogni massimo locale con il PROSSIMO minimo locale (allargando sino al minimo)
+            var caloPeriods = [];
+            for (var mi = 0; mi < maxIdxs.length; mi++) {
+                var maxIdx = maxIdxs[mi];
+                // Cerca il primo minimo locale che viene DOPO questo massimo
+                var nextMinIdx = null;
+                for (var mn = 0; mn < minIdxs.length; mn++) {
+                    if (minIdxs[mn] > maxIdx) { nextMinIdx = minIdxs[mn]; break; }
+                }
+                if (nextMinIdx === null) continue;
+
+                var days = (new Date(S[nextMinIdx].date) - new Date(S[maxIdx].date)) / 86400000;
+                var loss = S[maxIdx].weight - S[nextMinIdx].weight;
+
+                // Filtra: almeno 21 giorni (3 settimane) e perdita effettiva
+                if (days < 21 || loss <= 0) continue;
+
+                caloPeriods.push({
+                    from: S[maxIdx].date,
+                    to: S[nextMinIdx].date,
+                    fromWeight: S[maxIdx].weight,
+                    toWeight: S[nextMinIdx].weight,
+                    loss: loss,
+                    days: Math.round(days),
+                    weeklyRate: loss / days * 7
+                });
+            }
+
+            // Ordina cronologicamente
+            caloPeriods.sort(function(a, b) { return a.from < b.from ? -1 : 1; });
+
+            // Media dei ritmi settimanali
+            var avgRate = null;
+            if (caloPeriods.length > 0) {
+                avgRate = caloPeriods.reduce(function(acc, p) { return acc + p.weeklyRate; }, 0) / caloPeriods.length;
+            }
+
+            var allW = S.map(function(r) { return r.weight; });
+            return {
+                periods: caloPeriods,
+                avgRate: avgRate,
+                totalRecords: S.length,
+                firstDate: S[0].date,
+                lastDate: S[S.length-1].date,
+                maxWeight: Math.max.apply(null, allW),
+                minWeight: Math.min.apply(null, allW)
+            };
+        }
+
+        // Costruisce il testo del prompt da dare all'AI
+        // profile: { altezza_cm, eta, patologie, farmaci } (tutti opzionali)
+        function costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, profile) {
+            profile = profile || {};
+            var da_perdere = pesoAttuale && pesoObiettivo ? (pesoAttuale - pesoObiettivo).toFixed(1) : null;
+            var rateRef = analisi.avgRate ? analisi.avgRate.toFixed(2) : '~0.5';
+            var lines = [];
+
+            // Calcola durata periodo obiettivo in giorni/settimane
+            var durataPeriodo = null;
+            var settPeriodo = null;
+            if (dataInizioObiettivo && dataFineObiettivo) {
+                var ms = new Date(dataFineObiettivo) - new Date(dataInizioObiettivo);
+                if (ms > 0) {
+                    durataPeriodo = Math.round(ms / 86400000);
+                    settPeriodo = (durataPeriodo / 7).toFixed(1);
+                }
+            }
+
+            lines.push('Sei un nutrizionista esperto. Ho bisogno di un piano alimentare personalizzato basato sui miei dati reali di peso.');
+            lines.push('');
+            lines.push('═══════════════════════════════════════');
+            lines.push('DATI PERSONALI E OBIETTIVO');
+            lines.push('═══════════════════════════════════════');
+            if (profile.eta)       lines.push('• Età:            ' + profile.eta + ' anni');
+            if (profile.altezza_cm) lines.push('• Altezza:        ' + profile.altezza_cm + ' cm');
+            if (pesoAttuale)   lines.push('• Peso attuale:   ' + pesoAttuale.toFixed(1) + ' kg');
+            if (pesoObiettivo) lines.push('• Peso obiettivo: ' + pesoObiettivo.toFixed(1) + ' kg' + (nomeObiettivo ? '  (' + nomeObiettivo + ')' : ''));
+            if (da_perdere && parseFloat(da_perdere) > 0) lines.push('• Da perdere:     ' + da_perdere + ' kg');
+            if (dataInizioObiettivo && dataFineObiettivo) {
+                lines.push('• Periodo dieta:  dal ' + fmtDateIt(dataInizioObiettivo) + ' al ' + fmtDateIt(dataFineObiettivo) +
+                    (durataPeriodo ? '  (' + durataPeriodo + ' giorni / ' + settPeriodo + ' settimane)' : ''));
+            }
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('STORICO PESATE');
+            lines.push('═══════════════════════════════════════');
+            lines.push('• Misurazioni totali: ' + analisi.totalRecords + ' giorni distinti');
+            lines.push('• Periodo coperto:    ' + fmtDateIt(analisi.firstDate) + ' → ' + fmtDateIt(analisi.lastDate));
+            lines.push('• Peso massimo:       ' + analisi.maxWeight.toFixed(1) + ' kg');
+            lines.push('• Peso minimo:        ' + analisi.minWeight.toFixed(1) + ' kg');
+            lines.push('');
+
+            if (analisi.periods.length > 0) {
+                // Mostra solo gli ultimi 3 periodi più recenti
+                var totPeriodi = analisi.periods.length;
+                var periodiDaMostrare = analisi.periods.slice(-3);
+                lines.push('═══════════════════════════════════════');
+                lines.push('PERIODI DI CALO REALE (≥ 3 settimane, picco → minimo locale)');
+                lines.push('═══════════════════════════════════════');
+                if (totPeriodi > 3) {
+                    lines.push('Ho identificato ' + totPeriodi + ' periodi di calo documentati (mostro i 3 più recenti):');
+                } else {
+                    lines.push('Ho identificato ' + totPeriodi + ' periodo/i di calo documentato:');
+                }
+                lines.push('');
+                periodiDaMostrare.forEach(function(p, idx) {
+                    var numPeriodo = totPeriodi > 3 ? (totPeriodi - 3 + idx + 1) : (idx + 1);
+                    lines.push('  Periodo ' + numPeriodo + ':');
+                    lines.push('    Dal ' + fmtDateIt(p.from) + ' (' + p.fromWeight.toFixed(1) + ' kg)');
+                    lines.push('    Al  ' + fmtDateIt(p.to)   + ' (' + p.toWeight.toFixed(1)   + ' kg)');
+                    lines.push('    Durata: ' + p.days + ' giorni  |  Perdita: −' + p.loss.toFixed(1) + ' kg  |  Ritmo: −' + p.weeklyRate.toFixed(2) + ' kg/sett');
+                    lines.push('');
+                });
+                lines.push('RITMO MEDIO DI PERDITA (media di tutti i ' + totPeriodi + ' periodi):');
+                lines.push('  → −' + rateRef + ' kg/settimana');
+            } else {
+                lines.push('═══════════════════════════════════════');
+                lines.push('PERIODI DI CALO');
+                lines.push('═══════════════════════════════════════');
+                lines.push('Non sono stati trovati periodi di calo ≥ 3 settimane nello storico.');
+                lines.push('Utilizza un ritmo di perdita prudenziale di −0.5 kg/settimana.');
+            }
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('PATOLOGIE E FARMACI IN CORSO');
+            lines.push('═══════════════════════════════════════');
+            lines.push('⚠️  IMPORTANTE: il piano deve tenere conto obbligatoriamente di queste condizioni:');
+            lines.push('');
+            if (profile.patologie) {
+                profile.patologie.split('\n').forEach(function(riga) {
+                    riga = riga.trim();
+                    if (riga) lines.push('• ' + riga);
+                });
+            } else {
+                lines.push('(nessuna patologia indicata nel profilo)');
+            }
+            lines.push('');
+            lines.push('Farmaci attualmente assunti:');
+            if (profile.farmaci) {
+                profile.farmaci.split('\n').forEach(function(riga) {
+                    riga = riga.trim();
+                    if (riga) lines.push('  - ' + riga);
+                });
+            } else {
+                lines.push('  (nessun farmaco indicato nel profilo)');
+            }
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('PROTOCOLLO ALIMENTARE RICHIESTO: OMAD');
+            lines.push('═══════════════════════════════════════');
+            lines.push('Tipo di dieta: OMAD — One Meal A Day (un unico pasto al giorno)');
+            lines.push('');
+            lines.push('Caratteristiche obbligatorie del piano:');
+            lines.push('  • UN SOLO PASTO GIORNALIERO SERALE (finestra alimentare 1-2 ore, es. 19:30-21:00)');
+            lines.push('  • BASSO CONTENUTO DI CARBOIDRATI: max 50-80 g/die di carboidrati netti');
+            lines.push('    → eliminare pane bianco, pasta, riso, zucchero, dolci');
+            lines.push('    → ammessi in piccole quantità: verdure a basso indice glicemico, legumi');
+            lines.push('  • ALTO CONTENUTO DI PROTEINE: almeno 1,6-2,0 g per kg di peso corporeo');
+            lines.push('    → carne magra, pesce, uova, latticini magri, legumi');
+            lines.push('  • GRASSI SANI come fonte energetica principale:');
+            lines.push('    → olio extravergine di oliva, avocado, frutta secca (noci, mandorle)');
+            lines.push('    → pesce grasso (salmone, sgombro, sardine) — beneficio anche per il colesterolo');
+            lines.push('    → EVITARE grassi saturi di origine animale in eccesso (burro, insaccati, carni grasse)');
+            lines.push('  • Acqua, tè/caffè non zuccherati liberi durante la finestra di digiuno');
+            lines.push('');
+
+            lines.push('═══════════════════════════════════════');
+            lines.push('COSA TI CHIEDO');
+            lines.push('═══════════════════════════════════════');
+            lines.push('Basandoti ESCLUSIVAMENTE sui miei dati reali e sui vincoli sopra riportati, genera:');
+            lines.push('');
+            lines.push('1. ANALISI DEL MIO METABOLISMO');
+            lines.push('   - Stima del TDEE (fabbisogno calorico totale giornaliero)');
+            lines.push('   - Apporto calorico target per il PASTO UNICO OMAD, compatibile con il deficit');
+            lines.push('   - Deficit calorico coerente con il mio ritmo medio documentato (−' + rateRef + ' kg/sett)');
+            lines.push('');
+            lines.push('2. PIANO OMAD SETTIMANALE (7 giorni) — PASTO SERALE');
+            lines.push('   - Un pasto completo serale per ogni giorno (orario indicativo 19:30-21:00)');
+            lines.push('   - Composizione: proteine + grassi sani + verdure + carboidrati minimi');
+            lines.push('   - Grammature precise degli alimenti principali');
+            lines.push('   - Macronutrienti del pasto (proteine / carboidrati netti / grassi / calorie totali)');
+            lines.push('   - Menu con ingredienti della cucina italiana, pratici da preparare');
+            lines.push('   - Specificare quali alimenti evitare per le interazioni farmacologiche');
+            lines.push('');
+            lines.push('3. COMPATIBILITÀ PERIODO DIETA CON L\'ANALISI');
+            if (dataInizioObiettivo && dataFineObiettivo && durataPeriodo) {
+                lines.push('   Il mio obiettivo copre un periodo di ' + durataPeriodo + ' giorni (' + settPeriodo + ' settimane),');
+                lines.push('   dal ' + fmtDateIt(dataInizioObiettivo) + ' al ' + fmtDateIt(dataFineObiettivo) + '.');
+                lines.push('   Basandoti sul ritmo medio documentato (−' + rateRef + ' kg/sett) e sui ' + (da_perdere && parseFloat(da_perdere) > 0 ? da_perdere + ' kg da perdere' : 'dati di peso') + ':');
+                lines.push('   - Il periodo pianificato è REALISTICO per raggiungere il peso obiettivo?');
+                lines.push('   - In ' + settPeriodo + ' settimane al ritmo di −' + rateRef + ' kg/sett, quanti kg potrei perdere?');
+                lines.push('   - Se il periodo non è sufficiente, di quante settimane aggiuntive avrei bisogno?');
+                lines.push('   - Se invece è sovrastimato, quale sarebbe la data realistica di raggiungimento?');
+            } else {
+                lines.push('   - Verifica se il periodo dell\'obiettivo è compatibile con il ritmo di perdita documentato');
+                lines.push('   - Indica quante settimane servono realisticamente per raggiungere il peso obiettivo');
+            }
+            lines.push('');
+            lines.push('4. PROIEZIONE TEMPORALE');
+            lines.push('   - Stima delle settimane necessarie per raggiungere il peso obiettivo');
+            lines.push('   - Date intermedie di controllo suggerite');
+            lines.push('');
+            lines.push('5. CONSIGLI PRATICI');
+            lines.push('   - Come gestire il digiuno prolungato con i farmaci antipertensivi');
+            lines.push('   - Idratazione ottimale durante il digiuno (con ipertensione)');
+            lines.push('   - Segnali di allerta da monitorare (pressione, lipidi, glicemia)');
+            lines.push('   - Frequenza di pesata consigliata');
+            lines.push('');
+            lines.push('6. FILE JSON DEL PIANO ALIMENTARE');
+            lines.push('   Fornisci il piano settimanale anche in formato JSON strutturato come segue:');
+            lines.push('   - Per ogni giorno (lunedì→domenica) un oggetto con:');
+            lines.push('     • "giorno": nome del giorno');
+            lines.push('     • "pasto": nome/descrizione del pasto');
+            lines.push('     • "ingredienti": array di oggetti, ciascuno con:');
+            lines.push('         - "nome": nome dell\'ingrediente');
+            lines.push('         - "quantita_g": peso in grammi');
+            lines.push('         - "calorie": kcal');
+            lines.push('         - "proteine_g": grammi di proteine');
+            lines.push('         - "carboidrati_netti_g": grammi di carboidrati netti');
+            lines.push('         - "grassi_g": grammi di grassi');
+            lines.push('     • "totale_pasto": oggetto riepilogativo con la somma di calorie, proteine, carboidrati_netti e grassi');
+            lines.push('');
+            lines.push('   Schema di esempio:');
+            lines.push('   {');
+            lines.push('     "piano_omad_settimanale": [');
+            lines.push('       {');
+            lines.push('         "giorno": "Lunedì",');
+            lines.push('         "pasto": "Salmone con verdure e avocado",');
+            lines.push('         "ingredienti": [');
+            lines.push('           { "nome": "Salmone", "quantita_g": 200, "calorie": 416, "proteine_g": 40, "carboidrati_netti_g": 0, "grassi_g": 26 },');
+            lines.push('           { "nome": "...", "quantita_g": 0, "calorie": 0, "proteine_g": 0, "carboidrati_netti_g": 0, "grassi_g": 0 }');
+            lines.push('         ],');
+            lines.push('         "totale_pasto": { "calorie": 0, "proteine_g": 0, "carboidrati_netti_g": 0, "grassi_g": 0 }');
+            lines.push('       }');
+            lines.push('     ]');
+            lines.push('   }');
+
+            return lines.join('\n');
+        }
+
+        // Entry point: carica i dati e genera il prompt
+        function generaDieta() {
+            var statusEl = document.getElementById('dietaAnalisiStatus');
+            var risultatoEl = document.getElementById('dietaRisultato');
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Caricamento pesate storiche…';
+            risultatoEl.style.display = 'none';
+
+            fetchAllWeights('date', true)
+                .then(function(res) {
+                    if (res.error) {
+                        statusEl.textContent = '❌ Errore caricamento dati: ' + (res.error.message || res.error);
+                        return;
+                    }
+                    var weights = res.data || [];
+                    if (weights.length < 2) {
+                        statusEl.textContent = '⚠️ Non ci sono abbastanza pesate per l\'analisi (minimo 2 record con date diverse).';
+                        return;
+                    }
+
+                    var analisi = analizzaRitmoPerditaPeso(weights);
+
+                    // Peso attuale = ultima pesata
+                    var weightsSorted = weights.slice().sort(function(a, b) { return a.date > b.date ? -1 : 1; });
+                    var pesoAttuale = weightsSorted[0] ? parseFloat(weightsSorted[0].weight) : null;
+
+                    // Obiettivo attivo
+                    var obj = userData.currentObjective;
+                    var pesoObiettivo = obj ? parseFloat(obj.end_weight) : null;
+                    var nomeObiettivo = obj ? obj.objective_name : null;
+                    var dataInizioObiettivo = obj ? obj.start_date : null;
+                    var dataFineObiettivo = obj ? obj.end_date : null;
+
+                    // --- Card analisi ---
+                    var analisiHtml = '';
+
+                    // Riga superiore: media ritmo + n. periodi trovati
+                    analisiHtml += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">';
+                    if (analisi.avgRate != null) {
+                        analisiHtml += '<div style="background:#f0fdf4; border:1px solid #86efac; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.5rem; font-weight:bold; color:#16a34a;">−' + analisi.avgRate.toFixed(2) + '</div>' +
+                            '<div style="font-size:0.75rem; color:#166534;">kg/sett (ritmo medio)</div></div>';
+                    } else {
+                        analisiHtml += '<div style="background:#fef9c3; border:1px solid #fde047; padding:10px; text-align:center;">' +
+                            '<div style="font-size:1.2rem; font-weight:bold; color:#854d0e;">n/d</div>' +
+                            '<div style="font-size:0.75rem; color:#713f12;">ritmo medio</div></div>';
+                    }
+                    analisiHtml += '<div style="background:#f0f9ff; border:1px solid #7dd3fc; padding:10px; text-align:center;">' +
+                        '<div style="font-size:1.5rem; font-weight:bold; color:#0369a1;">' + analisi.periods.length + '</div>' +
+                        '<div style="font-size:0.75rem; color:#0c4a6e;">periodi di calo ≥ 3 sett</div></div>';
+                    analisiHtml += '</div>';
+
+                    // Tabella periodi
+                    if (analisi.periods.length > 0) {
+                        analisiHtml += '<div style="overflow-x:auto; margin-bottom:10px;">';
+                        analisiHtml += '<table style="width:100%; border-collapse:collapse; font-size:0.8rem;">';
+                        analisiHtml += '<thead><tr style="background:#f3f4f6;">' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">#</th>' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">Dal</th>' +
+                            '<th style="padding:5px 6px; text-align:left; border-bottom:1px solid #e5e7eb;">Al</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">Gg</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">−kg</th>' +
+                            '<th style="padding:5px 6px; text-align:right; border-bottom:1px solid #e5e7eb;">kg/sett</th>' +
+                            '</tr></thead><tbody>';
+                        analisi.periods.forEach(function(p, idx) {
+                            var rowBg = idx % 2 === 0 ? '#ffffff' : '#f9fafb';
+                            analisiHtml += '<tr style="background:' + rowBg + ';">' +
+                                '<td style="padding:5px 6px; color:#888;">' + (idx+1) + '</td>' +
+                                '<td style="padding:5px 6px;">' + fmtDateIt(p.from) + '<br><span style="color:#888;font-size:0.75rem;">' + p.fromWeight.toFixed(1) + ' kg</span></td>' +
+                                '<td style="padding:5px 6px;">' + fmtDateIt(p.to) + '<br><span style="color:#888;font-size:0.75rem;">' + p.toWeight.toFixed(1) + ' kg</span></td>' +
+                                '<td style="padding:5px 6px; text-align:right;">' + p.days + '</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#dc2626; font-weight:bold;">−' + p.loss.toFixed(1) + '</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#16a34a; font-weight:bold;">−' + p.weeklyRate.toFixed(2) + '</td>' +
+                                '</tr>';
+                        });
+                        // Riga media
+                        if (analisi.avgRate != null) {
+                            analisiHtml += '<tr style="background:#f0fdf4; font-weight:bold;">' +
+                                '<td colspan="5" style="padding:5px 6px; color:#166534;">Media ritmo</td>' +
+                                '<td style="padding:5px 6px; text-align:right; color:#16a34a;">−' + analisi.avgRate.toFixed(2) + '</td>' +
+                                '</tr>';
+                        }
+                        analisiHtml += '</tbody></table></div>';
+                    } else {
+                        analisiHtml += '<div style="font-size:0.84rem; color:#888; padding:10px 0;">Nessun periodo di calo ≥ 3 settimane trovato nello storico.</div>';
+                    }
+
+                    analisiHtml += '<div style="font-size:0.78rem; color:#aaa; margin-top:6px;">📦 ' + analisi.totalRecords + ' giorni · ' +
+                        fmtDateIt(analisi.firstDate) + ' → ' + fmtDateIt(analisi.lastDate) + '</div>';
+
+                    document.getElementById('dietaAnalisiContent').innerHTML = analisiHtml;
+
+                    // Carica dati profilo (altezza, età, patologie, farmaci) da cm_profile
+                    var profileUrl = supabase.url + '/rest/v1/cm_profile?select=altezza_cm,data_nascita,patologie,farmaci&limit=1';
+                    fetch(profileUrl, { headers: supabase.headers })
+                        .then(function(r) { return r.json(); })
+                        .then(function(profileData) {
+                            var profile = {};
+                            if (Array.isArray(profileData) && profileData.length > 0) {
+                                var p = profileData[0];
+                                if (p.altezza_cm) profile.altezza_cm = p.altezza_cm;
+                                if (p.data_nascita) {
+                                    var nascita = new Date(p.data_nascita);
+                                    var oggi = new Date();
+                                    var eta = oggi.getFullYear() - nascita.getFullYear();
+                                    var m = oggi.getMonth() - nascita.getMonth();
+                                    if (m < 0 || (m === 0 && oggi.getDate() < nascita.getDate())) eta--;
+                                    profile.eta = eta;
+                                }
+                                if (p.patologie) profile.patologie = p.patologie;
+                                if (p.farmaci)   profile.farmaci   = p.farmaci;
+                            }
+                            var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, profile);
+                            document.getElementById('dietaPromptText').value = prompt;
+                            statusEl.style.display = 'none';
+                            risultatoEl.style.display = 'block';
+                            log('Genera Dieta: ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
+                        })
+                        .catch(function() {
+                            // Profilo non caricabile: genera prompt senza dati profilo
+                            var prompt = costruisciPromptDieta(analisi, pesoAttuale, pesoObiettivo, nomeObiettivo, dataInizioObiettivo, dataFineObiettivo, {});
+                            document.getElementById('dietaPromptText').value = prompt;
+                            statusEl.style.display = 'none';
+                            risultatoEl.style.display = 'block';
+                            log('Genera Dieta (senza profilo): ' + analisi.periods.length + ' periodi su ' + weights.length + ' record');
+                        });
+                })
+                .catch(function(e) {
+                    statusEl.textContent = '❌ Errore: ' + e.message;
+                });
+        }
+
+        // Copia il prompt negli appunti
+        function copiaDietaPrompt() {
+            var ta = document.getElementById('dietaPromptText');
+            if (!ta || !ta.value) return;
+            var msg = document.getElementById('dietaCopiatoMsg');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(ta.value).then(function() {
+                    msg.style.display = 'block';
+                    setTimeout(function() { msg.style.display = 'none'; }, 2500);
+                });
+            } else {
+                ta.select();
+                document.execCommand('copy');
+                msg.style.display = 'block';
+                setTimeout(function() { msg.style.display = 'none'; }, 2500);
+            }
+        }
+
+        // ── CLAUDE API ────────────────────────────────────────────────
+
+        function copiaRispostaClaude() {
+            var pre = document.getElementById('claudeRispostaText');
+            if (!pre || !pre.textContent) return;
+            var msg = document.getElementById('claudeRispostaCopiatoMsg');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(pre.textContent).then(function() {
+                    msg.style.display = 'block';
+                    setTimeout(function() { msg.style.display = 'none'; }, 2500);
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = pre.textContent;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                msg.style.display = 'block';
+                setTimeout(function() { msg.style.display = 'none'; }, 2500);
+            }
+        }
+
+        async function inviaAClaudeAPI() {
+            var prompt = document.getElementById('dietaPromptText').value;
+            if (!prompt) {
+                alert('Genera prima il prompt con il bottone "Analizza e Genera Prompt".');
+                return;
+            }
+
+            var btn      = document.getElementById('btnInviaAClaude');
+            var statusEl = document.getElementById('claudeInvioStatus');
+            var boxEl    = document.getElementById('claudeRispostaBox');
+            var preEl    = document.getElementById('claudeRispostaText');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Invio in corso…';
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Elaborazione con Claude (può richiedere 30-60 secondi)…';
+            boxEl.style.display = 'none';
+            preEl.textContent = '';
+
+            // Animazione punti durante l'attesa
+            var dots = 0;
+            var dotsTimer = setInterval(function() {
+                dots = (dots + 1) % 4;
+                statusEl.textContent = '⏳ Elaborazione con Claude' + '.'.repeat(dots + 1) + ' (può richiedere 30-60 secondi)';
+            }, 600);
+
+            try {
+                // Chiama la Supabase Edge Function (timeout 150s, nessun blocco firewall)
+                var claudeEndpoint = CONFIG.supabaseUrl + '/functions/v1/claude-diet';
+                var response = await fetch(claudeEndpoint, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                clearInterval(dotsTimer);
+
+                var data = await response.json().catch(function() { return null; });
+                if (!response.ok || !data) {
+                    var errMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
+                    throw new Error(errMsg);
+                }
+
+                var fullText = '';
+                if (data.content && Array.isArray(data.content)) {
+                    data.content.forEach(function(block) {
+                        if (block.type === 'text') fullText += block.text;
+                    });
+                }
+
+                if (fullText) {
+                    boxEl.style.display = 'block';
+                    preEl.textContent = fullText;
+                } else {
+                    throw new Error('Risposta vuota dall\'API (content: ' + JSON.stringify(data.content) + ')');
+                }
+
+                statusEl.style.display = 'none';
+                btn.textContent = '✅ Completato — invia di nuovo';
+                log('Claude API: risposta ricevuta (' + fullText.length + ' caratteri)');
+            } catch(e) {
+                clearInterval(dotsTimer);
+                statusEl.textContent = '❌ Errore: ' + e.message;
+                btn.textContent = '🤖 Riprova';
+                log('Claude API errore: ' + e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Carica TUTTI i dati storici (senza filtro data) e aggiorna le statistiche
+        function refreshStatistiche() {
+            var el = document.getElementById('statsContent');
+            if (!el) return;
+            el.innerHTML = '<div class="stats-loading">⏳ Caricamento dati storici...</div>';
+            fetchAllWeights('date', true) // tutti i dati, ordinati ASC
+                .then(function(res) {
+                    if (res.error) {
+                        el.innerHTML = '<div class="stats-loading">Errore: ' + (res.error.message || res.error) + '</div>';
+                        return;
+                    }
+                    log('Statistiche: ' + (res.data ? res.data.length : 0) + ' record totali');
+                    updateStatistiche(res.data || []);
+                })
+                .catch(function(e) {
+                    el.innerHTML = '<div class="stats-loading">Errore: ' + e.message + '</div>';
+                });
+        }
+
         // START
         console.log('%c⚖ Weight Quest ' + APP_VERSION, 'color:#00B894;font-size:16px;font-weight:bold;');
         console.log('%cbuild: ' + BUILD_TIME, 'color:#888;font-size:11px;');
@@ -3534,5 +5526,16 @@
             init();
         }
     </script>
+
+    <!-- Milestone Celebration Overlay -->
+    <div id="milestoneOverlay" onclick="closeMilestoneOverlay()">
+        <div id="milestoneCard" onclick="event.stopPropagation()">
+            <div id="milestoneStars"></div>
+            <div id="milestoneArrow">↓</div>
+            <div id="milestoneKg">-- kg</div>
+            <div id="milestoneLabel">🏆 Soglia Superata!</div>
+            <div id="milestoneSub">Tocca per chiudere</div>
+        </div>
+    </div>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Log v2.1.7</title>
+    <title>Events Log v2.2.26</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -32,6 +32,43 @@
             background: var(--light);
             color: var(--dark);
             min-height: 100vh;
+            padding-top: 56px;
+        }
+
+        /* ── GARSAL TOP BAR ── */
+        #garsal-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0081C8;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            z-index: 3000;
+        }
+        #garsal-top-bar-icon {
+            width: 22px;
+            height: 22px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            flex-shrink: 0;
+        }
+        #garsal-top-bar-text {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
         }
 
         /* ===== LAYOUT ===== */
@@ -243,6 +280,11 @@
         .group-tab:hover { color: var(--dark); }
         .group-tab.active { border-bottom-color: var(--primary); color: var(--primary); }
         .group-tab .tab-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .group-tab[draggable="true"] { cursor: grab; user-select: none; }
+        .group-tab[draggable="true"]:active { cursor: grabbing; }
+        .group-tab.tab-dragging { opacity: 0.4; border-bottom-color: transparent; }
+        .group-tab.tab-drag-over { border-bottom-color: var(--accent); background: rgba(37,99,235,0.08); color: var(--accent); }
+        .group-tab .tab-drag-handle { font-size: 0.7rem; opacity: 0.35; margin-right: 0.1rem; pointer-events: none; }
 
         /* ===== EVENT BUTTONS GRID ===== */
         .events-grid {
@@ -533,7 +575,7 @@
             .sidebar {
                 display: flex !important;
                 position: fixed !important;
-                top: 0 !important;
+                top: 56px !important;
                 left: 0 !important;
                 right: 0 !important;
                 width: 100% !important;
@@ -598,11 +640,63 @@
             .event-btn .ev-icon { font-size: 1.8rem; }
             .event-btn .ev-name { font-size: var(--badge-smart-name); }
         }
+
+        /* Hidden Mode FAB */
+        .hidden-mode-fab {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: var(--muted, #6B7280);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+        .hidden-mode-fab:hover { transform: scale(1.1); }
+        .hidden-mode-fab:active { transform: scale(0.95); }
+        .hidden-mode-fab.active {
+            background: var(--secondary, #6C5CE7);
+            box-shadow: 0 4px 20px rgba(108,92,231,0.5);
+            animation: pulse-hidden 2s infinite;
+        }
+        @keyframes pulse-hidden {
+            0%   { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+            50%  { box-shadow: 0 4px 28px rgba(108,92,231,0.8); }
+            100% { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+        }
     </style>
 </head>
 <body>
 
+    <!-- GARSAL TOP BAR -->
+    <div id="garsal-top-bar">
+        <a href="app-launcher.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="15" r="7" fill="rgba(255,255,255,0.85)"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg>
+            <div id="garsal-top-bar-text">Garsal Apps</div>
+        </a>
+    </div>
+
+    <!-- AUTH OVERLAY — mostrato se app aperta senza token -->
+    <div id="authOverlay" style="display:none; position:fixed; inset:0; background:rgba(15,15,30,0.97); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; font-family:inherit;">
+        <div style="font-size:3.5rem;">🔐</div>
+        <h2 style="color:#fff; margin:0; font-size:1.4rem; font-weight:700;">Accesso richiesto</h2>
+        <p style="color:#aaa; margin:0; text-align:center; max-width:320px; line-height:1.6;">Apri <strong style="color:#FF3366;">Events Log</strong> da AppSphere per accedere con il tuo account Google.</p>
+        <a href="app-launcher.html" style="margin-top:0.5rem; padding:0.8rem 2rem; background:#FF3366; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;">Vai ad AppSphere</a>
+    </div>
+
 <div class="app-container">
+
+    <!-- Hidden Mode FAB -->
+    <button class="hidden-mode-fab" id="hiddenModeFab" onclick="toggleHiddenMode()" title="Mostra solo riservati">🙈</button>
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -821,6 +915,16 @@
                 <label class="form-label">Colore</label>
                 <input type="color" class="form-input" id="groupColor" value="#2563EB">
             </div>
+            <div class="form-group">
+                <label class="form-label">Descrizione</label>
+                <textarea class="form-textarea" id="groupDescription" placeholder="Descrizione del gruppo (opzionale)..." style="min-height:60px;"></textarea>
+            </div>
+            <div class="form-group" style="margin-top:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;user-select:none;">
+                    <input type="checkbox" id="groupRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
+                    <span class="form-label" style="margin:0;">Gruppo nascosto (riservato)</span>
+                </label>
+            </div>
             <button type="submit" class="btn btn-primary" style="width:100%;">Salva Gruppo</button>
         </form>
     </div>
@@ -930,18 +1034,85 @@
     // ==========================================
     // VERSION
     // ==========================================
-    var APP_VERSION = 'v2.1.8';
-    var BUILD_TIME  = '2026-03-03T12:00:00Z';
+    var APP_VERSION = 'v2.2.26';
+    var BUILD_TIME  = '2026-03-20T13:00:00Z';
     console.log('%c Events Log ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
         'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
         'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
 
     // ==========================================
-    // SUPABASE
+    // SUPABASE — client inizializzato dopo auth
     // ==========================================
-    const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+    const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+    const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+                 || (window.location.hostname.endsWith('.netlify.app')
+                    && window.location.hostname.startsWith('dev--'));
+    const SUPABASE_URL = _IS_DEV
+        ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
+        : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+    const SUPABASE_KEY = _IS_DEV
+        ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
+        : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+    let sb             = null; // inizializzato in initWithToken()
+    let sbAccessToken  = null;
+    let hiddenMode      = false; // modalità nascosta: attivata dal launcher
+    let riservatoFilter = false; // filtro FAB: mostra solo riservati
+
+    function updateHiddenModeFab() {
+        const fab = document.getElementById('hiddenModeFab');
+        if (!fab) return;
+        if (riservatoFilter) {
+            fab.classList.add('active');
+            fab.title = 'Solo riservati — clicca per mostrare tutti';
+            fab.textContent = '👁';
+        } else {
+            fab.classList.remove('active');
+            fab.title = 'Mostra solo riservati';
+            fab.textContent = '🙈';
+        }
+        fab.style.display = hiddenMode ? 'flex' : 'none';
+    }
+
+    function toggleHiddenMode() {
+        if (!hiddenMode) return;
+        riservatoFilter = !riservatoFilter;
+        sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
+        updateHiddenModeFab();
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
+    }
+
+    function initWithToken(token) {
+        if (sb) return; // già inizializzato
+        sbAccessToken = token;
+        localStorage.setItem('sb_token', token);
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth:   { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: 'Bearer ' + token } }
+        });
+        console.log('✅ Supabase autenticato con token Google (Events Log ' + APP_VERSION + ')');
+        document.getElementById('authOverlay').style.display = 'none';
+        startApp();
+    }
+
+    // Rileva errori JWT scaduto/non autenticato e mostra l'overlay di login.
+    // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+    function handleAuthError(error) {
+        if (!error) return false;
+        const msg = (error.message || '').toLowerCase();
+        const isAuthError = error.status === 401
+            || msg.includes('jwt expired')
+            || msg.includes('invalid jwt')
+            || msg.includes('not authenticated')
+            || msg.includes('pgjwt');
+        if (!isAuthError) return false;
+        console.warn('🔒 Token scaduto — sessione invalidata');
+        sb = null;
+        sbAccessToken = null;
+        localStorage.removeItem('sb_token');
+        document.getElementById('authOverlay').style.display = 'flex';
+        return true;
+    }
 
 // ==========================================
 // DATA STORE
@@ -972,6 +1143,17 @@ function showPage(pageId, navEl) {
     if (pageId === 'settingsPage') { renderSettingsPage(); }
 }
 
+function renderActivePage() {
+    const activePage = document.querySelector('.page.active');
+    if (!activePage) { renderLogPage(); return; }
+    switch (activePage.id) {
+        case 'logPage':      renderLogPage(); break;
+        case 'historyPage':  renderHistory(); break;
+        case 'mgmtPage':     renderMgmt();    break;
+        case 'statsPage':    renderStats();   break;
+    }
+}
+
 // ==========================================
 // LOG PAGE
 // ==========================================
@@ -995,8 +1177,16 @@ function renderGroupTabs() {
         activeGroupTab = groups[0].id;
     }
 
-    container.innerHTML = groups.map(g => `
-        <div class="group-tab ${g.id === activeGroupTab ? 'active' : ''}" onclick="selectGroupTab('${g.id}')">
+    container.innerHTML = groups.map((g, idx) => `
+        <div class="group-tab ${g.id === activeGroupTab ? 'active' : ''}"
+             draggable="true"
+             data-group-idx="${idx}"
+             onclick="selectGroupTab('${g.id}')"
+             ondragstart="onTabDragStart(event, ${idx})"
+             ondragover="onTabDragOver(event)"
+             ondrop="onTabDrop(event, ${idx})"
+             ondragend="onTabDragEnd(event)">
+            <span class="tab-drag-handle">⠿</span>
             <span class="tab-dot" style="background:${g.color};"></span>
             ${g.icon || ''} ${g.name}
         </div>
@@ -1007,6 +1197,57 @@ function selectGroupTab(groupId) {
     activeGroupTab = groupId;
     renderGroupTabs();
     renderEventsGrid();
+    renderRecentLogs();
+}
+
+// ==========================================
+// DRAG & DROP TABS
+// ==========================================
+let _dragSrcTabIdx = null;
+
+function onTabDragStart(e, idx) {
+    _dragSrcTabIdx = idx;
+    e.dataTransfer.effectAllowed = 'move';
+    // delay class add so browser can snapshot the element first
+    setTimeout(() => {
+        const tabs = document.querySelectorAll('#logGroupTabs .group-tab');
+        if (tabs[idx]) tabs[idx].classList.add('tab-dragging');
+    }, 0);
+}
+
+function onTabDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('#logGroupTabs .group-tab').forEach(t => t.classList.remove('tab-drag-over'));
+    e.currentTarget.classList.add('tab-drag-over');
+    return false;
+}
+
+function onTabDrop(e, idx) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (_dragSrcTabIdx === null || _dragSrcTabIdx === idx) return;
+    const moved = groups.splice(_dragSrcTabIdx, 1)[0];
+    groups.splice(idx, 0, moved);
+    renderGroupTabs();
+    saveGroupsOrder();
+    return false;
+}
+
+function onTabDragEnd(e) {
+    _dragSrcTabIdx = null;
+    document.querySelectorAll('#logGroupTabs .group-tab').forEach(t => {
+        t.classList.remove('tab-dragging');
+        t.classList.remove('tab-drag-over');
+    });
+}
+
+async function saveGroupsOrder() {
+    for (let i = 0; i < groups.length; i++) {
+        groups[i].sort_order = i;
+        await sb.from('el_groups').update({ sort_order: i }).eq('id', groups[i].id);
+    }
+    showToast('↕️ Ordine gruppi salvato');
 }
 
 function renderEventsGrid() {
@@ -1076,7 +1317,8 @@ function renderEventsGrid() {
 
 function renderRecentLogs() {
     const el = document.getElementById('recentLogs');
-    const recent = logs.slice(0, 8);
+    const groupEventIds = new Set(events.filter(e => e.groupId === activeGroupTab).map(e => e.id));
+    const recent = logs.filter(l => groupEventIds.has(l.eventId)).slice(0, 8);
 
     if (!recent.length) {
         el.innerHTML = '<div class="empty-state" style="padding:1.5rem;"><p>Nessun log registrato</p></div>';
@@ -1153,6 +1395,10 @@ function renderHistory() {
 
     let filtered = [...logs];
 
+    // Filtro riservato — events è già filtrato in base al 3 stati (normale/hidden/FAB)
+    const visibleEventIds = new Set(events.map(e => e.id));
+    filtered = filtered.filter(l => visibleEventIds.has(l.eventId));
+
     // Date filter
     if (daysVal) {
         const cutoff = new Date();
@@ -1160,7 +1406,7 @@ function renderHistory() {
         filtered = filtered.filter(l => new Date(l.loggedAt) >= cutoff);
     }
 
-    // Group filter
+    // Group filter (chip manuale)
     if (histActiveGroup) {
         const groupEventIds = events.filter(e => e.groupId === histActiveGroup).map(e => e.id);
         filtered = filtered.filter(l => groupEventIds.includes(l.eventId));
@@ -1312,7 +1558,10 @@ function renderMgmt() {
                     <div class="mgmt-group-title">
                         <div class="mgmt-group-dot" style="background:${g.color};"></div>
                         <span>${g.icon || ''}</span>
-                        <span>${g.name}</span>
+                        <div>
+                            <span>${g.name}</span>
+                            ${g.description ? `<div style="font-size:0.78rem; color:var(--muted); font-weight:400; margin-top:0.1rem;">${g.description}</div>` : ''}
+                        </div>
                         <span style="font-size:0.8rem; color:var(--muted); font-weight:400;">(${groupEvents.length} eventi)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -1375,13 +1624,17 @@ function openGroupModal(groupId = null) {
     if (groupId) {
         const g = groups.find(x => x.id === groupId);
         if (!g) return;
-        document.getElementById('groupName').value = g.name;
-        document.getElementById('groupIcon').value = g.icon || '';
-        document.getElementById('groupColor').value = g.color || '#2563EB';
+        document.getElementById('groupName').value        = g.name;
+        document.getElementById('groupIcon').value        = g.icon || '';
+        document.getElementById('groupColor').value       = g.color || '#2563EB';
+        document.getElementById('groupDescription').value = g.description || '';
+        document.getElementById('groupRiservato').checked  = !!g.riservato;
     } else {
-        document.getElementById('groupName').value = '';
-        document.getElementById('groupIcon').value = '';
-        document.getElementById('groupColor').value = '#2563EB';
+        document.getElementById('groupName').value        = '';
+        document.getElementById('groupIcon').value        = '';
+        document.getElementById('groupColor').value       = '#2563EB';
+        document.getElementById('groupDescription').value = '';
+        document.getElementById('groupRiservato').checked  = false;
     }
 
     document.getElementById('groupModal').classList.add('active');
@@ -1456,14 +1709,24 @@ function closeEventModal() {
 // ==========================================
 // STATS PAGE
 // ==========================================
+function getGroupFilteredLogs() {
+    // Filtra log per eventi visibili (rispetta il 3 stati riservato, perché events è già filtrato)
+    const visibleEventIds = new Set(events.map(e => e.id));
+    const filtered = logs.filter(l => visibleEventIds.has(l.eventId));
+    if (!activeGroupTab) return filtered;
+    const groupEventIds = new Set(events.filter(e => e.groupId === activeGroupTab).map(e => e.id));
+    return filtered.filter(l => groupEventIds.has(l.eventId));
+}
+
 function renderStats() {
-    const total = logs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
-    const days = new Set(logs.map(l => new Date(l.loggedAt).toDateString())).size || 1;
+    const filtLogs = getGroupFilteredLogs();
+    const total = filtLogs.reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+    const days = new Set(filtLogs.map(l => new Date(l.loggedAt).toDateString())).size || 1;
     const avg = Math.round(total / days);
 
     document.getElementById('stTotPts').textContent = (total >= 0 ? '+' : '') + total;
     document.getElementById('stAvgDay').textContent = (avg >= 0 ? '+' : '') + avg;
-    document.getElementById('stTotCount').textContent = logs.length;
+    document.getElementById('stTotCount').textContent = filtLogs.length;
 
     renderStatsChart();
     renderStatsTopEvents();
@@ -1473,13 +1736,14 @@ function renderStats() {
 function renderStatsChart() {
     const el = document.getElementById('statsChart');
     const today = new Date();
+    const filtLogs = getGroupFilteredLogs();
     const data = [];
 
     for (let i = 13; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
         const key = d.toDateString();
-        const pts = logs.filter(l => new Date(l.loggedAt).toDateString() === key).reduce((s, l) => s + (l.pointsAtLog || 0), 0);
+        const pts = filtLogs.filter(l => new Date(l.loggedAt).toDateString() === key).reduce((s, l) => s + (l.pointsAtLog || 0), 0);
         data.push({ label: d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }), pts });
     }
 
@@ -1501,10 +1765,11 @@ function renderStatsChart() {
 
 function renderStatsTopEvents() {
     const el = document.getElementById('statsTopEvents');
+    const filtLogs = getGroupFilteredLogs();
 
     const counts = {};
     const totPts = {};
-    logs.forEach(l => {
+    filtLogs.forEach(l => {
         counts[l.eventId] = (counts[l.eventId] || 0) + 1;
         totPts[l.eventId] = (totPts[l.eventId] || 0) + (l.pointsAtLog || 0);
     });
@@ -1590,21 +1855,22 @@ function calcScoreFromLogs(filteredLogs) {
 }
 
 function updateAllStats() {
-    const total = calcScoreFromLogs(logs);
+    const filtLogs = getGroupFilteredLogs();
+    const total = calcScoreFromLogs(filtLogs);
     document.getElementById('totalScore').textContent = (total >= 0 ? '+' : '') + total;
 
     const today = new Date().toDateString();
-    const todayLogs = logs.filter(l => new Date(l.loggedAt).toDateString() === today);
+    const todayLogs = filtLogs.filter(l => new Date(l.loggedAt).toDateString() === today);
     const todayPts = calcScoreFromLogs(todayLogs);
 
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekLogs = logs.filter(l => new Date(l.loggedAt) >= weekAgo);
+    const weekLogs = filtLogs.filter(l => new Date(l.loggedAt) >= weekAgo);
     const weekPts = calcScoreFromLogs(weekLogs);
 
     document.getElementById('sPtsOggi').textContent = (todayPts >= 0 ? '+' : '') + todayPts;
     document.getElementById('sLogOggi').textContent = todayLogs.length;
     document.getElementById('sPtsSettimana').textContent = (weekPts >= 0 ? '+' : '') + weekPts;
-    document.getElementById('sTotLogs').textContent = logs.length;
+    document.getElementById('sTotLogs').textContent = filtLogs.length;
 }
 
 // ==========================================
@@ -1624,6 +1890,21 @@ function toLocalISO(date) {
     return local.toISOString().slice(0, 16);
 }
 
+// Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+function localDateStr(d) {
+    const dt = d || new Date();
+    return dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0');
+}
+// Restituisce ISO UTC "YYYY-MM-DDTHH:MM:SS.sssZ" per il salvataggio su DB.
+// PostgreSQL timestamptz tratta stringhe senza offset come UTC; inviare esplicitamente
+// UTC evita lo shift di date per utenti in fuso UTC+N (es. CET/CEST).
+function localDateTimeStr(d) {
+    const dt = d || new Date();
+    return dt.toISOString();
+}
+
 function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -1636,7 +1917,13 @@ function showToast(msg, isError = false) {
 // SUPABASE: LOAD
 // ==========================================
 async function loadGroups() {
-    const { data, error } = await sb.from('el_groups').select('*').order('sort_order', { ascending: true }).order('name');
+    let groupsQuery = sb.from('el_groups').select('*').order('sort_order', { ascending: true }).order('name');
+    if (riservatoFilter) {
+        groupsQuery = groupsQuery.eq('riservato', true);
+    } else if (!hiddenMode) {
+        groupsQuery = groupsQuery.or('riservato.eq.false,riservato.is.null');
+    }
+    const { data, error } = await groupsQuery;
     if (error) { console.error('loadGroups', error); return; }
     groups = (data || []).map(g => ({ ...g, groupId: g.group_id }));
 }
@@ -1645,6 +1932,11 @@ async function loadEvents() {
     const { data, error } = await sb.from('el_events').select('*').order('sort_order', { ascending: true }).order('name');
     if (error) { console.error('loadEvents', error); return; }
     events = (data || []).map(e => ({ ...e, groupId: e.group_id }));
+}
+
+function filterEventsByVisibleGroups() {
+    const visibleGroupIds = new Set(groups.map(g => g.id));
+    events = events.filter(e => visibleGroupIds.has(e.groupId));
 }
 
 async function loadLogs() {
@@ -1668,10 +1960,12 @@ async function saveGroup(e) {
     e.preventDefault();
     const editId = document.getElementById('editGroupId').value;
     const data = {
-        name:       document.getElementById('groupName').value.trim(),
-        icon:       document.getElementById('groupIcon').value.trim() || null,
-        color:      document.getElementById('groupColor').value,
-        sort_order: editId ? (groups.find(g => g.id === editId)?.sort_order ?? 0) : groups.length,
+        name:        document.getElementById('groupName').value.trim(),
+        icon:        document.getElementById('groupIcon').value.trim() || null,
+        color:       document.getElementById('groupColor').value,
+        description: document.getElementById('groupDescription').value.trim() || null,
+        sort_order:  editId ? (groups.find(g => g.id === editId)?.sort_order ?? 0) : groups.length,
+        riservato:   document.getElementById('groupRiservato').checked || false,
     };
 
     setLoading(true);
@@ -1787,7 +2081,7 @@ async function quickConfirmLog() {
     document.getElementById('quickLogModal').classList.remove('active');
     const ev = events.find(e => e.id === pendingLogEventId);
     if (!ev) return;
-    await _saveLog(ev, null, new Date().toISOString());
+    await _saveLog(ev, null, localDateTimeStr());
     pendingLogEventId = null;
 }
 
@@ -1798,7 +2092,7 @@ async function confirmLog() {
 
     const note    = document.getElementById('logModalNote').value.trim();
     const dtValue = document.getElementById('logModalDateTime').value;
-    const loggedAt = dtValue ? new Date(dtValue).toISOString() : new Date().toISOString();
+    const loggedAt = dtValue ? new Date(dtValue).toISOString() : localDateTimeStr();
 
     await _saveLog(ev, note || null, loggedAt);
     closeLogModal();
@@ -1900,7 +2194,7 @@ async function checkDaSelectEvents() {
                     id:            crypto.randomUUID(),
                     event_id:      ev.id,
                     note:          `count:${currentVal}`,
-                    logged_at:     new Date().toISOString(),
+                    logged_at:     localDateTimeStr(),
                     points_at_log: totalScore,
                 };
                 const { error: insertError } = await sb.from('el_logs').insert([newLog]);
@@ -1970,15 +2264,80 @@ function saveSettings() {
 // ==========================================
 // INIT
 // ==========================================
-window.addEventListener('load', async () => {
+async function startApp() {
     loadSettings();
     showToast('⏳ Caricamento dati...');
     await loadGroups();
     await loadEvents();
+    filterEventsByVisibleGroups();
     await loadLogs();
     renderLogPage();
     await checkDaSelectEvents();
     showToast('✅ Dati caricati');
+}
+
+// AUTH — token da launcher via postMessage o sessionStorage
+window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    if (e.data.type === 'SB_TOKEN' && e.data.token) {
+        console.log('✅ SB_TOKEN ricevuto dal launcher (Events Log)');
+        initWithToken(e.data.token);
+    } else if (e.data.type === 'HIDDEN_MODE') {
+        hiddenMode = !!e.data.active;
+        riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0');
+        console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        updateHiddenModeFab();
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
+    }
+});
+
+// Logout/token refresh/hidden mode broadcast da AppSphere
+const _authChannel = new BroadcastChannel('appsphere_auth');
+_authChannel.onmessage = (e) => {
+    if (!e.data) return;
+    if (e.data.type === 'LOGOUT') {
+        sb = null;
+        sbAccessToken = null;
+        localStorage.removeItem('sb_token');
+        document.getElementById('authOverlay').style.display = 'flex';
+        console.log('🔒 Sessione invalidata da AppSphere (logout)');
+    } else if (e.data.type === 'TOKEN_REFRESH' && e.data.sbToken) {
+        const newToken = e.data.sbToken;
+        localStorage.setItem('sb_token', newToken);
+        sbAccessToken = newToken;
+        if (sb) {
+            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth:   { persistSession: false, autoRefreshToken: false },
+                global: { headers: { Authorization: 'Bearer ' + newToken } }
+            });
+        }
+        console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+    } else if (e.data.type === 'HIDDEN_MODE') {
+        hiddenMode = !!e.data.active;
+        riservatoFilter = false;
+        console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+        updateHiddenModeFab();
+        if (sb) Promise.all([loadGroups(), loadEvents()]).then(() => { filterEventsByVisibleGroups(); renderActivePage(); });
+    }
+};
+
+window.addEventListener('load', () => {
+    // Legge hidden_mode impostato dal launcher (navigazione stessa pagina)
+    const storedHidden = sessionStorage.getItem('hidden_mode');
+    if (storedHidden !== null) {
+        hiddenMode = storedHidden === '1';
+        riservatoFilter = hiddenMode && sessionStorage.getItem('riservato_filter') === '1';
+        updateHiddenModeFab();
+    }
+
+    const stored = localStorage.getItem('sb_token');
+    if (stored) {
+        initWithToken(stored);
+    } else {
+        // Mostra overlay di blocco e attende postMessage dal launcher
+        document.getElementById('authOverlay').style.display = 'flex';
+        console.warn('⚠️ Nessun SB_TOKEN — attendo dal launcher (AppSphere)');
+    }
 });
 </script>
 </body>

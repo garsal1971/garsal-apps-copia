@@ -177,6 +177,45 @@ open tasks.html
 python3 -m http.server 8080
 ```
 
+### Ambiente di sviluppo (dev environment)
+
+Il repository include un ambiente dev separato dalla produzione:
+
+**Server locale:**
+```bash
+bash server.sh        # avvia su http://localhost:8080
+bash server.sh 3000   # porta personalizzata
+```
+Quando si accede da `localhost`, le app rilevano automaticamente `_IS_DEV = true` e usano il progetto Supabase dev.
+
+**Credenziali dev nei file HTML:**
+Ogni file HTML contiene un blocco `_IS_DEV` che switcha le credenziali Supabase in base all'hostname:
+```js
+const _IS_DEV = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
+             || (window.location.hostname.endsWith('.netlify.app')
+                && window.location.hostname.startsWith('dev--'));
+const SUPABASE_URL = _IS_DEV ? 'https://DEV_SUPABASE_PROJECT_REF.supabase.co' : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+const SUPABASE_KEY = _IS_DEV ? 'DEV_SUPABASE_ANON_KEY' : '<PROD_KEY>';
+```
+**I placeholder `DEV_SUPABASE_PROJECT_REF` e `DEV_SUPABASE_ANON_KEY` devono essere sostituiti** con le credenziali reali del progetto Supabase dev creato su [supabase.com](https://supabase.com).
+
+**Setup iniziale del progetto Supabase dev (una tantum):**
+1. Creare un nuovo progetto su [supabase.com](https://supabase.com) (piano gratuito va bene)
+2. Replicare lo schema: `supabase db push --project-ref <DEV_PROJECT_REF>`
+3. In Auth → URL Configuration → Redirect URLs, aggiungere: `http://localhost:8080`
+4. Aggiungere il secret `SUPABASE_DEV_PROJECT_REF` in GitHub → Settings → Secrets (usato da `deploy-dev.yml`)
+5. In Netlify → Site configuration → Build & deploy → Branch deploys → aggiungere pattern `dev/*`
+
+**Branch naming:**
+- `dev/<descrizione>` — sviluppo/test, preview su Netlify, **non va in produzione**
+- `claude/<descrizione>-<id>` — produzione, auto-merge su master
+
+**Preview URL per branch dev:**
+```
+dev--<nome-branch>--<sitename>.netlify.app
+```
+Usa automaticamente Supabase dev (rilevamento hostname).
+
 ### Deployment
 Netlify auto-deploys on push to `master`. Configuration in `netlify.toml`:
 ```toml
@@ -194,7 +233,8 @@ Push to `master` → Netlify picks it up → live within seconds.
 
 ### Git workflow
 - `master` — production branch (auto-deployed to Netlify)
-- Feature branches follow `claude/<description>-<id>` convention (e.g. `claude/add-claude-documentation-3yPWQ`)
+- `claude/<description>-<id>` — feature branch → auto-merge to master → produzione
+- `dev/<description>` — development/staging branch → preview URL Netlify, **non va in produzione**
 - Commit message prefixes used in this repo:
   - `feat:` — new feature
   - `fix:` — bug fix
@@ -206,6 +246,11 @@ Push to `master` → Netlify picks it up → live within seconds.
 Pushing to a `claude/**` branch triggers `.github/workflows/deploy.yml` which:
 1. Merges the branch into `master` automatically (no PR needed)
 2. Netlify picks up the master push and deploys within seconds
+
+Pushing to a `dev/**` branch triggers `.github/workflows/deploy-dev.yml` which:
+1. **Does NOT merge to master**
+2. Netlify creates a branch preview deploy at `dev--<branch>--<sitename>.netlify.app`
+3. Optionally applies Supabase migrations/functions to the dev project
 
 **Claude cannot push directly to `master`** (HTTP 403 — server-side branch protection).
 The only path to production is: push to `claude/**` → GitHub Actions merges → Netlify deploys.

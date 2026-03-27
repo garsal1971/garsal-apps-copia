@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.2.0</title>
+<title>AppSphere v1.5.72</title>
+<meta name="theme-color" content="#0081C8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AppSphere">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,7 +25,10 @@
   }
   #field {
     position: fixed;
-    inset: 0;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow: hidden;
   }
   .cw {
@@ -65,33 +75,6 @@
     margin-top: 4px;
     pointer-events: none;
   }
-  .cw:not(.dragging):hover .tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .tip {
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%) translateY(5px);
-    background: #111;
-    color: #fff;
-    border-radius: 8px;
-    padding: 8px 14px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s, transform 0.15s;
-    z-index: 9999;
-    font-size: 12px;
-  }
-  .tip::after {
-    content: '';
-    position: absolute;
-    top: 100%; left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #111;
-  }
-  .tip-name { font-weight: 600; margin-bottom: 2px; }
-  .tip-meta { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; }
 
   /* ── SCORE PANEL ── */
   #score-panel {
@@ -107,9 +90,11 @@
     flex-direction: column;
     gap: 2px;
     min-width: 110px;
-    pointer-events: none;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
   }
   #score-panel.visible { display: flex; }
+  #score-panel:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(238,51,78,0.35); }
   .sp-label {
     font-family: 'DM Sans', sans-serif;
     font-size: 10px;
@@ -142,6 +127,38 @@
     justify-content: center;
     z-index: 9999;
     transition: opacity 0.5s ease;
+  }
+  .login-top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #0081C8;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 10px;
+  }
+  .login-top-bar-icon {
+    width: 22px;
+    height: 22px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .login-top-bar-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.2px;
   }
   #login-screen.hidden {
     opacity: 0;
@@ -191,43 +208,416 @@
   /* ── NOME UTENTE IN ALTO ── */
   #user-bar {
     position: fixed;
-    top: 16px;
-    right: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
     display: none;
     align-items: center;
+    padding: 0 16px;
     gap: 10px;
     z-index: 500;
+    background: #0081C8;
     font-family: 'DM Mono', monospace;
     font-size: 12px;
-    color: #888;
+    color: #fff;
   }
   #user-bar.visible { display: flex; }
-  #logout-btn {
-    padding: 5px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #fff;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: #888;
-    cursor: pointer;
-    transition: border-color 0.2s;
+  #user-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
   }
-  #logout-btn:hover { border-color: #aaa; color: #111; }
+  #user-bar-brand-icon {
+    width: 22px;
+    height: 22px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+  }
+  #user-bar-brand-text {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.2px;
+  }
+  #user-name {
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+  }
+  /* ── HAMBURGER BTN ── */
+  #hamburger-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  #hamburger-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+  }
 
-  /* ── SETTINGS BTN ── */
-  #settings-btn {
-    padding: 5px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+  /* ── HAMBURGER DROPDOWN MENU ── */
+  #hamburger-menu {
+    display: none;
+    position: fixed;
+    top: 56px;
+    right: 0;
+    min-width: 180px;
     background: #fff;
+    border-radius: 0 0 0 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    z-index: 600;
+    overflow: hidden;
+  }
+  #hamburger-menu.open { display: block; }
+  .hm-item {
+    display: block;
+    width: 100%;
+    padding: 15px 20px;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #222;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .hm-item:last-child { border-bottom: none; }
+  .hm-item:hover { background: #f5f5f5; }
+  .hm-item.danger { color: #E74C3C; }
+
+  /* ── NOTIFICHE MODAL ── */
+  #notifiche-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.48);
+    z-index: 700;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #notifiche-overlay.open { display: flex; }
+  #notifiche-modal {
+    background: #fff;
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #notifiche-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+  }
+  #notifiche-modal-header h2 {
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+  }
+  #notifiche-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  #notifiche-modal-body { padding: 16px 20px 32px; }
+  .notif-rule-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .notif-rule-title {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #111;
+    margin-bottom: 4px;
+  }
+  .notif-rule-app {
     font-family: 'DM Mono', monospace;
     font-size: 11px;
     color: #888;
-    cursor: pointer;
-    transition: border-color 0.2s;
+    margin-bottom: 10px;
   }
-  #settings-btn:hover { border-color: #aaa; color: #111; }
+  .notif-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .notif-chip {
+    background: #EEF2FF;
+    color: #3730A3;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+  }
+  .notif-chip.green { background: #ECFDF5; color: #065F46; }
+  .notif-chip.grey  { background: #F3F4F6; color: #9CA3AF; }
+  .notif-chip.red   { background: #FEF2F2; color: #991B1B; }
+  .notif-rule-card { cursor: pointer; transition: box-shadow 0.15s; }
+  .notif-rule-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+  .notif-rule-card.open { border-color: #6366F1; }
+  .notif-queue-panel {
+    display: none;
+    margin-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 10px;
+  }
+  .notif-queue-panel.open { display: block; }
+  .notif-queue-loading { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; }
+  .notif-queue-empty  { color: #aaa; font-size: 11px; font-family: 'DM Mono', monospace; font-style: italic; }
+  .notif-queue-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+  }
+  .notif-queue-row:last-child { border-bottom: none; }
+  .notif-queue-status {
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .nqs-pending  { background: #FFF7ED; color: #C2410C; }
+  .nqs-snoozed  { background: #EFF6FF; color: #1D4ED8; }
+  .nqs-sent     { background: #ECFDF5; color: #065F46; }
+  .nqs-cancelled{ background: #F3F4F6; color: #9CA3AF; }
+
+  /* ── NOTIFICA AL VOLO MODAL ── */
+  #nqv-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,0.55);
+    font-family: 'DM Sans', sans-serif;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #nqv-overlay.open { display: flex; }
+  .nqv-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: min(420px, 100%);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.32);
+  }
+  .nqv-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #6C5CE7;
+    flex-shrink: 0;
+  }
+  .nqv-back-btn {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+  .nqv-back-btn:hover { background: rgba(255,255,255,0.22); }
+  .nqv-modal-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .nqv-modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nqv-modal-close:hover { background: rgba(255,255,255,0.22); color: #fff; }
+  #nqv-view-list { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  #nqv-view-form { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  .nqv-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+  }
+  .nqv-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 13px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    background: #fff;
+    transition: border-color 0.15s;
+  }
+  .nqv-item-body { flex: 1; min-width: 0; }
+  .nqv-item-title { font-size: 14px; font-weight: 600; color: #1F2937; }
+  .nqv-item-meta { font-size: 11px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 3px; }
+  .nqv-item-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+  .nqv-del-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    line-height: 1;
+    transition: color 0.13s;
+  }
+  .nqv-del-btn:hover { color: #EF4444; }
+  .nqv-footer {
+    padding: 12px 14px;
+    border-top: 1px solid #F3F4F6;
+    flex-shrink: 0;
+  }
+  .nqv-insert-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    background: #6C5CE7;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .nqv-insert-btn:hover { opacity: 0.88; }
+  .nqv-form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .nqv-field { display: flex; flex-direction: column; gap: 6px; }
+  .nqv-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .nqv-input, .nqv-textarea {
+    padding: 10px 12px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #111;
+    background: #F9FAFB;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .nqv-textarea { resize: vertical; min-height: 70px; }
+  .nqv-input:focus, .nqv-textarea:focus { border-color: #6C5CE7; background: #fff; }
+  .nqv-date-row { display: flex; gap: 10px; }
+  .nqv-date-row .nqv-field { flex: 1; }
+  .nqv-form-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #F3F4F6;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .nqv-btn-cancel {
+    flex: 1;
+    padding: 10px;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+  }
+  .nqv-btn-cancel:hover { border-color: #aaa; }
+  .nqv-btn-save {
+    flex: 2;
+    padding: 10px;
+    background: #6C5CE7;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .nqv-btn-save:hover { opacity: 0.88; }
+  .nqv-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9CA3AF;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
 
   /* ── BADGE SETTINGS MODAL ── */
   #badge-modal-overlay {
@@ -301,6 +691,34 @@
     border-radius: 50%;
     border: 2px solid #111;
     flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+  }
+  .bq-color-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .bq-color-input {
+    width: 38px;
+    height: 28px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 2px;
+    cursor: pointer;
+    background: none;
+  }
+  .bq-color-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 4px 8px;
+    width: 80px;
+    text-transform: uppercase;
   }
   .bq-title {
     font-size: 13px;
@@ -360,12 +778,573 @@
     transition: opacity 0.15s;
   }
   #badge-reload-btn:hover { opacity: 0.8; }
+
+  /* ── PREMI ── */
+  #rewards-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0,0,0,0.55);
+    font-family: 'DM Sans', sans-serif;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  #rewards-overlay.open { display: flex; }
+
+  .rw-modal {
+    background: #fff;
+    border-radius: 16px;
+    width: min(420px, 100%);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.32);
+  }
+  .rw-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #1F2937;
+    flex-shrink: 0;
+  }
+  .rw-modal-back {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+  .rw-modal-back:hover { background: rgba(255,255,255,0.22); }
+  .rw-modal-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .rw-modal-close {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rw-modal-close:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+  /* Views */
+  #rw-view-main        { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  #rw-view-gestisci    { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+  #rw-view-cronologia  { display: none; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+
+  /* Prize scroll */
+  .rw-prize-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+  }
+  .rw-prize-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 13px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .rw-prize-card:hover { border-color: #FF3366; box-shadow: 0 2px 10px rgba(255,51,102,0.1); }
+  .rw-prize-icon { font-size: 22px; flex-shrink: 0; }
+  .rw-prize-info { flex: 1; min-width: 0; }
+  .rw-prize-name { font-size: 14px; font-weight: 600; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw-prize-cost { font-size: 12px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-prize-uses { font-size: 11px; color: #A78BFA; font-family: 'DM Mono', monospace; margin-top: 2px; font-weight: 600; }
+  .rw-redeem-btn {
+    padding: 7px 13px;
+    background: #FF3366;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .rw-redeem-btn:hover { opacity: 0.85; }
+  .rw-redeem-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; opacity: 1; }
+
+  /* Action buttons row */
+  .rw-action-row {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #F3F4F6;
+    flex-shrink: 0;
+  }
+  .rw-action-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: #F9FAFB;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.13s, border-color 0.13s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .rw-action-btn:hover { background: #F3F4F6; border-color: #D1D5DB; }
+
+  /* Stats badges */
+  .rw-stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #F3F4F6;
+    flex-shrink: 0;
+  }
+  .rw-stat-badge {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .rw-stat-badge.available { background: #D1FAE5; }
+  .rw-stat-badge.spent     { background: #FEE2E2; }
+  .rw-stat-num {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.1;
+  }
+  .rw-stat-badge.available .rw-stat-num { color: #059669; }
+  .rw-stat-badge.spent     .rw-stat-num { color: #DC2626; }
+  .rw-stat-lbl {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-top: 3px;
+    color: #6B7280;
+  }
+
+  /* Gestisci view */
+  .rw-gestisci-top {
+    padding: 12px 14px;
+    border-bottom: 1px solid #F3F4F6;
+    flex-shrink: 0;
+  }
+  .rw-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    background: #FF3366;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    width: 100%;
+    justify-content: center;
+  }
+  .rw-add-btn:hover { opacity: 0.88; }
+  .rw-gestisci-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 0;
+  }
+  .rw-card {
+    background: #fff;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 11px 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: box-shadow 0.15s;
+  }
+  .rw-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .rw-card-emoji { font-size: 22px; flex-shrink: 0; }
+  .rw-card-body { flex: 1; min-width: 0; }
+  .rw-card-name { font-size: 14px; font-weight: 600; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rw-card-meta { font-size: 12px; color: #6B7280; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .rw-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rw-badge.once   { background: #FEF3C7; color: #92400E; }
+  .rw-badge.repeat { background: #D1FAE5; color: #065F46; }
+  .rw-card-pts { font-family: 'DM Mono', monospace; font-size: 20px; color: #FF3366; line-height: 1; }
+  .rw-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .rw-icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    border: 1.5px solid #E5E7EB;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.13s, border-color 0.13s;
+  }
+  .rw-icon-btn:hover { background: #F9FAFB; }
+  .rw-icon-btn.del:hover { background: #FEE2E2; border-color: #EF4444; }
+
+  /* Cronologia view */
+  .rw-cron-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+  .rw-cron-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background: #F9FAFB;
+  }
+  .rw-cron-info { flex: 1; min-width: 0; }
+  .rw-cron-name { font-size: 14px; font-weight: 600; color: #1F2937; }
+  .rw-cron-date { font-size: 11px; color: #9CA3AF; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .rw-cron-pts { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; color: #DC2626; flex-shrink: 0; }
+
+  /* Empty state */
+  .rw-empty { text-align: center; padding: 40px 20px; color: #6B7280; }
+  .rw-empty-icon { font-size: 44px; margin-bottom: 12px; }
+  .rw-empty-text { font-size: 13px; line-height: 1.6; }
+
+  /* Form modal */
+  #rw-form-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9500;
+    align-items: center;
+    justify-content: center;
+  }
+  #rw-form-overlay.open { display: flex; }
+  #rw-form-modal {
+    background: #fff;
+    border-radius: 14px;
+    border: 2px solid #111;
+    width: min(480px, 94vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .rw-form-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rw-form-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+  }
+  .rw-form-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .rw-form-body {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .rw-field { display: flex; flex-direction: column; gap: 6px; }
+  .rw-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .rw-input, .rw-select {
+    padding: 10px 12px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: #111;
+    background: #F9FAFB;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .rw-input:focus, .rw-select:focus { border-color: #FF3366; background: #fff; }
+  .rw-per-use-row { display: none; }
+  .rw-per-use-row.show { display: flex; }
+  .rw-form-footer {
+    padding: 14px 22px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .rw-btn-cancel {
+    padding: 9px 18px;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+  }
+  .rw-btn-cancel:hover { border-color: #aaa; }
+  .rw-btn-save {
+    padding: 9px 18px;
+    background: #FF3366;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .rw-btn-save:hover { opacity: 0.88; }
+
+  /* ── PROFILO MODAL ── */
+  #profilo-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.48);
+    z-index: 700;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #profilo-overlay.open { display: flex; }
+  #profilo-modal {
+    background: #fff;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #profilo-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+  }
+  #profilo-modal-header h2 { font-size: 16px; font-weight: 600; color: #222; }
+  #profilo-modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #888;
+    padding: 4px 8px;
+  }
+  #profilo-body { padding: 16px 20px 32px; }
+  .profilo-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  #profilo-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e5e7eb;
+    border: 2px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+  #profilo-avatar-initials {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg,#0081C8,#00A651);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .profilo-email { font-size: 13px; color: #888; }
+  .profilo-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #0081C8;
+    margin: 20px 0 10px;
+  }
+  .profilo-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .profilo-field { margin-bottom: 10px; }
+  .profilo-field label {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .profilo-field input,
+  .profilo-field select,
+  .profilo-field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #222;
+    background: #fafafa;
+    box-sizing: border-box;
+  }
+  .profilo-field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .profilo-field input:focus,
+  .profilo-field select:focus,
+  .profilo-field textarea:focus {
+    outline: none;
+    border-color: #0081C8;
+    background: #fff;
+  }
+  #profilo-save-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg,#0081C8,#00A651);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  #profilo-save-btn:active { opacity: 0.85; }
+  #profilo-saved-msg {
+    display: none;
+    text-align: center;
+    color: #00A651;
+    font-weight: 700;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  /* ── INSERIMENTO CODICE NASCOSTO ── */
+  #code-entry {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 7px 9px;
+    z-index: 200;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  #code-entry.visible { display: flex; }
+  #code-entry.active  { background: rgba(0,129,200,0.45); }
+  /* modalità nascosta attiva: nascondi caselle, mostra icona */
+  #code-entry.active:not(.capturing) .code-box,
+  #code-entry.active:not(.capturing) #code-confirm { display: none; }
+  #hidden-icon {
+    display: none;
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s, transform 0.2s;
+  }
+  #hidden-icon:hover { color: #fff; transform: scale(1.15); }
+  #code-entry.active:not(.capturing) #hidden-icon { display: flex; align-items: center; }
+  .code-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid rgba(255,255,255,0.35);
+    background: transparent;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .code-box.filled {
+    border-color: transparent;
+    transform: scale(1.1);
+  }
+  #code-confirm {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    margin-left: 2px;
+  }
+  #code-confirm:hover { color: #fff; }
+
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="login-screen">
+  <div class="login-top-bar">
+    <div class="login-top-bar-icon">G</div>
+    <div class="login-top-bar-text">Garsal Apps</div>
+  </div>
   <div class="login-card">
     <div class="login-title">AppSphere</div>
     <div class="login-sub">// il tuo universo di applicazioni</div>
@@ -381,11 +1360,150 @@
   </div>
 </div>
 
-<!-- UTENTE BAR -->
+<!-- UTENTE BAR / TOP BAR -->
 <div id="user-bar">
+  <div id="user-bar-brand">
+    <div id="user-bar-brand-icon">G</div>
+    <div id="user-bar-brand-text">Garsal Apps</div>
+  </div>
   <span id="user-name"></span>
-  <button id="settings-btn" onclick="openBadgeSettings()">⚙ Badge</button>
-  <button id="logout-btn" onclick="logout()">Esci</button>
+  <button id="hamburger-btn" onclick="toggleHamburgerMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<!-- HAMBURGER DROPDOWN -->
+<div id="hamburger-menu">
+  <button class="hm-item" onclick="closeHamburgerMenu(); openProfilo();">👤 Profilo</button>
+  <button class="hm-item" onclick="closeHamburgerMenu(); openBadgeSettings();">⚙ Badge</button>
+  <button class="hm-item" onclick="closeHamburgerMenu(); openNotifiche();">🔔 Notifiche</button>
+  <button class="hm-item" onclick="closeHamburgerMenu(); openNqv();">⚡ Notifica al Volo</button>
+  <button class="hm-item danger" onclick="closeHamburgerMenu(); logout();">↩ Esci</button>
+</div>
+
+<!-- PROFILO MODAL -->
+<div id="profilo-overlay" onclick="handleProfiloOverlayClick(event)">
+  <div id="profilo-modal">
+    <div id="profilo-modal-header">
+      <h2>👤 Profilo</h2>
+      <button id="profilo-modal-close" onclick="closeProfilo()">✕</button>
+    </div>
+    <div id="profilo-body">
+
+      <!-- Avatar + email -->
+      <div class="profilo-avatar-row">
+        <div id="profilo-avatar-initials">?</div>
+        <div>
+          <div id="profilo-display-name" style="font-weight:700; font-size:15px; color:#222;"></div>
+          <div class="profilo-email" id="profilo-display-email"></div>
+        </div>
+      </div>
+
+      <!-- Anagrafica -->
+      <div class="profilo-section-title">Anagrafica</div>
+      <div class="profilo-row">
+        <div class="profilo-field">
+          <label>Nome</label>
+          <input type="text" id="pf-nome" placeholder="Mario">
+        </div>
+        <div class="profilo-field">
+          <label>Cognome</label>
+          <input type="text" id="pf-cognome" placeholder="Rossi">
+        </div>
+      </div>
+      <div class="profilo-row">
+        <div class="profilo-field">
+          <label>Data di nascita</label>
+          <input type="date" id="pf-data-nascita">
+        </div>
+        <div class="profilo-field">
+          <label>Sesso</label>
+          <select id="pf-sesso">
+            <option value="">—</option>
+            <option value="M">Maschio</option>
+            <option value="F">Femmina</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="profilo-field" style="max-width:140px;">
+        <label>Altezza (cm)</label>
+        <input type="number" id="pf-altezza" placeholder="175" min="50" max="300">
+      </div>
+
+      <!-- Clinica -->
+      <div class="profilo-section-title">Informazioni Cliniche</div>
+      <div class="profilo-field">
+        <label>Patologie (una per riga)</label>
+        <textarea id="pf-patologie" placeholder="Es.&#10;Ipertensione arteriosa&#10;Ipercolesterolemia"></textarea>
+      </div>
+      <div class="profilo-field">
+        <label>Farmaci assunti (uno per riga)</label>
+        <textarea id="pf-farmaci" placeholder="Es.&#10;Amlodipina 5mg — antipertensivo&#10;Rosuvastatina 5mg — statina"></textarea>
+      </div>
+      <div class="profilo-field">
+        <label>Note mediche</label>
+        <textarea id="pf-note" placeholder="Altre informazioni utili…"></textarea>
+      </div>
+
+      <button id="profilo-save-btn" onclick="saveProfilo()">💾 Salva profilo</button>
+      <div id="profilo-saved-msg">✅ Profilo salvato!</div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICHE MODAL -->
+<div id="notifiche-overlay" onclick="handleNotificheOverlayClick(event)">
+  <div id="notifiche-modal">
+    <div id="notifiche-modal-header">
+      <h2>🔔 Notifiche</h2>
+      <button id="notifiche-modal-close" onclick="closeNotifiche()">✕</button>
+    </div>
+    <div id="notifiche-modal-body"></div>
+  </div>
+</div>
+
+<!-- NOTIFICA AL VOLO MODAL -->
+<div id="nqv-overlay" onclick="handleNqvOverlayClick(event)">
+  <div class="nqv-modal">
+    <div class="nqv-modal-header">
+      <button class="nqv-back-btn" id="nqv-back-btn" onclick="nqvShowView('list')" style="display:none">← Indietro</button>
+      <span class="nqv-modal-title" id="nqv-modal-title">⚡ Notifica al Volo</span>
+      <button class="nqv-modal-close" onclick="closeNqv()">✕</button>
+    </div>
+    <!-- VIEW: lista -->
+    <div id="nqv-view-list">
+      <div class="nqv-list-scroll" id="nqv-list-scroll">
+        <div class="nqv-empty">Caricamento…</div>
+      </div>
+      <div class="nqv-footer">
+        <button class="nqv-insert-btn" onclick="nqvShowView('form')">➕ Inserisci</button>
+      </div>
+    </div>
+    <!-- VIEW: form inserimento -->
+    <div id="nqv-view-form">
+      <div class="nqv-form-body">
+        <div class="nqv-field">
+          <label class="nqv-label">Testo notifica</label>
+          <textarea class="nqv-textarea" id="nqv-testo" placeholder="Es. Chiama il dentista…"></textarea>
+        </div>
+        <div class="nqv-date-row">
+          <div class="nqv-field">
+            <label class="nqv-label">Data</label>
+            <input type="date" class="nqv-input" id="nqv-data">
+          </div>
+          <div class="nqv-field">
+            <label class="nqv-label">Orario</label>
+            <input type="time" class="nqv-input" id="nqv-orario">
+          </div>
+        </div>
+      </div>
+      <div class="nqv-form-footer">
+        <button class="nqv-btn-cancel" onclick="nqvShowView('list')">Annulla</button>
+        <button class="nqv-btn-save" onclick="saveNqv()">💾 Salva</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- BADGE SETTINGS MODAL -->
@@ -405,10 +1523,103 @@
 
 <div id="field"></div>
 
+<!-- INSERIMENTO CODICE NASCOSTO -->
+<div id="code-entry">
+  <div class="code-box" id="cb0"></div>
+  <div class="code-box" id="cb1"></div>
+  <div class="code-box" id="cb2"></div>
+  <button id="code-confirm" title="Verifica codice">›</button>
+  <span id="hidden-icon" title="Modalità nascosta attiva">
+    <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 0C5.5 0 1.7 2.8 0 7c1.7 4.2 5.5 7 10 7s8.3-2.8 10-7C18.3 2.8 14.5 0 10 0zm0 11.7A4.7 4.7 0 0 1 5.3 7 4.7 4.7 0 0 1 10 2.3 4.7 4.7 0 0 1 14.7 7 4.7 4.7 0 0 1 10 11.7zm0-7.5A2.8 2.8 0 0 0 7.2 7 2.8 2.8 0 0 0 10 9.8 2.8 2.8 0 0 0 12.8 7 2.8 2.8 0 0 0 10 4.2z" fill="currentColor"/>
+    </svg>
+  </span>
+</div>
+
 <!-- SCORE PANEL -->
-<div id="score-panel">
+<div id="score-panel" onclick="openRewards()" title="Apri Catalogo Premi">
   <div class="sp-label">Totale</div>
   <div class="sp-value" id="sp-value">—</div>
+</div>
+
+<!-- PREMI OVERLAY -->
+<div id="rewards-overlay">
+  <div class="rw-modal">
+
+    <div class="rw-modal-header">
+      <button class="rw-modal-back" id="rw-back-btn" onclick="rwShowView('main')" style="display:none">← Indietro</button>
+      <span class="rw-modal-title" id="rw-modal-title">🎁 Premi</span>
+      <button class="rw-modal-close" onclick="closeRewards()">✕</button>
+    </div>
+
+    <!-- VIEW: principale — lista premi ritirati -->
+    <div id="rw-view-main">
+      <div class="rw-prize-scroll" id="rw-prize-scroll"></div>
+      <div class="rw-action-row">
+        <button class="rw-action-btn" onclick="rwShowView('gestisci')">🛠 Gestisci</button>
+        <button class="rw-action-btn" onclick="rwShowView('cronologia')">📋 Cronologia</button>
+      </div>
+      <div class="rw-stats-row">
+        <div class="rw-stat-badge available">
+          <span class="rw-stat-num" id="rw-pts-available">—</span>
+          <span class="rw-stat-lbl">Pun. disponibili</span>
+        </div>
+        <div class="rw-stat-badge spent">
+          <span class="rw-stat-num" id="rw-pts-spent">—</span>
+          <span class="rw-stat-lbl">Pun. spesi</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: gestisci premi -->
+    <div id="rw-view-gestisci">
+      <div class="rw-gestisci-top">
+        <button class="rw-add-btn" onclick="openRewardForm(null)">+ Aggiungi Premio</button>
+      </div>
+      <div class="rw-gestisci-list" id="rw-list"></div>
+    </div>
+
+    <!-- VIEW: cronologia riscatti -->
+    <div id="rw-view-cronologia">
+      <div class="rw-cron-list" id="rw-cron-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FORM PREMIO -->
+<div id="rw-form-overlay">
+  <div id="rw-form-modal">
+    <div class="rw-form-header">
+      <span class="rw-form-title" id="rw-form-title">Nuovo Premio</span>
+      <button class="rw-form-close" onclick="closeRewardForm()">✕</button>
+    </div>
+    <div class="rw-form-body">
+      <div class="rw-field">
+        <label class="rw-label">Nome Premio</label>
+        <input class="rw-input" id="rw-name" type="text" placeholder="es. Film al cinema">
+      </div>
+      <div class="rw-field">
+        <label class="rw-label">Tipo</label>
+        <select class="rw-select" id="rw-type" onchange="rwTypeChange()">
+          <option value="una_tantum">Una tantum (una sola volta)</option>
+          <option value="ripetibile">Ripetibile (ogni volta che lo usi)</option>
+        </select>
+      </div>
+      <div class="rw-field">
+        <label class="rw-label">Punti Necessari (totale)</label>
+        <input class="rw-input" id="rw-points" type="number" min="1" placeholder="es. 50">
+      </div>
+      <div class="rw-field rw-per-use-row" id="rw-per-use-row">
+        <label class="rw-label">Punti per ogni utilizzo</label>
+        <input class="rw-input" id="rw-per-use" type="number" min="1" placeholder="es. 10">
+      </div>
+    </div>
+    <div class="rw-form-footer">
+      <button class="rw-btn-cancel" onclick="closeRewardForm()">Annulla</button>
+      <button class="rw-btn-save" onclick="saveReward()">Salva</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -417,11 +1628,33 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.2.0';
-const BUILD_TIME  = '2026-03-03T00:00:00Z';
+const APP_VERSION = 'v1.5.72';
+const BUILD_TIME  = '2026-03-27T16:00:00Z';
+
+// ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+}
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function deleteCookie(name) {
+  document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+}
 console.log('%c AppSphere ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
     'background:#0081C8;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
     'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
+
+// ── MODALITÀ NASCOSTA ──
+let hiddenMode      = false;
+let hiddenSequence  = [];   // sequenza colori da cm_settings
+let hiddenSeqLength = 0;
+let captureMode     = false; // true quando il widget è aperto
+let capturedColors  = [];   // colori selezionati nelle caselle
+let captureTimeout  = null; // auto-chiusura dopo 15s
+let lastCaptureTouch = 0;   // evita double-fire touch+mousedown
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
@@ -696,7 +1929,8 @@ function render(apps) {
     const r = size / 2;
     const pos = initialPlace(r, nodes);
 
-    const color = OLYMPIC[i % OLYMPIC.length];
+    const color = app.color || OLYMPIC[i % OLYMPIC.length];
+    app.color = color; // normalizza per cattura sequenza
     const nameFz  = fitFontSize(app.name, size);
     const scoreFz = Math.max(9, Math.round(size * 0.13));
 
@@ -707,10 +1941,6 @@ function render(apps) {
       <div class="circle" style="width:${size}px;height:${size}px;background:${color};border:4px solid #111;">
         <span class="c-name" style="font-size:${nameFz}px">${app.name}</span>
         <span class="c-score" style="font-size:${scoreFz}px">${app.score}</span>
-      </div>
-      <div class="tip">
-        <div class="tip-name">${app.name}</div>
-        <div class="tip-meta">${app.description} · ${app.score} pts</div>
       </div>
     `;
 
@@ -730,10 +1960,11 @@ function render(apps) {
     field.appendChild(node.el);
   });
 
-  // Update total score in the panel
+  // Update total score in the panel (net = gross - punti premi spesi)
   const total = CURRENT_APPS.reduce((s, a) => s + a.score, 0);
   const spv = document.getElementById('sp-value');
   if (spv) spv.textContent = total.toLocaleString('it-IT');
+  updateScorePanel();
 }
 
 // ── DRAG ──
@@ -751,6 +1982,22 @@ function makeDraggable(node) {
   }
 
   function onDown(e) {
+    // Capture mode attiva: registra colore nella casella successiva
+    if (captureMode) {
+      const now = Date.now();
+      if (e.type === 'touchstart') {
+        lastCaptureTouch = now;
+        if (capturedColors.length >= (hiddenSeqLength || 3)) capturedColors = [];
+        capturedColors.push(node.app.color);
+        updateCodeBoxes();
+      } else if (e.type === 'mousedown' && now - lastCaptureTouch > 300) {
+        // desktop click reale (non il mousedown sintetico generato da touch)
+        if (capturedColors.length >= (hiddenSeqLength || 3)) capturedColors = [];
+        capturedColors.push(node.app.color);
+        updateCodeBoxes();
+      }
+      return; // blocca SEMPRE onUp → launchApp non scatta mai
+    }
     const { x, y } = getXY(e);
     startX = x; startY = y;
     origX = node.x; origY = node.y;
@@ -796,7 +2043,9 @@ function makeDraggable(node) {
     window.removeEventListener('touchmove', onMove);
     window.removeEventListener('mouseup', onUp);
     window.removeEventListener('touchend', onUp);
-    if (!moved) launchApp(node.app);
+    if (!moved) {
+      launchApp(node.app);
+    }
   }
 
   el.addEventListener('mousedown', onDown);
@@ -804,31 +2053,38 @@ function makeDraggable(node) {
 }
 
 function launchApp(app) {
-  const win = window.open(app.html_file, '_blank');
-
-  // Passa i token all'app figlia via postMessage (dopo 1s per attesa caricamento)
-  const googleToken = sessionStorage.getItem('google_token');
-  const sbToken     = sessionStorage.getItem('sb_token');
-  if (win) {
-    setTimeout(() => {
-      if (googleToken) win.postMessage({ type: 'GOOGLE_TOKEN', token: googleToken }, '*');
-      if (sbToken)     win.postMessage({ type: 'SB_TOKEN',     token: sbToken     }, '*');
-    }, 1000);
-  }
+  // Salva hidden_mode in sessionStorage così l'app figlia può leggerlo al caricamento
+  sessionStorage.setItem('hidden_mode', hiddenMode ? '1' : '0');
+  window.location.href = app.html_file;
 }
 
 // ── AUTH ──
-const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+// ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+             || (window.location.hostname.endsWith('.netlify.app')
+                && window.location.hostname.startsWith('dev--'));
+const SUPABASE_URL = _IS_DEV
+    ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
+    : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+const SUPABASE_KEY = _IS_DEV
+    ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
+    : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
 
 function loginWithGoogle() {
-  const redirect = window.location.href.split('#')[0].split('?')[0];
+  // Se l'app gira nel WebView Android, usa il custom scheme come redirect_to
+  // in modo che il deep link torni direttamente all'app dopo il login Google.
+  const isAndroidApp = (typeof window.AndroidBridge !== 'undefined') && window.AndroidBridge.isNativeApp();
+  const redirect = isAndroidApp
+    ? 'garsalapps://oauth'
+    : window.location.href.split('#')[0].split('?')[0];
   const scopes = [
     'email',
     'profile',
     'https://www.googleapis.com/auth/fitness.activity.read',
     'https://www.googleapis.com/auth/fitness.body.read',
     'https://www.googleapis.com/auth/fitness.nutrition.read',
+    'https://www.googleapis.com/auth/calendar.readonly',
   ].join(' ');
   window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google`
     + `&redirect_to=${encodeURIComponent(redirect)}`
@@ -836,19 +2092,84 @@ function loginWithGoogle() {
     + `&access_type=offline`;
 }
 
+const _authChannel = new BroadcastChannel('appsphere_auth');
+let _refreshInterval = null;
+
+// Rinnova il JWT tramite refresh_token senza richiedere un nuovo login.
+// In caso di errore fa logout forzato. Distribuisce il nuovo token a tutte le app figlie.
+async function refreshSession() {
+  const refreshToken = localStorage.getItem('refresh_token') || getCookie('sb_refresh_token');
+  if (!refreshToken) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    if (!res.ok) {
+      // Token non valido: pulisce i token scaduti ma NON chiama logout()
+      // (non chiama logout per non mostrare la schermata login con animazione)
+      console.warn('🔒 Refresh token non valido — pulizia silenziosa');
+      localStorage.removeItem('sb_token');
+      localStorage.removeItem('refresh_token');
+      deleteCookie('sb_refresh_token');
+      return;
+    }
+    const data = await res.json();
+    localStorage.setItem('sb_token', data.access_token);
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+      setCookie('sb_refresh_token', data.refresh_token, 30);
+    }
+    // Notifica tutte le app figlie: aggiornare il token senza ricaricare la pagina
+    _authChannel.postMessage({ type: 'TOKEN_REFRESH', sbToken: data.access_token });
+    console.log('🔄 Token rinnovato silenziosamente (' + APP_VERSION + ')');
+  } catch (e) {
+    console.warn('Errore refresh token:', e);
+  }
+}
+
+// Avvia il rinnovo automatico ogni 50 minuti (JWT Supabase scade dopo 60 min di default)
+function startTokenRefresh() {
+  if (_refreshInterval) clearInterval(_refreshInterval);
+  _refreshInterval = setInterval(refreshSession, 50 * 60 * 1000);
+}
+
 async function logout() {
-  const token = sessionStorage.getItem('sb_token');
+  const token = localStorage.getItem('sb_token');
   if (token) {
     await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
     }).catch(() => {});
   }
-  sessionStorage.removeItem('sb_token');
-  document.getElementById('user-bar').classList.remove('visible');
-  document.getElementById('score-panel').classList.remove('visible');
-  document.getElementById('sp-value').textContent = '—';
-  document.getElementById('login-screen').classList.remove('hidden');
+  localStorage.removeItem('sb_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('google_token');
+  localStorage.removeItem('was_authenticated');
+  deleteCookie('sb_refresh_token');
+  if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
+
+  // Notifica tutte le app figlie aperte: devono invalidare il token
+  _authChannel.postMessage({ type: 'LOGOUT' });
+
+  // Torna alla pagina di login con redirect pulito
+  window.location.href = 'app-launcher.html';
+}
+
+// Chiamata dall'APK Android via evaluateJavascript dopo OAuth con deep link garsalapps://oauth
+// params è un oggetto JSON: { access_token, refresh_token, provider_token, ... }
+function handleNativeOAuthCallback(params) {
+  if (!params || !params.access_token) return;
+  localStorage.setItem('sb_token', params.access_token);
+  if (params.provider_token) localStorage.setItem('google_token', params.provider_token);
+  if (params.refresh_token) {
+    localStorage.setItem('refresh_token', params.refresh_token);
+    setCookie('sb_refresh_token', params.refresh_token, 30);
+  }
+  getUserInfo(params.access_token).then(user => {
+    if (user) { showApp(user); startTokenRefresh(); }
+  });
 }
 
 function parseHash() {
@@ -857,9 +2178,14 @@ function parseHash() {
   const p = {};
   hash.split('&').forEach(kv => { const [k,v] = kv.split('='); p[decodeURIComponent(k)] = decodeURIComponent(v||''); });
   if (p.access_token) {
-    sessionStorage.setItem('sb_token', p.access_token);
+    localStorage.setItem('sb_token', p.access_token);
     // provider_token = token Google reale, usabile con Google Fit API
-    if (p.provider_token) sessionStorage.setItem('google_token', p.provider_token);
+    if (p.provider_token) localStorage.setItem('google_token', p.provider_token);
+    // refresh_token = usato per rinnovare il JWT senza re-login
+    if (p.refresh_token) {
+      localStorage.setItem('refresh_token', p.refresh_token);
+      setCookie('sb_refresh_token', p.refresh_token, 30); // 30 giorni
+    }
     history.replaceState(null, '', window.location.pathname);
     return p.access_token;
   }
@@ -867,17 +2193,31 @@ function parseHash() {
 }
 
 async function getUserInfo(token) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
-  });
-  return res.ok ? res.json() : null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
+    });
+    return res.ok ? res.json() : null;
+  } catch(e) {
+    console.warn('getUserInfo network error:', e);
+    return null; // rete non ancora pronta all'avvio
+  }
 }
 
 function showApp(user) {
+  localStorage.setItem('was_authenticated', '1'); // flag storico, non più usato per auto-login
   const name = user?.user_metadata?.full_name || user?.email || 'Utente';
   document.getElementById('user-name').textContent = name.split(' ')[0];
   document.getElementById('user-bar').classList.add('visible');
   document.getElementById('score-panel').classList.add('visible');
+
+  // Ripristina modalità nascosta se era attiva quando si è usciti
+  const storedHidden = sessionStorage.getItem('hidden_mode');
+  if (storedHidden === '1') {
+    hiddenMode = true;
+    updateHiddenIndicator();
+  }
+
   const ls = document.getElementById('login-screen');
   ls.classList.add('hidden');
   setTimeout(() => {
@@ -886,28 +2226,135 @@ function showApp(user) {
   }, 500);
 }
 
+// ── HIDDEN MODE: carica sequenza dal DB ──
+async function loadHiddenSequence() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_settings?key=eq.hidden_mode_sequence&select=value&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows.length) return;
+    hiddenSequence = JSON.parse(rows[0].value);
+    hiddenSeqLength = hiddenSequence.length;
+  } catch(e) {
+    console.warn('Sequenza hidden mode non disponibile:', e);
+  }
+}
+
+function enterCaptureMode() {
+  captureMode    = true;
+  capturedColors = [];
+  clearTimeout(captureTimeout);
+  updateCodeBoxes();
+  const el = document.getElementById('code-entry');
+  el.classList.add('visible', 'capturing');
+  // Auto-chiusura dopo 15 secondi di inattività
+  captureTimeout = setTimeout(exitCaptureMode, 15000);
+}
+
+function exitCaptureMode() {
+  captureMode    = false;
+  capturedColors = [];
+  clearTimeout(captureTimeout);
+  updateCodeBoxes();
+  const el = document.getElementById('code-entry');
+  el.classList.remove('capturing');
+  if (!hiddenMode) el.classList.remove('visible');
+}
+
+function updateCodeBoxes() {
+  const n = hiddenSeqLength || 3;
+  for (let i = 0; i < n; i++) {
+    const box = document.getElementById('cb' + i);
+    if (!box) continue;
+    if (i < capturedColors.length) {
+      box.style.background = capturedColors[i];
+      box.classList.add('filled');
+    } else {
+      box.style.background = '';
+      box.classList.remove('filled');
+    }
+  }
+}
+
+function checkSequence() {
+  const colors = [...capturedColors];
+  exitCaptureMode();
+  if (!hiddenSequence.length) return;
+  const match =
+    colors.length === hiddenSequence.length &&
+    colors.every((c, i) => c === hiddenSequence[i]);
+  if (match) {
+    hiddenMode = !hiddenMode;
+    sessionStorage.setItem('hidden_mode', hiddenMode ? '1' : '0');
+    broadcastHiddenMode();
+    updateHiddenIndicator();
+    loadApps();
+  }
+}
+
+function broadcastHiddenMode() {
+  _authChannel.postMessage({ type: 'HIDDEN_MODE', active: hiddenMode });
+}
+
+function updateHiddenIndicator() {
+  const el = document.getElementById('code-entry');
+  if (!el) return;
+  el.classList.toggle('active', hiddenMode);
+  if (hiddenMode) {
+    el.classList.add('visible');
+  } else if (!captureMode) {
+    el.classList.remove('visible');
+  }
+}
+
 // ── CARICA APP DA SUPABASE ──
 async function loadApps() {
-  const token = sessionStorage.getItem('sb_token');
+  const token = localStorage.getItem('sb_token');
 
-  // 1. Leggi tutte le app attive
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/cm_apps?active=eq.true&select=id,title,description,score_query,html_file,color&order=id.asc`,
-    {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-      }
-    }
+  // Carica anche la sequenza nascosta se non ancora disponibile
+  if (!hiddenSeqLength) await loadHiddenSequence();
+
+  // 1. Leggi le app: in modalità normale solo quelle attive e non riservate;
+  //    in modalità nascosta anche quelle riservate
+  // Prova prima con la colonna riservato; se la colonna non esiste ancora (DB non migrato)
+  // fa fallback senza filtro riservato e filtra lato client.
+  const hdrs = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json',
+  };
+  const activeFilter = hiddenMode
+    ? `active=eq.true`
+    : `active=eq.true&or=(riservato.eq.false,riservato.is.null)`;
+  let res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_apps?${activeFilter}&select=id,title,description,score_query,html_file,color,riservato&order=id.asc`,
+    { headers: hdrs }
   );
 
+  let riservatoSupported = res.ok;
   if (!res.ok) {
-    console.error('Errore fetch cm_apps:', await res.text());
-    return;
+    // Fallback: colonna riservato non ancora presente nel DB
+    console.warn('Colonna riservato non disponibile, fallback senza filtro riservato');
+    res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_apps?active=eq.true&select=id,title,description,score_query,html_file,color&order=id.asc`,
+      { headers: hdrs }
+    );
+    if (!res.ok) {
+      console.error('Errore fetch cm_apps:', await res.text());
+      return;
+    }
   }
 
-  const rows = await res.json();
+  let rows = await res.json();
+  // Se riservato non è supportato mostriamo tutto; altrimenti il DB ha già filtrato
+  if (!riservatoSupported && !hiddenMode) {
+    rows = rows.filter(r => !r.riservato);
+  }
 
   // 2. Per ogni app esegui la score_query
   const apps = await Promise.all(rows.map(async (row, i) => {
@@ -932,7 +2379,7 @@ async function loadApps() {
       name:        row.title,
       description: row.description || '',
       score:       score,
-      color:       row.color || OLYMPIC[i % OLYMPIC.length],
+      color:       (row.color || OLYMPIC[i % OLYMPIC.length]).trim(),
       html_file:   row.html_file,
     };
   }));
@@ -940,18 +2387,549 @@ async function loadApps() {
   render(apps);
 }
 
+// ── HAMBURGER MENU ──
+function toggleHamburgerMenu() {
+  document.getElementById('hamburger-menu').classList.toggle('open');
+}
+function closeHamburgerMenu() {
+  document.getElementById('hamburger-menu').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('hamburger-menu');
+  const btn  = document.getElementById('hamburger-btn');
+  if (menu && menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// ── PROFILO ──
+async function openProfilo() {
+  document.getElementById('profilo-overlay').classList.add('open');
+  await loadProfilo();
+}
+function closeProfilo() {
+  document.getElementById('profilo-overlay').classList.remove('open');
+}
+function handleProfiloOverlayClick(e) {
+  if (e.target === document.getElementById('profilo-overlay')) closeProfilo();
+}
+
+async function loadProfilo() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) return;
+
+  // Pre-carica dati Google (nome, email, avatar)
+  const user = await getUserInfo();
+  if (user) {
+    const meta = user.user_metadata || {};
+    const fullName = meta.full_name || '';
+    const parts    = fullName.trim().split(' ');
+    const email    = user.email || '';
+    const avatar   = meta.avatar_url || meta.picture || '';
+    const initials = parts.map(p => p[0]).join('').substring(0, 2).toUpperCase() || '?';
+
+    document.getElementById('profilo-display-name').textContent = fullName || email;
+    document.getElementById('profilo-display-email').textContent = email;
+    document.getElementById('profilo-avatar-initials').textContent = initials;
+
+    // Pre-riempi nome/cognome solo se i campi sono vuoti
+    if (!document.getElementById('pf-nome').value && parts[0])
+      document.getElementById('pf-nome').value = parts[0];
+    if (!document.getElementById('pf-cognome').value && parts.length > 1)
+      document.getElementById('pf-cognome').value = parts.slice(1).join(' ');
+  }
+
+  // Carica profilo salvato da cm_profile
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_profile?select=*&limit=1`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows.length) return;
+    const p = rows[0];
+    if (p.nome)          document.getElementById('pf-nome').value         = p.nome;
+    if (p.cognome)       document.getElementById('pf-cognome').value      = p.cognome;
+    if (p.data_nascita)  document.getElementById('pf-data-nascita').value = p.data_nascita;
+    if (p.sesso)         document.getElementById('pf-sesso').value        = p.sesso;
+    if (p.altezza_cm)    document.getElementById('pf-altezza').value      = p.altezza_cm;
+    if (p.patologie)     document.getElementById('pf-patologie').value    = p.patologie;
+    if (p.farmaci)       document.getElementById('pf-farmaci').value      = p.farmaci;
+    if (p.note_mediche)  document.getElementById('pf-note').value         = p.note_mediche;
+  } catch(e) {
+    console.warn('Errore caricamento profilo:', e);
+  }
+}
+
+async function saveProfilo() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) { alert('Sessione scaduta, rieffettua il login.'); return; }
+
+  const user = await getUserInfo();
+  const meta = user?.user_metadata || {};
+
+  const payload = {
+    // user_id non inviato: il DB lo imposta da DEFAULT auth.uid()
+    nome:         document.getElementById('pf-nome').value.trim()         || null,
+    cognome:      document.getElementById('pf-cognome').value.trim()      || null,
+    email:        user?.email || null,
+    avatar_url:   meta.avatar_url || meta.picture || null,
+    data_nascita: document.getElementById('pf-data-nascita').value        || null,
+    sesso:        document.getElementById('pf-sesso').value               || null,
+    altezza_cm:   parseInt(document.getElementById('pf-altezza').value)   || null,
+    patologie:    document.getElementById('pf-patologie').value.trim()    || null,
+    farmaci:      document.getElementById('pf-farmaci').value.trim()      || null,
+    note_mediche: document.getElementById('pf-note').value.trim()         || null,
+  };
+
+  const btn = document.getElementById('profilo-save-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_profile?on_conflict=user_id`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'HTTP ' + res.status);
+    }
+    const msg = document.getElementById('profilo-saved-msg');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  } catch(e) {
+    alert('Errore salvataggio profilo: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── NOTIFICHE ──
+async function openNotifiche() {
+  const overlay = document.getElementById('notifiche-overlay');
+  const body    = document.getElementById('notifiche-modal-body');
+  overlay.classList.add('open');
+  body.innerHTML = '<p style="text-align:center;color:#aaa;padding:24px;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</p>';
+
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  if (!token) {
+    body.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:20px;">Non autenticato.</p>';
+    return;
+  }
+
+  try {
+    const hdrs = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token };
+
+    // fetch regole e fire_at più recente per ogni regola in parallelo
+    const [rulesRes, queueRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/cm_notification_rules?select=*`, { headers: hdrs }),
+      fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue?select=app,entity_id,fire_at&status=neq.cancelled&order=fire_at.desc`, { headers: hdrs })
+    ]);
+    const rules    = await rulesRes.json();
+    const queueAll = await queueRes.json();
+
+    if (!Array.isArray(rules) || rules.length === 0) {
+      body.innerHTML = '<p style="text-align:center;color:#aaa;padding:24px;font-family:DM Mono,monospace;font-size:12px;">Nessuna regola di notifica configurata.</p>';
+      return;
+    }
+
+    // per ogni regola trova la fire_at più vicina a oggi
+    const now = Date.now();
+    const closestFireAt = {};   // key → ISO string
+    const closestDist   = {};   // key → ms distance
+    if (Array.isArray(queueAll)) {
+      for (const q of queueAll) {
+        const k    = `${q.app}-${q.entity_id}`;
+        const dist = Math.abs(new Date(q.fire_at).getTime() - now);
+        if (closestDist[k] === undefined || dist < closestDist[k]) {
+          closestDist[k]   = dist;
+          closestFireAt[k] = q.fire_at;
+        }
+      }
+    }
+
+    // helper: estrae la data di riferimento per regole senza coda
+    // usa due_date oppure la prima data di reminder_presets['from-to']
+    function getRuleRefDate(rule) {
+      const p = rule.reminder_presets || {};
+      // "single" tasks usano due_at (ISO timestamp), altri usano due_date o from-to[0]
+      const raw = p.due_at || p.due_date || ((p['from-to'] || [])[0]) || null;
+      if (!raw) return null;
+      // formato "yyyy mm dd" con spazi (es. "2026 03 15")
+      if (/^\d{4} \d{2} \d{2}$/.test(raw)) {
+        return new Date(raw.replace(/ /g, '-')).getTime();
+      }
+      // formato europeo "dd/mm/yyyy"
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+        const [d, m, y] = raw.split('/');
+        return new Date(`${y}-${m}-${d}`).getTime();
+      }
+      // ISO timestamp o qualsiasi altro formato valido per Date()
+      return new Date(raw).getTime();
+    }
+
+    // ordina: chi ha fire_at più vicina a oggi viene prima;
+    // senza coda: ordina per due_date / from-to[0] crescente (null va in fondo)
+    rules.sort((a, b) => {
+      const ka = `${a.app}-${a.entity_id}`;
+      const kb = `${b.app}-${b.entity_id}`;
+      const da = closestDist[ka] ?? null;
+      const db = closestDist[kb] ?? null;
+      if (da !== null && db !== null) return da - db;
+      if (da !== null) return -1;
+      if (db !== null) return 1;
+      // entrambe senza coda: ordina per data di riferimento
+      const ra = getRuleRefDate(a);
+      const rb = getRuleRefDate(b);
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
+      return (a.entity_title || '').localeCompare(b.entity_title || '');
+    });
+
+    // alias usato nel render
+    const latestFireAt = closestFireAt;
+
+    const appLabel  = { habits: '🔄 Habit Tracker', tasks: '✅ Tasks', events: '📋 Events Log' };
+    const freqLabel = { daily: 'Giornaliero', weekly: 'Settimanale', daily_multiple: 'Multi-orario' };
+    const chanLabel = { telegram: '✈ Telegram', push: '📲 Push', email: '✉ Email' };
+
+    body.innerHTML = rules.map(rule => {
+      const latestDt = latestFireAt[`${rule.app}-${rule.entity_id}`];
+      const latestStr = latestDt
+        ? (() => { const d = new Date(latestDt); return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); })()
+        : null;
+      const p  = rule.reminder_presets || {};
+      const times    = (p.times  || []).map(t => `<span class="notif-chip">🕐 ${t}</span>`).join('');
+      const fromTo   = (p['from-to'] || [null, null]);
+      const dateRange = (fromTo[0] || fromTo[1])
+        ? `<span class="notif-chip">📅 ${fromTo[0] || '?'} → ${fromTo[1] || '∞'}</span>` : '';
+      const tgBtn    = p.telegram_complete_button ? '<span class="notif-chip green">✅ Btn Fatto</span>' : '';
+      const enabled  = rule.enabled
+        ? '<span class="notif-chip green">✓ Attiva</span>'
+        : '<span class="notif-chip red">✗ Disabilitata</span>';
+      const channel  = `<span class="notif-chip">${chanLabel[rule.channel] || rule.channel}</span>`;
+      const freq     = freqLabel[rule.entity_type] || rule.entity_type || '';
+      const app      = appLabel[rule.app] || rule.app || '';
+      const duets    = getRuleRefDate(rule);
+      const dueStr   = duets ? new Date(duets).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+
+      const ruleId = `${rule.app}-${rule.entity_id}`;
+      return `
+        <div class="notif-rule-card" id="nrc-${ruleId}"
+             onclick="toggleQueuePanel('${ruleId}', '${rule.app}', '${rule.entity_id}')">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="notif-rule-title">${rule.entity_title || '—'}</div>
+            <span id="nrc-arrow-${ruleId}" style="color:#aaa;font-size:12px;transition:transform 0.2s;">▾</span>
+          </div>
+          <div class="notif-rule-app">${app}${freq ? ' · ' + freq : ''}${dueStr ? ' &nbsp;·&nbsp; <span style="color:#e67e22;">📅 scad. ' + dueStr + '</span>' : ''}${latestStr ? ' &nbsp;·&nbsp; <span style="color:#6366F1;">🕐 ' + latestStr + '</span>' : ''}</div>
+          <div class="notif-chips">${enabled}${channel}${times}${dateRange}${tgBtn}</div>
+          <div class="notif-queue-panel" id="nqp-${ruleId}">
+            <div class="notif-queue-loading">Caricamento coda…</div>
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    body.innerHTML = `<p style="text-align:center;color:#e74c3c;padding:20px;">Errore: ${e.message}</p>`;
+  }
+}
+async function toggleQueuePanel(ruleId, app, entityId) {
+  const card  = document.getElementById('nrc-' + ruleId);
+  const panel = document.getElementById('nqp-' + ruleId);
+  const arrow = document.getElementById('nrc-arrow-' + ruleId);
+  if (!card || !panel) return;
+
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    card.classList.remove('open');
+    arrow.style.transform = '';
+    return;
+  }
+
+  panel.classList.add('open');
+  card.classList.add('open');
+  arrow.style.transform = 'rotate(180deg)';
+  panel.innerHTML = '<div class="notif-queue-loading">Caricamento coda…</div>';
+
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  try {
+    const params = new URLSearchParams({
+      app:       `eq.${app}`,
+      entity_id: `eq.${entityId}`,
+      status:    'neq.cancelled',
+      order:     'fire_at.asc',
+      select:    'fire_at,status,body',
+      limit:     '30'
+    });
+    const res  = await fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue?${params}`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } });
+    const rows = await res.json();
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      panel.innerHTML = '<div class="notif-queue-empty">Nessuna notifica in coda.</div>';
+      return;
+    }
+
+    const statusClass = { pending: 'nqs-pending', snoozed: 'nqs-snoozed', sent: 'nqs-sent', cancelled: 'nqs-cancelled' };
+    const statusLabel = { pending: '⏳ pending', snoozed: '💤 snoozed', sent: '✅ inviata', cancelled: '✗ annullata' };
+
+    panel.innerHTML = rows.map(r => {
+      const d = r.fire_at ? new Date(r.fire_at) : null;
+      const dateStr = d
+        ? d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+          + ' ' + d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })
+        : '—';
+      const sc = statusClass[r.status] || 'nqs-pending';
+      const sl = statusLabel[r.status] || r.status;
+      return `
+        <div class="notif-queue-row">
+          <span class="notif-queue-status ${sc}">${sl}</span>
+          <span style="flex:1;">${dateStr}</span>
+        </div>`;
+    }).join('');
+
+  } catch (e) {
+    panel.innerHTML = `<div class="notif-queue-empty" style="color:#e74c3c;">Errore: ${e.message}</div>`;
+  }
+}
+
+function closeNotifiche() {
+  document.getElementById('notifiche-overlay').classList.remove('open');
+}
+function handleNotificheOverlayClick(e) {
+  if (e.target === document.getElementById('notifiche-overlay')) closeNotifiche();
+}
+
+// ── NOTIFICA AL VOLO ──
+async function openNqv() {
+  document.getElementById('nqv-overlay').classList.add('open');
+  nqvShowView('list');
+  await nqvLoadList();
+}
+
+function closeNqv() {
+  document.getElementById('nqv-overlay').classList.remove('open');
+}
+
+function handleNqvOverlayClick(e) {
+  if (e.target === document.getElementById('nqv-overlay')) closeNqv();
+}
+
+function nqvShowView(view) {
+  const titles = { list: '⚡ Notifica al Volo', form: 'Nuova Notifica' };
+  document.getElementById('nqv-modal-title').textContent = titles[view] || '';
+  document.getElementById('nqv-back-btn').style.display = view === 'form' ? '' : 'none';
+  document.getElementById('nqv-view-list').style.display = view === 'list' ? 'flex' : 'none';
+  document.getElementById('nqv-view-form').style.display = view === 'form' ? 'flex' : 'none';
+  if (view === 'form') {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm   = String(now.getMonth() + 1).padStart(2, '0');
+    const dd   = String(now.getDate()).padStart(2, '0');
+    const hh   = String(now.getHours()).padStart(2, '0');
+    const mi   = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('nqv-data').value   = `${yyyy}-${mm}-${dd}`;
+    document.getElementById('nqv-orario').value = `${hh}:${mi}`;
+    document.getElementById('nqv-testo').value  = '';
+    document.getElementById('nqv-testo').focus();
+  }
+}
+
+async function nqvLoadList() {
+  const el = document.getElementById('nqv-list-scroll');
+  el.innerHTML = '<div class="nqv-empty">Caricamento…</div>';
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  if (!token) { el.innerHTML = '<div class="nqv-empty">Non autenticato.</div>'; return; }
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_notification_rules?app=eq.quick&order=created_at.desc&select=*`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      el.innerHTML = '<div class="nqv-empty">Nessuna notifica al volo.<br>Premi ➕ Inserisci per aggiungerne una.</div>';
+      return;
+    }
+    el.innerHTML = rows.map(r => {
+      const p  = r.reminder_presets || {};
+      const fa = p.fire_at ? new Date(p.fire_at) : null;
+      const dateStr = fa
+        ? fa.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'numeric'})
+          + ' ' + fa.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})
+        : '—';
+      return `
+        <div class="nqv-item" id="nqv-item-${r.id}">
+          <div class="nqv-item-body">
+            <div class="nqv-item-title">${r.entity_title || '—'}</div>
+            <div class="nqv-item-meta">📅 ${dateStr} &nbsp;·&nbsp; ✈ Telegram</div>
+          </div>
+          <button class="nqv-del-btn" title="Elimina" onclick="deleteNqv('${r.id}', '${r.entity_id}', event)">🗑</button>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="nqv-empty" style="color:#e74c3c;">Errore: ${e.message}</div>`;
+  }
+}
+
+async function triggerFillQueue() {
+  try {
+    const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+    if (!token) return;
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/fill-notification-queue`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!resp.ok) { console.warn('⚠️ triggerFillQueue: risposta non ok', resp.status); return; }
+    const result = await resp.json();
+    console.log('✅ triggerFillQueue:', result);
+  } catch (e) {
+    console.warn('⚠️ triggerFillQueue eccezione:', e.message);
+  }
+}
+
+async function deleteNqv(id, entityId, event) {
+  event && event.stopPropagation();
+  if (!confirm('Eliminare questa notifica?')) return;
+  const token = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_notification_queue?entity_id=eq.${entityId}&app=eq.quick`,
+      { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/cm_notification_rules?id=eq.${id}`,
+      { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (res.ok) {
+      const itemEl = document.getElementById('nqv-item-' + id);
+      if (itemEl) itemEl.remove();
+      const listEl = document.getElementById('nqv-list-scroll');
+      if (listEl && !listEl.querySelector('.nqv-item')) {
+        listEl.innerHTML = '<div class="nqv-empty">Nessuna notifica al volo.<br>Premi ➕ Inserisci per aggiungerne una.</div>';
+      }
+      triggerFillQueue();
+    }
+  } catch(e) {
+    alert('Errore: ' + e.message);
+  }
+}
+
+async function saveNqv() {
+  const testo  = document.getElementById('nqv-testo').value.trim();
+  const data   = document.getElementById('nqv-data').value;
+  const orario = document.getElementById('nqv-orario').value;
+  if (!testo)  { alert('Inserisci il testo della notifica.'); return; }
+  if (!data)   { alert('Inserisci la data.'); return; }
+  if (!orario) { alert("Inserisci l'orario."); return; }
+
+  // Converte ora locale in UTC ISO prima di salvare su DB (timestamptz tratta stringhe senza
+  // offset come UTC → senza conversione la notifica scatta con lo shift del fuso orario).
+  const fireAt   = new Date(`${data}T${orario}:00`).toISOString();
+  const token    = sessionStorage.getItem('sb_token') || localStorage.getItem('sb_token');
+  const entityId = crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+  const currentUser = await getUserInfo(token);
+  const userId = currentUser?.id || null;
+
+  const rulePayload = {
+    app:          'quick',
+    entity_id:    entityId,
+    entity_title: testo,
+    entity_type:  'quick',
+    channel:      'telegram',
+    enabled:      true,
+    user_id:      userId,
+    reminder_presets: {
+      fire_at:                fireAt,
+      telegram_snooze_button: true,
+      telegram_cancel_button: false
+    }
+  };
+
+  const saveBtn = document.querySelector('.nqv-btn-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Salvataggio…';
+
+  try {
+    const ruleRes = await fetch(`${SUPABASE_URL}/rest/v1/cm_notification_rules`, {
+      method:  'POST',
+      headers: {
+        'apikey':       SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Prefer':       'return=representation'
+      },
+      body: JSON.stringify(rulePayload)
+    });
+    if (!ruleRes.ok) {
+      const err = await ruleRes.json();
+      throw new Error(err.message || 'Errore inserimento regola');
+    }
+
+    const ruleData = await ruleRes.json();
+    const ruleId   = Array.isArray(ruleData) ? ruleData[0]?.id : ruleData?.id;
+    // occurrence_id: formato uniforme con fill-notification-queue → ruleId:YYYY-MM-DD:HH:MM
+    const occurrenceId = `${ruleId}:${data}:${orario}`;
+
+    // Inserisci anche in coda per pianificare l'invio
+    await fetch(`${SUPABASE_URL}/rest/v1/cm_notification_queue`, {
+      method:  'POST',
+      headers: {
+        'apikey':       SUPABASE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        rule_id:       ruleId,
+        user_id:       userId,
+        app:           'quick',
+        entity_id:     entityId,
+        title:         '⚡ ' + testo,
+        body:          testo,
+        channel:       'telegram',
+        fire_at:       fireAt,
+        status:        'pending',
+        occurrence_id: occurrenceId,
+        metadata:      { telegram_snooze_button: true, telegram_cancel_button: false }
+      })
+    });
+
+    triggerFillQueue();
+    nqvShowView('list');
+    await nqvLoadList();
+  } catch(e) {
+    alert('Errore: ' + e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Salva';
+  }
+}
+
 // ── BADGE SETTINGS ──
 let _badgeRows = []; // cache delle righe cm_apps
 
 async function openBadgeSettings() {
-  const token = sessionStorage.getItem('sb_token');
+  const token = localStorage.getItem('sb_token');
   const overlay = document.getElementById('badge-modal-overlay');
   const body    = document.getElementById('badge-modal-body');
   body.innerHTML = '<div style="padding:20px;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
   overlay.classList.add('open');
 
+  const badgeFilter = hiddenMode
+    ? `active=eq.true`
+    : `active=eq.true&or=(riservato.eq.false,riservato.is.null)`;
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/cm_apps?select=id,title,score_query,color&order=id.asc`,
+    `${SUPABASE_URL}/rest/v1/cm_apps?${badgeFilter}&select=id,title,score_query,color,riservato&order=id.asc`,
     { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
   );
   if (!res.ok) {
@@ -959,17 +2937,25 @@ async function openBadgeSettings() {
     return;
   }
   _badgeRows = await res.json();
-  body.innerHTML = _badgeRows.map((row, i) => `
+  body.innerHTML = _badgeRows.map((row, i) => {
+    const color = (row.color || OLYMPIC[i % OLYMPIC.length]).trim();
+    return `
     <div class="bq-row" data-id="${row.id}">
       <div class="bq-label">
-        <div class="bq-dot" style="background:${row.color || OLYMPIC[i % OLYMPIC.length]}"></div>
+        <div class="bq-dot" id="bq-dot-${row.id}" style="background:${color}" onclick="document.getElementById('bq-colorpicker-${row.id}').click()"></div>
         <span class="bq-title">${row.title}</span>
         <span class="bq-status" id="bq-status-${row.id}"></span>
+      </div>
+      <div class="bq-color-wrap">
+        <input type="color" class="bq-color-input" id="bq-colorpicker-${row.id}" value="${color}"
+          oninput="document.getElementById('bq-dot-${row.id}').style.background=this.value; document.getElementById('bq-colorhex-${row.id}').value=this.value.toUpperCase()">
+        <input type="text" class="bq-color-hex" id="bq-colorhex-${row.id}" value="${color.toUpperCase()}" maxlength="7"
+          oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)){document.getElementById('bq-colorpicker-${row.id}').value=this.value;document.getElementById('bq-dot-${row.id}').style.background=this.value;}">
       </div>
       <textarea class="bq-textarea" id="bq-query-${row.id}" rows="2">${row.score_query || ''}</textarea>
       <button class="bq-save-btn" onclick="saveBadgeQuery('${row.id}')">Salva</button>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function closeBadgeSettings() {
@@ -977,15 +2963,20 @@ function closeBadgeSettings() {
 }
 
 async function saveBadgeQuery(id) {
-  const token    = sessionStorage.getItem('sb_token');
+  const token    = localStorage.getItem('sb_token');
   const textarea = document.getElementById('bq-query-' + id);
   const statusEl = document.getElementById('bq-status-' + id);
+  const colorEl  = document.getElementById('bq-colorpicker-' + id);
   const btn      = textarea.closest('.bq-row').querySelector('.bq-save-btn');
   const query    = textarea.value.trim();
+  const color    = colorEl ? colorEl.value : null;
 
   btn.disabled = true;
   statusEl.textContent = '';
   statusEl.style.display = 'none';
+
+  const patch = { score_query: query };
+  if (color) patch.color = color;
 
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/cm_apps?id=eq.${id}`,
@@ -997,7 +2988,7 @@ async function saveBadgeQuery(id) {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       },
-      body: JSON.stringify({ score_query: query }),
+      body: JSON.stringify(patch),
     }
   );
 
@@ -1018,18 +3009,381 @@ document.getElementById('badge-modal-overlay').addEventListener('click', functio
   if (e.target === this) closeBadgeSettings();
 });
 
-async function init() {
-  const token = parseHash() || sessionStorage.getItem('sb_token');
-  if (token) {
-    const user = await getUserInfo(token);
-    if (user) { showApp(user); return; }
-    sessionStorage.removeItem('sb_token');
+// ── PREMI ──
+let _editingRewardId = null;
+let _rewardsList = [];
+let _ptsAvailable = 0;
+
+async function fetchPtsSpent() {
+  const token = localStorage.getItem('sb_token');
+  if (!token) return 0;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_rewards_log?select=points_spent`,
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+  );
+  if (!res.ok) return 0;
+  const logs = await res.json();
+  return logs.reduce((s, l) => s + (l.points_spent || 0), 0);
+}
+
+async function updateScorePanel() {
+  const gross    = CURRENT_APPS.reduce((s, a) => s + a.score, 0);
+  const spent    = await fetchPtsSpent();
+  const net      = Math.max(0, gross - spent);
+  const spv      = document.getElementById('sp-value');
+  if (spv) spv.textContent = net.toLocaleString('it-IT');
+}
+
+function rwShowView(view) {
+  document.getElementById('rw-view-main').style.display       = view === 'main'       ? 'flex' : 'none';
+  document.getElementById('rw-view-gestisci').style.display   = view === 'gestisci'   ? 'flex' : 'none';
+  document.getElementById('rw-view-cronologia').style.display = view === 'cronologia' ? 'flex' : 'none';
+  const titles = { main: '🎁 Premi', gestisci: '🛠 Gestisci Premi', cronologia: '📋 Cronologia' };
+  document.getElementById('rw-modal-title').textContent = titles[view];
+  document.getElementById('rw-back-btn').style.display = view === 'main' ? 'none' : '';
+  if (view === 'gestisci')   renderRewards();
+  if (view === 'cronologia') loadCronologia();
+}
+
+function openRewards() {
+  document.getElementById('rewards-overlay').classList.add('open');
+  rwShowView('main');
+  loadRewards();
+}
+
+function closeRewards() {
+  document.getElementById('rewards-overlay').classList.remove('open');
+}
+
+async function loadRewards() {
+  const token = localStorage.getItem('sb_token');
+  document.getElementById('rw-prize-scroll').innerHTML =
+    '<div style="padding:30px;text-align:center;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
+
+  const hdr = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token };
+  const [resR, ptsSpent] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?order=points_cost.asc`, { headers: hdr }),
+    fetchPtsSpent(),
+  ]);
+
+  _rewardsList = resR.ok ? await resR.json() : [];
+
+  const gross = CURRENT_APPS.reduce((s, a) => s + a.score, 0);
+  _ptsAvailable = Math.max(0, gross - ptsSpent);
+
+  document.getElementById('rw-pts-available').textContent = _ptsAvailable;
+  document.getElementById('rw-pts-spent').textContent     = ptsSpent;
+  renderMainPrizes();
+}
+
+function renderMainPrizes() {
+  const el = document.getElementById('rw-prize-scroll');
+  const visible = _rewardsList.filter(r => !r.is_redeemed);
+  if (!visible.length) {
+    el.innerHTML = `<div class="rw-empty"><div class="rw-empty-icon">🎁</div><div class="rw-empty-text">Nessun premio disponibile.<br>Aggiungine uno con Gestisci!</div></div>`;
+    return;
   }
+  el.innerHTML = visible.map(r => {
+    const isRepeat  = r.type === 'ripetibile';
+    const canAfford = _ptsAvailable >= r.points_cost;
+    const emoji     = isRepeat ? '🔄' : '⭐';
+    const counter   = isRepeat && r.use_count > 0
+      ? `<div class="rw-prize-uses">usato ${r.use_count}×</div>` : '';
+    return `
+      <div class="rw-prize-card">
+        <div class="rw-prize-icon">${emoji}</div>
+        <div class="rw-prize-info">
+          <div class="rw-prize-name">${r.name}</div>
+          <div class="rw-prize-cost">${r.points_cost} punti</div>
+          ${counter}
+        </div>
+        <button class="rw-redeem-btn" onclick="redeemReward('${r.id}')" ${canAfford ? '' : 'disabled'}>
+          ${canAfford ? 'Ritira' : '—'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+async function redeemReward(id) {
+  const reward = _rewardsList.find(r => r.id === id);
+  if (!reward) return;
+  if (!confirm(`Riscattare "${reward.name}" per ${reward.points_cost} punti?`)) return;
+
+  const token = localStorage.getItem('sb_token');
+  const hdr = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal',
+  };
+
+  // 1. Registra il riscatto nel log
+  const resLog = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards_log`, {
+    method: 'POST', headers: hdr,
+    body: JSON.stringify([{ reward_id: id, reward_name: reward.name, points_spent: reward.points_cost }]),
+  });
+  if (!resLog.ok) { alert('Errore nel riscatto: ' + await resLog.text()); return; }
+
+  // 2. Aggiorna il premio in base al tipo
+  const patch = reward.type === 'una_tantum'
+    ? { is_redeemed: true }
+    : { points_cost: reward.points_cost + (reward.points_per_use || 0),
+        use_count: (reward.use_count || 0) + 1 };
+
+  await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?id=eq.${id}`, {
+    method: 'PATCH', headers: hdr, body: JSON.stringify(patch),
+  });
+
+  await Promise.all([loadRewards(), updateScorePanel()]);
+}
+
+async function loadCronologia() {
+  const token = localStorage.getItem('sb_token');
+  const el = document.getElementById('rw-cron-list');
+  el.innerHTML = '<div style="padding:30px;text-align:center;color:#aaa;font-family:DM Mono,monospace;font-size:12px;">Caricamento…</div>';
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/cm_rewards_log?order=redeemed_at.desc`,
+    { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+  );
+  if (!res.ok) {
+    el.innerHTML = '<div class="rw-empty"><div class="rw-empty-icon">⚠️</div><div class="rw-empty-text">Impossibile caricare la cronologia.</div></div>';
+    return;
+  }
+  const logs = await res.json();
+  if (!logs.length) {
+    el.innerHTML = '<div class="rw-empty"><div class="rw-empty-icon">📋</div><div class="rw-empty-text">Nessun premio riscattato ancora.</div></div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => {
+    const d = new Date(l.redeemed_at);
+    const ds = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `
+      <div class="rw-cron-item">
+        <div class="rw-cron-info">
+          <div class="rw-cron-name">${l.reward_name}</div>
+          <div class="rw-cron-date">${ds}</div>
+        </div>
+        <div class="rw-cron-pts">−${l.points_spent}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderRewards() {
+  const listEl = document.getElementById('rw-list');
+  if (!_rewardsList.length) {
+    listEl.innerHTML = `<div class="rw-empty"><div class="rw-empty-icon">🎁</div><div class="rw-empty-text">Nessun premio. Aggiungine uno!</div></div>`;
+    return;
+  }
+  listEl.innerHTML = _rewardsList.map(r => {
+    const isRepeat = r.type === 'ripetibile';
+    const emoji = isRepeat ? '🔄' : '⭐';
+    let meta = `${r.points_cost} punti`;
+    if (isRepeat && r.points_per_use) meta += ` · ${r.points_per_use}/uso`;
+    return `
+      <div class="rw-card">
+        <div class="rw-card-emoji">${emoji}</div>
+        <div class="rw-card-body">
+          <div class="rw-card-name">${r.name}</div>
+          <div class="rw-card-meta">${meta}</div>
+        </div>
+        <div class="rw-card-right">
+          <span class="rw-badge ${isRepeat ? 'repeat' : 'once'}">${isRepeat ? 'ripetibile' : 'una tantum'}</span>
+          <div class="rw-card-pts">${r.points_cost}</div>
+        </div>
+        <div class="rw-card-actions">
+          <button class="rw-icon-btn" onclick="openRewardForm('${r.id}')" title="Modifica">✏️</button>
+          <button class="rw-icon-btn del" onclick="deleteReward('${r.id}')" title="Elimina">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openRewardForm(id) {
+  _editingRewardId = id;
+  document.getElementById('rw-form-title').textContent = id ? 'Modifica Premio' : 'Nuovo Premio';
+  if (id) {
+    const r = _rewardsList.find(x => x.id === id);
+    document.getElementById('rw-name').value    = r.name;
+    document.getElementById('rw-type').value    = r.type;
+    document.getElementById('rw-points').value  = r.points_cost;
+    document.getElementById('rw-per-use').value = r.points_per_use || '';
+  } else {
+    document.getElementById('rw-name').value    = '';
+    document.getElementById('rw-type').value    = 'una_tantum';
+    document.getElementById('rw-points').value  = '';
+    document.getElementById('rw-per-use').value = '';
+  }
+  rwTypeChange();
+  document.getElementById('rw-form-overlay').classList.add('open');
+}
+
+function closeRewardForm() {
+  document.getElementById('rw-form-overlay').classList.remove('open');
+  _editingRewardId = null;
+}
+
+function rwTypeChange() {
+  document.getElementById('rw-per-use-row').classList.toggle('show', document.getElementById('rw-type').value === 'ripetibile');
+}
+
+async function saveReward() {
+  const token      = localStorage.getItem('sb_token');
+  const name       = document.getElementById('rw-name').value.trim();
+  const type       = document.getElementById('rw-type').value;
+  const pointsCost = parseInt(document.getElementById('rw-points').value);
+  const perUse     = type === 'ripetibile' ? parseInt(document.getElementById('rw-per-use').value) || null : null;
+
+  if (!name)                                            { alert('Inserisci un nome per il premio.'); return; }
+  if (!pointsCost || pointsCost < 1)                   { alert('Inserisci i punti necessari (minimo 1).'); return; }
+  if (type === 'ripetibile' && (!perUse || perUse < 1)) { alert('Inserisci i punti per ogni utilizzo (minimo 1).'); return; }
+
+  const payload = { name, type, points_cost: pointsCost, points_per_use: perUse };
+  const isNew   = !_editingRewardId;
+  const url     = `${SUPABASE_URL}/rest/v1/cm_rewards` + (isNew ? '' : `?id=eq.${_editingRewardId}`);
+
+  const res = await fetch(url, {
+    method: isNew ? 'POST' : 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json', 'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(isNew ? [payload] : payload),
+  });
+
+  if (res.ok) {
+    closeRewardForm();
+    await loadRewards();
+    renderRewards();
+  } else {
+    alert('Errore nel salvataggio. Riprova.');
+  }
+}
+
+async function deleteReward(id) {
+  if (!confirm('Eliminare questo premio?')) return;
+  const token = localStorage.getItem('sb_token');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_rewards?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token },
+  });
+  if (res.ok) {
+    await loadRewards();
+    renderRewards();
+  } else {
+    alert('Errore nell\'eliminazione.');
+  }
+}
+
+document.getElementById('rw-form-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeRewardForm();
+});
+
+async function init() {
+  // Sincronizza cookie dal localStorage se manca (es. APK WebView che inietta via JS)
+  const storedRt = localStorage.getItem('refresh_token');
+  if (storedRt && !getCookie('sb_refresh_token')) {
+    setCookie('sb_refresh_token', storedRt, 30);
+  }
+
+  let token = parseHash() || localStorage.getItem('sb_token');
+  if (token) {
+    let user = await getUserInfo(token);
+    if (!user) {
+      // JWT scaduto: tenta rinnovo silenzioso prima di mostrare il login
+      await refreshSession();
+      token = localStorage.getItem('sb_token');
+      user = token ? await getUserInfo(token) : null;
+    }
+    if (user) { showApp(user); startTokenRefresh(); return; }
+    localStorage.removeItem('sb_token');
+    token = null; // reset per permettere il fallback al cookie
+  }
+  // Nessun token in localStorage — prova dal cookie (mobile svuota localStorage)
+  if (!token && getCookie('sb_refresh_token')) {
+    await refreshSession();
+    token = localStorage.getItem('sb_token');
+    if (token) {
+      const user = await getUserInfo(token);
+      if (user) { showApp(user); startTokenRefresh(); return; }
+    }
+  }
+  // Nessun token valido — mostra il pulsante login.
+  // L'auto-login silenzioso è stato rimosso: apriva automaticamente la pagina
+  // Google ad ogni lancio dell'APK quando il JWT era scaduto.
   // show login
 }
 init();
 
 window.addEventListener('resize', () => { if (CURRENT_APPS.length) render(); });
+
+// ── LONG PRESS / LONG CLICK helper ───────────────────────────────────────────
+// Mobile: tap tenuto per LONG_MS ms → trigger
+// Desktop: dblclick conservato come alternativa
+const LONG_MS = 600;
+
+function addLongPressListener(el, handler) {
+  // Desktop — dblclick come alternativa
+  el.addEventListener('dblclick', handler);
+
+  // Mobile — long press
+  let timer = null;
+  let moved  = false;
+
+  el.addEventListener('touchstart', (e) => {
+    moved = false;
+    timer = setTimeout(() => {
+      if (!moved) handler(e);
+    }, LONG_MS);
+  }, { passive: false });
+
+  el.addEventListener('touchmove', () => {
+    moved = true; // se l'utente trascina, annulla
+    clearTimeout(timer);
+  }, { passive: true });
+
+  el.addEventListener('touchend',   () => clearTimeout(timer), { passive: true });
+  el.addEventListener('touchcancel',() => clearTimeout(timer), { passive: true });
+}
+
+// Long press sullo sfondo → apre il widget di inserimento codice
+addLongPressListener(document.getElementById('field'), (e) => {
+  if (e.target && e.target.closest && e.target.closest('.cw')) return;
+  enterCaptureMode();
+});
+
+// Tap sulla freccia → verifica il codice inserito
+document.getElementById('code-confirm').addEventListener('click', () => {
+  checkSequence();
+});
+
+// Tap sulle caselle piene → sblocca la modalità nascosta
+document.getElementById('code-entry').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('code-box')) return;
+  if (capturedColors.length === 0) return;
+  checkSequence();
+});
+
+// Tap sull'icona occhio → disattiva direttamente la modalità nascosta
+document.getElementById('hidden-icon').addEventListener('click', () => {
+  hiddenMode = false;
+  sessionStorage.setItem('hidden_mode', '0');
+  broadcastHiddenMode();
+  updateHiddenIndicator();
+  loadApps();
+});
+
+// ── PWA Service Worker ───────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(reg) {
+        console.log('[SW] Registrato:', reg.scope);
+      })
+      .catch(function(err) {
+        console.warn('[SW] Registrazione fallita:', err);
+      });
+  });
+}
 </script>
 </body>
 </html>

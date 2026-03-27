@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Stack Tracker</title>
+    <title>Habit Stack Tracker v9.3.68</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Darker+Grotesque:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -36,6 +36,43 @@
             background: var(--light);
             color: var(--dark);
             min-height: 100vh;
+            padding-top: 56px;
+        }
+
+        /* ── GARSAL TOP BAR ── */
+        #garsal-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0081C8;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            z-index: 3000;
+        }
+        #garsal-top-bar-icon {
+            width: 22px;
+            height: 22px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            flex-shrink: 0;
+        }
+        #garsal-top-bar-text {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
         }
 
         .app-container {
@@ -460,7 +497,7 @@
         .bottom-nav {
             display: none;
             position: fixed;
-            top: 0; /* Cambiato da bottom a top */
+            top: 56px; /* Sotto la Garsal top bar */
             left: 0;
             right: 0;
             background: white;
@@ -528,6 +565,39 @@
 
             .page-title {
                 font-size: 2rem;
+            }
+
+            /* Habit stack header — layout a due righe su mobile */
+            .habit-stack-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.4rem;
+            }
+
+            .habit-stack-title {
+                font-size: 1.1rem;
+            }
+
+            .habit-stack-meta {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                justify-content: space-between;
+            }
+
+            .habit-freq-label {
+                font-size: 0.78rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 45%;
+            }
+
+            .habit-stack-meta .btn {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.78rem !important;
             }
         }
 
@@ -708,6 +778,11 @@
             border-color: #2196F3;
         }
 
+        .day-card.missed {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-color: #FF9800;
+        }
+
         .day-card.future {
             opacity: 0.6;
         }
@@ -848,6 +923,25 @@
             color: white;
         }
 
+        .simple-btn.btn-missed {
+            background: #FF9800;
+            border-color: #FF9800;
+            color: white;
+        }
+
+        .simple-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .simple-btn:disabled:hover {
+            transform: none;
+        }
+
+        .simple-btn.btn-completed:disabled {
+            opacity: 0.85;
+        }
+
         .single-completion {
             display: flex;
             align-items: center;
@@ -878,50 +972,7 @@
             color: white;
         }
 
-        /* Debug Console */
-        .debug-toggle {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 3000;
-            background: var(--dark);
-            color: white;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .debug-toggle:hover {
-            transform: scale(1.1);
-            background: var(--accent);
-        }
-
-        .debug-console {
-            position: fixed;
-            bottom: 80px;
-            right: 1rem;
-            width: 400px;
-            max-width: calc(100vw - 2rem);
-            max-height: 500px;
-            background: #1a1a1a;
-            color: #0f0;
-            border: 2px solid var(--accent);
-            z-index: 2999;
-            display: none;
-            flex-direction: column;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .debug-console.active {
-            display: flex;
-        }
+        /* Debug Console (nella pagina Impostazioni) */
 
         .debug-header {
             background: var(--accent);
@@ -1017,9 +1068,59 @@
                 left: 1rem;
             }
         }
+
+        /* Hidden Mode FAB */
+        .hidden-mode-fab {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: var(--muted, #6B7280);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+        .hidden-mode-fab:hover { transform: scale(1.1); }
+        .hidden-mode-fab:active { transform: scale(0.95); }
+        .hidden-mode-fab.active {
+            background: var(--secondary, #6C5CE7);
+            box-shadow: 0 4px 20px rgba(108,92,231,0.5);
+            animation: pulse-hidden 2s infinite;
+        }
+        @keyframes pulse-hidden {
+            0%   { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+            50%  { box-shadow: 0 4px 28px rgba(108,92,231,0.8); }
+            100% { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+        }
     </style>
 </head>
 <body>
+
+    <!-- GARSAL TOP BAR -->
+    <div id="garsal-top-bar">
+        <a href="app-launcher.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="15" r="7" fill="rgba(255,255,255,0.85)"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg>
+            <div id="garsal-top-bar-text">Garsal Apps</div>
+        </a>
+    </div>
+
+    <!-- AUTH OVERLAY — mostrato se app aperta senza token -->
+    <div id="authOverlay" style="display:none; position:fixed; inset:0; background:rgba(15,15,30,0.97); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; font-family:inherit;">
+        <div style="font-size:3.5rem;">🔐</div>
+        <h2 style="color:#fff; margin:0; font-size:1.4rem; font-weight:700;">Accesso richiesto</h2>
+        <p style="color:#aaa; margin:0; text-align:center; max-width:320px; line-height:1.6;">Apri <strong style="color:#FF3366;">Habit Stack Tracker</strong> da AppSphere per accedere con il tuo account Google.</p>
+        <a href="app-launcher.html" style="margin-top:0.5rem; padding:0.8rem 2rem; background:#FF3366; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;">Vai ad AppSphere</a>
+    </div>
+
     <!-- Menu Toggle (Mobile) -->
     <!-- Top Navigation Bar (Mobile Only) -->
     <nav class="bottom-nav">
@@ -1039,26 +1140,11 @@
         </div>
     </nav>
 
-    <!-- Debug Toggle -->
-    <button class="debug-toggle" onclick="toggleDebug()" title="Debug Console">🐛</button>
-
-    <!-- Debug Console -->
-    <div id="debugConsole" class="debug-console">
-        <div class="debug-header">
-            <span>🐛 Debug Console</span>
-            <div class="debug-controls">
-                <button class="debug-btn" onclick="refreshDebugStats()">🔄</button>
-                <button class="debug-btn" onclick="clearDebugLogs()">🗑️</button>
-                <button class="debug-btn" onclick="toggleDebug()">✕</button>
-            </div>
-        </div>
-        <div class="debug-content">
-            <div id="debugStats" class="debug-stats"></div>
-            <div id="debugLogs"></div>
-        </div>
-    </div>
 
     <div class="app-container">
+        <!-- Hidden Mode FAB -->
+        <button class="hidden-mode-fab" id="hiddenModeFab" onclick="toggleHiddenMode()" title="Mostra solo riservati">🙈</button>
+
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <nav class="nav-menu">
@@ -1080,10 +1166,8 @@
         <main class="main-content">
             <!-- Dashboard Page -->
             <div id="page-dashboard" class="page">
-                <div class="card">
-                    <div id="habitsTimeline">
-                        <!-- Timeline will be rendered here -->
-                    </div>
+                <div id="habitsTimeline">
+                    <!-- Timeline will be rendered here -->
                 </div>
             </div>
 
@@ -1099,7 +1183,7 @@
                     </select>
                     <select class="form-input" style="width: auto;" onchange="filterHabits()" id="filterStatus">
                         <option value="active">Attive</option>
-                        <option value="paused">In pausa</option>
+                        <option value="stopped">Interrotti</option>
                         <option value="all">Tutte</option>
                     </select>
                 </div>
@@ -1110,6 +1194,9 @@
 
             <!-- Archive Page -->
             <div id="page-archive" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1 class="page-title">📦 Archivio</h1>
+                </div>
                 <div id="archivedStacksList">
                     <!-- Lista stack archiviati -->
                 </div>
@@ -1161,17 +1248,15 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="margin-bottom: 1rem;">Notifiche</h2>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="notificationsEnabled" onchange="saveSettings()">
-                            Abilita promemoria giornalieri
-                        </label>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                        <h2 style="margin:0;">🐛 Console Debug</h2>
+                        <div style="display:flex;gap:0.5rem;">
+                            <button class="btn btn-secondary" onclick="refreshDebugStats()" style="font-size:0.8rem;padding:0.3rem 0.7rem;">🔄 Aggiorna</button>
+                            <button class="btn btn-accent" onclick="clearDebugLogs()" style="font-size:0.8rem;padding:0.3rem 0.7rem;">🗑 Svuota</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Orario promemoria</label>
-                        <input type="time" class="form-input" id="notificationTime" value="09:00" onchange="saveSettings()">
-                    </div>
+                    <div id="debugStats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0.5rem;margin-bottom:0.75rem;"></div>
+                    <div id="debugLogs" style="background:#0a0a0a;color:#0f0;font-family:monospace;font-size:11px;padding:0.6rem;border-radius:4px;max-height:300px;overflow-y:auto;border:1px solid #333;white-space:pre-wrap;word-break:break-all;"></div>
                 </div>
             </div>
         </main>
@@ -1229,6 +1314,31 @@
                         <label><input type="checkbox" name="weekday" value="0"> Dom</label>
                     </div>
                 </div>
+                <div class="form-group" id="reminderTimeGroup">
+                    <label class="form-label">⏰ Orario promemoria</label>
+                    <input type="time" class="form-input" id="habitReminderTime">
+                    <small style="opacity:0.7;font-size:0.85rem;display:block;margin-top:0.3rem;">
+                        Orario di riferimento per i promemoria anticipati
+                    </small>
+                </div>
+                <div class="form-group" id="dailyMultipleReminderNote" style="display: none;">
+                    <small style="opacity:0.7;font-size:0.85rem;">
+                        ℹ️ I promemoria si applicano agli orari configurati per questa abitudine
+                    </small>
+                </div>
+                <div class="form-group" id="reminderPresetsGroup">
+                    <label class="form-label" style="font-weight:700;text-transform:uppercase;font-size:0.82rem;letter-spacing:0.05em;">Promemoria</label>
+                    <div id="addHabitReminderChips" style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;min-height:38px;">
+                        <span style="opacity:0.5;font-size:0.85rem;align-self:center;">Caricamento preset...</span>
+                    </div>
+                </div>
+                <div class="form-group" id="addCompleteButtonGroup" style="display:none;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;">
+                        <input type="checkbox" id="addHabitCompleteButton" onchange="addHabitCompleteButton=this.checked">
+                        <span style="font-size:0.88rem;">🤖 Aggiungi pulsante <strong>Fatto ✅</strong> nel messaggio Telegram</span>
+                    </label>
+                    <small style="opacity:0.7;font-size:0.82rem;display:block;margin-top:0.3rem;">Il bot Telegram aggiungerà un bottone per segnare l'abitudine come completata direttamente dal messaggio</small>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Data Inizio Stack</label>
                     <input type="date" class="form-input" id="habitStartDate" value="">
@@ -1262,6 +1372,12 @@
                             Punti persi se fallisci lo stack
                         </small>
                     </div>
+                </div>
+                <div id="addRiservatoGroup" class="form-group" style="margin-top:0.5rem;display:none;">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;user-select:none;">
+                        <input type="checkbox" id="habitRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
+                        <span class="form-label" style="margin:0;">Serie nascosta (riservata)</span>
+                    </label>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Crea Abitudine</button>
             </form>
@@ -1325,7 +1441,33 @@
                         </div>
                     </div>
                 </div>
-                
+
+                <div class="form-group" id="editReminderTimeGroup">
+                    <label class="form-label">⏰ Orario promemoria</label>
+                    <input type="time" class="form-input" id="editHabitReminderTime">
+                    <small style="opacity:0.7;font-size:0.85rem;display:block;margin-top:0.3rem;">
+                        Orario di riferimento per i promemoria anticipati
+                    </small>
+                </div>
+                <div class="form-group" id="editDailyMultipleReminderNote" style="display: none;">
+                    <small style="opacity:0.7;font-size:0.85rem;">
+                        ℹ️ I promemoria si applicano agli orari configurati per questa abitudine
+                    </small>
+                </div>
+                <div class="form-group" id="editReminderPresetsGroup">
+                    <label class="form-label" style="font-weight:700;text-transform:uppercase;font-size:0.82rem;letter-spacing:0.05em;">Promemoria</label>
+                    <div id="editHabitReminderChips" style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;min-height:38px;">
+                        <span style="opacity:0.5;font-size:0.85rem;align-self:center;">Caricamento preset...</span>
+                    </div>
+                </div>
+                <div class="form-group" id="editCompleteButtonGroup" style="display:none;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;">
+                        <input type="checkbox" id="editHabitCompleteButton" onchange="editHabitCompleteButton=this.checked">
+                        <span style="font-size:0.88rem;">🤖 Aggiungi pulsante <strong>Fatto ✅</strong> nel messaggio Telegram</span>
+                    </label>
+                    <small style="opacity:0.7;font-size:0.82rem;display:block;margin-top:0.3rem;">Il bot Telegram aggiungerà un bottone per segnare l'abitudine come completata direttamente dal messaggio</small>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Data Inizio Stack</label>
                     <input type="date" class="form-input" id="editHabitStartDate">
@@ -1355,6 +1497,12 @@
                     </div>
                 </div>
                 
+                <div id="editRiservatoGroup" class="form-group" style="margin-top:0.5rem;display:none;">
+                    <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;user-select:none;">
+                        <input type="checkbox" id="editHabitRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
+                        <span class="form-label" style="margin:0;">Serie nascosta (riservata)</span>
+                    </label>
+                </div>
                 <div style="display: flex; gap: 0.5rem;">
                     <button type="submit" class="btn btn-primary" style="flex: 1;">Salva Modifiche</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('editHabitModal')" style="flex: 1;">Annulla</button>
@@ -1368,7 +1516,7 @@
         <div class="modal-content" style="max-width: 500px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; animation: shake 0.5s;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">💀</div>
             <h1 style="font-size: 3rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); animation: pulse 1s infinite;">GAME OVER</h1>
-            <p style="font-size: 1.5rem; margin: 1rem 0; opacity: 0.9;">Jolly Esauriti!</p>
+            <p id="gameOverSubtitle" style="font-size: 1.5rem; margin: 1rem 0; opacity: 0.9;">Jolly Esauriti!</p>
             
             <div id="gameOverHabitName" style="font-size: 1.2rem; margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.2); border-radius: 8px;">
                 <!-- Nome abitudine -->
@@ -1387,8 +1535,39 @@
                 </div>
             </div>
             
-            <button class="btn btn-primary" onclick="closeGameOver()" style="width: 100%; margin-top: 2rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
-                🔄 Ricomincia da Capo
+            <div style="margin-top: 1.5rem; text-align: left;">
+                <label style="font-size: 0.9rem; opacity: 0.85; display: block; margin-bottom: 0.4rem;">📅 Inizia nuovo ciclo dal:</label>
+                <input type="date" id="gameOverStartDate"
+                    style="width: 100%; padding: 0.6rem 0.8rem; font-size: 1rem; border-radius: 8px; border: none; color: #333; box-sizing: border-box;" />
+            </div>
+            <button class="btn btn-primary" onclick="closeGameOver(true)" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #667eea; border: none;">
+                🔄 Ricomincia
+            </button>
+            <button onclick="closeGameOver(false)" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
+                ⛔ Interrompi
+            </button>
+            <button id="undoGameOverBtn" onclick="undoGameOver()" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
+                ↩ Annulla ultimo fallimento
+            </button>
+        </div>
+    </div>
+
+    <!-- Stack Success Modal -->
+    <div class="modal" id="stackSuccessModal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 500px; text-align: center; background: linear-gradient(135deg, #00B894 0%, #00CEC9 100%); color: white; border: none; animation: pop 0.4s;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
+            <h1 style="font-size: 2.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); animation: pulse 1s infinite;">STACK COMPLETATO!</h1>
+            <div id="successStackList" style="margin: 1.5rem 0;"></div>
+            <div style="margin-top: 1rem; text-align: left;">
+                <label style="font-size: 0.9rem; opacity: 0.85; display: block; margin-bottom: 0.4rem;">📅 Inizia nuovo ciclo dal:</label>
+                <input type="date" id="successStartDate"
+                    style="width: 100%; padding: 0.6rem 0.8rem; font-size: 1rem; border-radius: 8px; border: none; color: #333; box-sizing: border-box;" />
+            </div>
+            <button class="btn btn-primary" onclick="closeSuccessModal(true)" style="width: 100%; margin-top: 1rem; font-size: 1.2rem; background: white; color: #00B894; border: none;">
+                🚀 Inizia Nuovo Ciclo
+            </button>
+            <button onclick="closeSuccessModal(false)" style="width: 100%; margin-top: 0.75rem; font-size: 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 0.75rem; cursor: pointer;">
+                ⛔ Interrompi
             </button>
         </div>
     </div>
@@ -1399,10 +1578,16 @@
             10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
             20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
-        
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
+        }
+
+        @keyframes pop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            80%  { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 
@@ -1487,36 +1672,114 @@
     </div>
 
     <script>
-        // Supabase Configuration
-        // VERSION 2.0 - Fixed supabase client reference
-        const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        console.log('🔥 Habit Tracker v9.0.1');
-        console.log('📡 Client object:', supabaseClient);
+        // ==========================================
+        // VERSION
+        // ==========================================
+        const APP_VERSION = 'v9.3.68';
+        const BUILD_TIME  = '2026-03-21T13:00:00Z';
+        console.log('%c Habit Stack ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
+            'background:#FF3366;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
+            'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
+
+        // ==========================================
+        // SUPABASE — client inizializzato dopo auth
+        // ==========================================
+        // ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+        const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+        const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+                     || (window.location.hostname.endsWith('.netlify.app')
+                        && window.location.hostname.startsWith('dev--'));
+        const SUPABASE_URL = _IS_DEV
+            ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
+            : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+        const SUPABASE_KEY = _IS_DEV
+            ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+
+        let supabaseClient = null; // inizializzato in initWithToken()
+        let sbAccessToken  = null;
+        let hiddenMode      = false; // modalità nascosta: attivata dal launcher
+        let riservatoFilter = false; // filtro FAB: mostra solo riservati
+
+        function updateHiddenModeFab() {
+            const fab = document.getElementById('hiddenModeFab');
+            if (!fab) return;
+            if (riservatoFilter) {
+                fab.classList.add('active');
+                fab.title = 'Solo riservati — clicca per mostrare tutti';
+                fab.textContent = '👁';
+            } else {
+                fab.classList.remove('active');
+                fab.title = 'Mostra solo riservati';
+                fab.textContent = '🙈';
+            }
+            fab.style.display = hiddenMode ? 'flex' : 'none';
+        }
+
+        function toggleHiddenMode() {
+            if (!hiddenMode) return;
+            riservatoFilter = !riservatoFilter;
+            sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
+            updateHiddenModeFab();
+            if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
+        }
+
+        function initWithToken(token) {
+            if (supabaseClient) return; // già inizializzato
+            sbAccessToken  = token;
+            localStorage.setItem('sb_token', token);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth:   { persistSession: false, autoRefreshToken: false },
+                global: { headers: { Authorization: 'Bearer ' + token } }
+            });
+            console.log('✅ Supabase autenticato con token Google (Habit Stack ' + APP_VERSION + ')');
+            document.getElementById('authOverlay').style.display = 'none';
+            init();
+        }
+
+        // Rileva errori JWT scaduto/non autenticato e mostra l'overlay di login.
+        // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+        function handleAuthError(error) {
+            if (!error) return false;
+            const msg = (error.message || '').toLowerCase();
+            const isAuthError = error.status === 401
+                || msg.includes('jwt expired')
+                || msg.includes('invalid jwt')
+                || msg.includes('not authenticated')
+                || msg.includes('pgjwt');
+            if (!isAuthError) return false;
+            console.warn('🔒 Token scaduto — sessione invalidata');
+            supabaseClient = null;
+            sbAccessToken = null;
+            localStorage.removeItem('sb_token');
+            document.getElementById('authOverlay').style.display = 'flex';
+            return true;
+        }
 
         // Global State
         let habits = [];
         let categories = [];
         let completions = [];
         let archivedStacks = [];
+        let inactiveHabits = [];
         let settings = {
-            notificationsEnabled: false,
-            notificationTime: '09:00'
+            notificationsEnabled: false
         };
+        let habitNotificationRules = {}; // { habitId: { reminders:[], time?, use_habit_times? } }
+        let habitReminderPresets   = []; // preset da cm_reminder_presets
+        let addHabitReminderIds    = []; // int_id selezionati nel modal Add
+        let editHabitReminderIds   = []; // int_id selezionati nel modal Edit
+        let addHabitCompleteButton = false; // flag pulsante Fatto Telegram (modal Add)
+        let editHabitCompleteButton = false; // flag pulsante Fatto Telegram (modal Edit)
         let debugLogs = [];
         let debugEnabled = false;
         let dailyTimes = []; // Array per orari multipli giornalieri
 
         // Debug Functions
         function toggleDebug() {
-            const debugConsole = document.getElementById('debugConsole');
-            debugConsole.classList.toggle('active');
-            debugEnabled = debugConsole.classList.contains('active');
-            if (debugEnabled) {
-                refreshDebugStats();
-            }
+            // naviga alla pagina impostazioni per mostrare il debug
+            showPage('settings');
+            refreshDebugStats();
         }
 
         function clearDebugLogs() {
@@ -1535,15 +1798,13 @@
                 debugLogs = debugLogs.slice(-100);
             }
             
-            // Update display if console is open
-            if (debugEnabled) {
-                const logsContainer = document.getElementById('debugLogs');
+            // Aggiorna sempre il log nel DOM (è nella pagina impostazioni)
+            const logsContainer = document.getElementById('debugLogs');
+            if (logsContainer) {
                 const logDiv = document.createElement('div');
                 logDiv.className = `debug-log ${type}`;
-                logDiv.innerHTML = `<span class="debug-timestamp">[${timestamp}]</span>${message}`;
+                logDiv.innerHTML = `<span style="color:#888;">[${timestamp}]</span> ${message}`;
                 logsContainer.appendChild(logDiv);
-                
-                // Auto scroll to bottom
                 logsContainer.scrollTop = logsContainer.scrollHeight;
             }
         }
@@ -1552,10 +1813,10 @@
             const stats = {
                 'Abitudini': habits.length,
                 'Attive': habits.filter(h => h.status === 'active').length,
-                'In Pausa': habits.filter(h => h.status === 'paused').length,
+                'Interrotti': habits.filter(h => h.status === 'stopped').length,
                 'Categorie': categories.length,
                 'Completamenti': completions.length,
-                'Oggi': completions.filter(c => c.completed_at.startsWith(new Date().toISOString().split('T')[0])).length,
+                'Oggi': completions.filter(c => c.completed_at.startsWith(localDateStr())).length,
                 'Logs': debugLogs.length,
                 'Supabase': SUPABASE_URL.includes('jajlmm') ? '✅ Connesso' : '❌ Errore'
             };
@@ -1645,20 +1906,38 @@
         }
 
         // Initialize App
+        async function migratePausedToStopped() {
+            // Migrazione una-tantum: aggiorna record con status='paused' a 'stopped'
+            try {
+                const { error } = await supabaseClient
+                    .from('hb_habits')
+                    .update({ status: 'stopped' })
+                    .eq('status', 'paused');
+                if (error) console.warn('⚠️ Migrazione paused→stopped:', error.message);
+                else console.log('✅ Migrazione paused→stopped completata');
+            } catch (e) {
+                console.warn('⚠️ Migrazione paused→stopped fallita:', e.message);
+            }
+        }
+
         async function init() {
             console.log('🚀 Inizializzazione app...');
             console.log('📡 Supabase URL:', SUPABASE_URL);
-            
+
+            await migratePausedToStopped();
             await loadCategories();
             await loadHabits();
             await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
-            await loadUserPoints(); // Carica punteggio totale
+            recalculateTotalScore();
+            await loadHabitReminderPresets();    // Carica preset anticipi da cm_reminder_presets
+            await loadHabitNotificationRules(); // Carica regole promemoria per abitudine
             loadSettings();
             await renderDashboard(); // Ora è async!
             setupEventListeners();
             requestNotificationPermission();
-            
+
             console.log('✅ App inizializzata con successo!');
             refreshDebugStats();
         }
@@ -1667,10 +1946,17 @@
         async function loadHabits() {
             try {
                 console.log('📥 Caricamento abitudini...');
-                const { data, error } = await supabaseClient
+                let habitsQuery = supabaseClient
                     .from('hb_habits')
                     .select('*')
+                    .in('status', ['active', 'stopped'])
                     .order('created_at', { ascending: false });
+                if (riservatoFilter) {
+                    habitsQuery = habitsQuery.eq('riservato', true);
+                } else if (!hiddenMode) {
+                    habitsQuery = habitsQuery.or('riservato.eq.false,riservato.is.null');
+                }
+                const { data, error } = await habitsQuery;
                 
                 if (error) throw error;
                 
@@ -1713,37 +1999,38 @@
             }
         }
 
-        async function loadUserPoints() {
+        async function recalculateTotalScore() {
             try {
-                const { data, error } = await supabaseClient
-                    .from('hb_user_points')
-                    .select('*')
-                    .limit(1)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-                    console.error('❌ Errore caricamento punti:', error);
-                    return;
+                const { data: allHabits, error } = await supabaseClient
+                    .from('hb_habits')
+                    .select('id, status, points_reward, points_penalty, goal');
+                if (error) throw error;
+
+                let total = 0;
+                for (const h of (allHabits || [])) {
+                    if (h.status === 'completed') {
+                        total += h.points_reward || 0;
+                    } else if (h.status === 'failed') {
+                        total -= h.points_penalty || 0;
+                    } else if (h.status === 'active') {
+                        // Quota parte maturata: (completamenti / goal) * reward
+                        const goal = h.goal || 1;
+                        const done = completions.filter(c => c.habit_id === h.id && c.status === 'completed').length;
+                        total += (done / goal) * (h.points_reward || 0);
+                    }
                 }
-                
-                if (!data) {
-                    // Crea record se non esiste
-                    const { data: newData } = await supabaseClient
-                        .from('hb_user_points')
-                        .insert([{ total_points: 0 }])
-                        .select()
-                        .single();
-                    
-                    document.getElementById('totalScore').textContent = '0';
-                } else {
-                    document.getElementById('totalScore').textContent = data.total_points || 0;
+
+                // Aggiunge i punti degli stack archiviati
+                for (const archived of (archivedStacks || [])) {
+                    total += archived.points_earned || 0;
                 }
-            } catch (error) {
-                console.error('❌ Errore caricamento punti:', error);
-                // Non mostrare errore all'utente, usa 0 di default
-                document.getElementById('totalScore').textContent = '0';
+
+                document.getElementById('totalScore').textContent = Math.round(total);
+            } catch (err) {
+                console.error('❌ Errore recalculateTotalScore:', err);
             }
         }
+
 
         async function loadCompletions() {
             try {
@@ -1768,10 +2055,26 @@
                     .from("hb_archived_stacks")
                     .select("*")
                     .order("ended_at", { ascending: false });
-                
+
                 if (error) throw error;
                 archivedStacks = data || [];
                 console.log(`✅ ${archivedStacks.length} stack archiviati caricati`);
+
+                let inactiveQuery = supabaseClient
+                    .from("hb_habits")
+                    .select("*")
+                    .neq("status", "active")
+                    .order("updated_at", { ascending: false });
+                if (riservatoFilter) {
+                    inactiveQuery = inactiveQuery.eq('riservato', true);
+                } else if (!hiddenMode) {
+                    inactiveQuery = inactiveQuery.or('riservato.eq.false,riservato.is.null');
+                }
+                const { data: inactiveData, error: inactiveError } = await inactiveQuery;
+
+                if (inactiveError) throw inactiveError;
+                inactiveHabits = inactiveData || [];
+                console.log(`✅ ${inactiveHabits.length} abitudini non attive caricate`);
             } catch (error) {
                 console.error("❌ Errore caricamento stack archiviati:", error);
             }
@@ -1828,8 +2131,7 @@
                         max_failures: maxFailures,
                         current_failures: 0,
                         status: 'active',
-                        current_streak: 0,
-                        best_streak: 0
+                        riservato: document.getElementById('habitRiservato')?.checked || false
                     }])
                     .select();
 
@@ -1837,16 +2139,23 @@
 
                 habits.push(data[0]);
                 console.log('✅ Abitudine creata:', data[0]);
+
+                // Salva regola promemoria
+                const reminderTime = document.getElementById('habitReminderTime').value;
+                const addHabitCompleteButtonChecked = document.getElementById('addHabitCompleteButton')?.checked || false;
+                await syncHabitNotificationRule(data[0].id, frequency, daily_times || [], reminderTime, name, addHabitReminderIds, weekdays, startedAt, goal, addHabitCompleteButtonChecked);
+
                 closeModal('addHabitModal');
                 showToast('Abitudine creata con successo! 🎉');
                 renderDashboard();
                 renderHabits();
                 refreshDebugStats();
-                
+
                 // Reset form
                 document.getElementById('habitName').value = '';
                 document.getElementById('habitDescription').value = '';
                 document.getElementById('habitGoal').value = '30';
+                document.getElementById('habitReminderTime').value = '';
                 dailyTimes = [];
                 renderDailyTimes();
             } catch (error) {
@@ -1890,15 +2199,14 @@
         }
 
         async function setTimeState(habitId, time, dateStr, newState) {
-            const targetDate = dateStr || new Date().toISOString().split('T')[0];
+            const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
-            
-            const existing = completions.find(c => {
-                if (c.habit_id !== habitId) return false;
-                if (!c.completed_at.startsWith(targetDate)) return false;
-                const completionTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return completionTime === time;
-            });
+            const key = buildPeriodKey('daily_multiple', targetDate, time);
+
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key ||
+                 (c.period_key == null && c.completed_at.startsWith(`${targetDate}T${time}`))));
 
             console.log(`🎯 setTimeState: habit=${habitId}, time=${time}, date=${targetDate}, newState=${newState}`);
             console.log(`📦 existing:`, existing);
@@ -1908,9 +2216,9 @@
                 if (newState === 'none') {
                     // Rimuovi
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [TIME] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [TIME] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -1954,7 +2262,8 @@
                                 habit_id: habitId,
                                 completed_at: completionDateTime,
                                 status: newState,
-                                notes: `${newState} alle ${time}`
+                                notes: `${newState} alle ${time}`,
+                                period_key: key
                             }])
                             .select();
 
@@ -1962,20 +2271,58 @@
 
                         completions.push(data[0]);
                     }
-                    
+
                     // Gestione jolly
-                    console.log(`🃏 Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
-                    
-                    if (existing && existing.status === 'failed' && newState === 'completed') {
-                        console.log('✅ Condizione RESTORE soddisfatta!');
-                        await restoreJolly(habitId);
+                    // Per daily_multiple: 1 jolly per GIORNO, non per sessione
+                    const _habitForJolly = habits.find(h => h.id === habitId);
+                    const _isMultiple = _habitForJolly?.frequency === 'daily_multiple' && _habitForJolly?.daily_times?.length > 0;
+                    console.log(`🃏 [STS] Jolly check: habit="${_habitForJolly?.name}" isMultiple=${_isMultiple} existing.status=${existing?.status} newState=${newState} date=${targetDate} current_failures=${_habitForJolly?.current_failures}/${_habitForJolly?.max_failures}`);
+
+                    if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
+                        if (_isMultiple) {
+                            // Restituisci jolly solo se NON ci sono altri slot falliti nello stesso giorno
+                            const otherDayFailures = completions.filter(c =>
+                                c.habit_id === habitId &&
+                                (c.status === 'failed' || c.status === 'missed') &&
+                                c.completed_at.startsWith(targetDate) &&
+                                c.id !== existing.id
+                            );
+                            console.log(`🃏 [STS] RESTORE check: altri slot failed/missed nello stesso giorno (escluso current):`, otherDayFailures.map(c => c.period_key || c.completed_at));
+                            if (otherDayFailures.length === 0) {
+                                console.log('✅ [STS] Nessun altro slot fallito → RESTITUISCO jolly');
+                                await restoreJolly(habitId);
+                            } else {
+                                console.log(`⚪ [STS] ${otherDayFailures.length} altri slot falliti rimasti — jolly NON restituito`);
+                            }
+                        } else {
+                            console.log('✅ [STS] RESTORE jolly (non-multiple)');
+                            await restoreJolly(habitId);
+                        }
                     }
                     else if (newState === 'failed') {
-                        console.log('❌ Condizione CONSUME soddisfatta!');
-                        await handleFailure(habitId);
+                        if (_isMultiple) {
+                            // Consuma jolly solo se NON ci sono già altri slot falliti nello stesso giorno
+                            const otherSlotFailed = completions.filter(c =>
+                                c.habit_id === habitId &&
+                                (c.status === 'failed' || c.status === 'missed') &&
+                                c.completed_at.startsWith(targetDate) &&
+                                c.id !== existing?.id &&
+                                c.period_key !== key
+                            );
+                            console.log(`🃏 [STS] CONSUME check: altri slot failed/missed oggi (escluso questo):`, otherSlotFailed.map(c => c.period_key || c.completed_at));
+                            if (otherSlotFailed.length === 0) {
+                                console.log('❌ [STS] Primo slot fallito del giorno → CONSUMO jolly');
+                                await handleFailure(habitId);
+                            } else {
+                                console.log(`⚪ [STS] Giorno già contato come fallito (${otherSlotFailed.length} altri slot) — jolly NON consumato`);
+                            }
+                        } else {
+                            console.log('❌ [STS] CONSUME jolly (non-multiple)');
+                            await handleFailure(habitId);
+                        }
                     }
                     else {
-                        console.log('⚪ Nessuna gestione jolly necessaria');
+                        console.log('⚪ [STS] Nessuna gestione jolly necessaria');
                     }
                     
                     // showToast removed
@@ -2003,9 +2350,9 @@
             
             const completion = completions.find(c => {
                 if (c.habit_id !== habitId) return false;
+                if (c.period_key) return c.period_key === buildPeriodKey('daily_multiple', dateStr, time);
                 if (!c.completed_at.startsWith(dateStr)) return false;
-                const compTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return compTime === time;
+                return c.completed_at.substring(11, 16) === time;
             });
             
             const isCompleted = completion && completion.status === 'completed';
@@ -2042,15 +2389,14 @@
         }
 
         async function toggleHabitTimeCompletion(habitId, time, dateStr = null) {
-            const targetDate = dateStr || new Date().toISOString().split('T')[0];
+            const targetDate = dateStr || localDateStr();
             const timeStr = time + ':00';
-            
-            const existing = completions.find(c => {
-                if (c.habit_id !== habitId) return false;
-                if (!c.completed_at.startsWith(targetDate)) return false;
-                const completionTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                return completionTime === time;
-            });
+            const key = buildPeriodKey('daily_multiple', targetDate, time);
+
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key ||
+                 (c.period_key == null && c.completed_at.startsWith(`${targetDate}T${time}`))));
 
             console.log(`🔄 Toggle 3-state orario ${time} del ${targetDate}`);
 
@@ -2058,20 +2404,22 @@
                 if (!existing) {
                     // Stato 0 → Stato 1: NON FATTO → FATTO
                     const completionDateTime = `${targetDate}T${timeStr}`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
                             status: 'completed',
-                            notes: `Completato alle ${time}`
+                            notes: `Completato alle ${time}`,
+                            period_key: key
                         }])
                         .select();
 
                     if (error) throw error;
 
                     completions.push(data[0]);
+                    cancelHabitQueueEntries(habitId, targetDate, time);
                     // showToast removed
                 } else if (existing.status === 'completed') {
                     // Stato 1 → Stato 2: FATTO → DIMENTICATO
@@ -2111,10 +2459,11 @@
         }
 
         async function toggleHabitCompletion(habitId) {
-            const today = new Date().toISOString().split('T')[0];
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(today)
-            );
+            const today = localDateStr();
+            const key = buildPeriodKey('daily', today);
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key || (c.period_key == null && c.completed_at.startsWith(today))));
 
             console.log('🔄 Toggle completamento per habit:', habitId);
 
@@ -2138,13 +2487,16 @@
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
-                            completed_at: new Date().toISOString()
+                            completed_at: localDateTimeStr(),
+                            status: 'completed',
+                            period_key: key
                         }])
                         .select();
 
                     if (error) throw error;
 
                     completions.push(data[0]);
+                    cancelHabitQueueEntries(habitId, today);
                     showToast('Ottimo lavoro! 🎉');
                 }
 
@@ -2157,6 +2509,48 @@
             } catch (error) {
                 console.error('❌ Errore toggle completamento:', error);
                 showToast('Errore nel salvataggio');
+            }
+        }
+
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            const dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce "YYYY-MM-DDTHH:MM:SS" nell'ora locale
+        function localDateTimeStr(d) {
+            const dt = d || new Date();
+            return localDateStr(dt) + 'T' +
+                String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
+        }
+
+        // Restituisce la data del lunedì della settimana contenente dateStr
+        function getMondayOfWeek(dateStr) {
+            const d = parseDateLocal(dateStr) || new Date();
+            const day = d.getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+            const diff = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diff);
+            return localDateStr(d);
+        }
+
+        // Costruisce la chiave univoca del periodo per un completion
+        // daily:          "yyyy-mm-dd"
+        // daily_multiple: "yyyy-mm-dd-hh:mm"
+        // weekly:         "yyyy-mm-dd-n"  (lunedì settimana + n=1Lun…7Dom)
+        function buildPeriodKey(frequency, dateStr, time = null) {
+            if (frequency === 'daily_multiple') {
+                return `${dateStr}-${time}`;
+            } else if (frequency === 'weekly') {
+                const monday = getMondayOfWeek(dateStr);
+                const d = parseDateLocal(dateStr) || new Date();
+                const n = d.getDay() === 0 ? 7 : d.getDay();
+                return `${monday}-${n}`;
+            } else {
+                return dateStr;
             }
         }
 
@@ -2203,50 +2597,37 @@
                 currentStreak = calculateDailyStreak(habit, habitCompletions, startDate);
             }
 
-            const bestStreak = Math.max(currentStreak, habit.best_streak || 0);
+            // Aggiorna streak locale (non persiste in DB)
+            habit._streak = currentStreak;
+            console.log(`✅ Streak calcolato: current=${currentStreak}`);
 
-            try {
-                const { error } = await supabaseClient
-                    .from('hb_habits')
-                    .update({
-                        current_streak: currentStreak,
-                        best_streak: bestStreak
-                    })
-                    .eq('id', habitId);
-
-                if (error) throw error;
-                console.log(`✅ Streak aggiornato: current=${currentStreak}, best=${bestStreak}`);
-                
-                // CONTROLLA SE STACK COMPLETATO
-                if (currentStreak >= habit.goal && currentStreak > 0) {
-                    console.log('🎉 STACK COMPLETATO! Assegnazione punti...');
-                    await completeStack(habitId);
-                }
-            } catch (error) {
-                console.error('Error updating streak:', error);
+            // CONTROLLA SE STACK COMPLETATO
+            if (currentStreak >= habit.goal && currentStreak > 0) {
+                console.log('🎉 STACK COMPLETATO! Assegnazione punti...');
+                await completeStack(habitId, currentStreak);
             }
         }
         
-        async function completeStack(habitId) {
+        async function completeStack(habitId, currentStreak) {
             const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
-            
-            const todayStr = new Date().toISOString().split('T')[0];
+
+            const todayStr = localDateStr();
             const pointsReward = habit.points_reward || 0;
-            
+
             console.log(`🏆 Stack completato! Punti: +${pointsReward}`);
-            
+
             // Calcola statistiche stack
             const startDate = new Date(habit.started_at);
             const endDate = new Date();
             const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-            
-            const stackCompletions = completions.filter(c => 
-                c.habit_id === habitId && 
+
+            const stackCompletions = completions.filter(c =>
+                c.habit_id === habitId &&
                 c.status === 'completed' &&
                 new Date(c.completed_at) >= startDate
             );
-            
+
             // Archivia stack completato
             await supabaseClient
                 .from('hb_archived_stacks')
@@ -2256,65 +2637,44 @@
                     category_id: habit.category_id,
                     started_at: habit.started_at,
                     ended_at: todayStr,
-                    final_streak: habit.current_streak,
+                    final_streak: currentStreak,
                     total_days: totalDays,
                     total_completions: stackCompletions.length,
                     total_failures: 0,
                     points_earned: pointsReward,
                     reason: 'completato'
                 }]);
-            
-            // Aggiorna punteggio totale
-            const { data: userPointsData } = await supabaseClient
-                .from('hb_user_points')
-                .select('*')
-                .limit(1)
-                .single();
-            
-            if (userPointsData) {
-                const newTotal = (userPointsData.total_points || 0) + pointsReward;
-                await supabaseClient
-                    .from('hb_user_points')
-                    .update({ total_points: newTotal })
-                    .eq('id', userPointsData.id);
-                
-                // Log transazione
-                await supabaseClient
-                    .from('hb_points_transactions')
-                    .insert([{
-                        habit_id: habitId,
-                        habit_name: habit.name,
-                        points_change: pointsReward,
-                        reason: 'stack_completed'
-                    }]);
-                
-                // Aggiorna sidebar
-                document.getElementById('totalScore').textContent = newTotal;
-            }
-            
-            // Reset stack per ricominciare
+
+            // Marca vecchio stack come completato
             await supabaseClient
                 .from('hb_habits')
-                .update({
-                    current_streak: 0,
-                    current_failures: 0,
-                    started_at: todayStr
-                })
+                .update({ status: 'completed' })
                 .eq('id', habitId);
-            
-            // Cancella completions vecchio stack
-            await supabaseClient
-                .from('hb_completions')
-                .delete()
-                .eq('habit_id', habitId)
-                .gte('completed_at', `${habit.started_at}T00:00:00`)
-                .lte('completed_at', `${todayStr}T23:59:59`);
-            
-            showToast(`🎉 Stack completato! +${pointsReward} punti!`);
-            
+
             await loadHabits();
+            await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
             await loadArchivedStacks();
-            renderDashboard();
+            recalculateTotalScore();
+            renderHabitsTimeline();
+            showStackSuccessModal([{
+                name: habit.name,
+                streak: currentStreak,
+                points: pointsReward,
+                habitData: {
+                    id: habit.id,
+                    name: habit.name,
+                    description: habit.description,
+                    category_id: habit.category_id,
+                    frequency: habit.frequency,
+                    weekdays: habit.weekdays,
+                    daily_times: habit.daily_times,
+                    goal: habit.goal,
+                    max_failures: habit.max_failures,
+                    points_reward: habit.points_reward,
+                    points_penalty: habit.points_penalty
+                }
+            }]);
         }
 
         function calculateWeeklyStreak(habit, completions, startDate) {
@@ -2360,7 +2720,7 @@
                     const daysToAdd = dayNum === 0 ? 6 : dayNum - 1;
                     dayDate.setDate(checkWeekStart.getDate() + daysToAdd);
                     
-                    const dateStr = dayDate.toISOString().split('T')[0];
+                    const dateStr = localDateStr(dayDate);
                     
                     // Se il giorno è PRIMA della data inizio, consideralo completato automaticamente
                     if (dayDate < startDate) {
@@ -2411,7 +2771,7 @@
 
             // Non contare giorni prima della data inizio
             while (checkDate >= startDate) {
-                const dateStr = checkDate.toISOString().split('T')[0];
+                const dateStr = localDateStr(checkDate);
                 const completionsOnDay = completions.filter(c => c.completed_at.startsWith(dateStr));
                 
                 if (completionsOnDay.length >= requiredTimes) {
@@ -2425,6 +2785,19 @@
             return streak;
         }
 
+        function computeHabitStreak(habit) {
+            const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+            const startDate = parseDateLocal(habit.started_at);
+            startDate.setHours(12, 0, 0, 0);
+            if (habit.frequency === 'weekly' && habit.weekdays && habit.weekdays.length > 0) {
+                return calculateWeeklyStreak(habit, habitCompletions, startDate);
+            } else if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                return calculateDailyMultipleStreak(habit, habitCompletions, startDate);
+            } else {
+                return calculateDailyStreak(habit, habitCompletions, startDate);
+            }
+        }
+
         function calculateDailyStreak(habit, completions, startDate) {
             let streak = 0;
             let checkDate = new Date();
@@ -2432,7 +2805,7 @@
 
             // Non contare giorni prima della data inizio
             while (checkDate >= startDate) {
-                const dateStr = checkDate.toISOString().split('T')[0];
+                const dateStr = localDateStr(checkDate);
                 const completed = completions.some(c => c.completed_at.startsWith(dateStr));
                 
                 if (completed) {
@@ -2447,7 +2820,340 @@
         }
 
         // Rendering Functions
+        function showStackSuccessModal(results) {
+            window.currentSuccessHabitsData = results.map(r => r.habitData).filter(Boolean);
+            document.getElementById('successStartDate').value = localDateStr();
+            const list = document.getElementById('successStackList');
+            list.innerHTML = results.map(r => `
+                <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
+                    <div style="font-size: 1.2rem; font-weight: bold;">${r.name}</div>
+                    <div style="display: flex; gap: 1.5rem; justify-content: center; margin-top: 0.5rem;">
+                        <span>🔥 ${r.streak} streak</span>
+                        <span>+${r.points} punti</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('stackSuccessModal').classList.add('active');
+        }
+
+        async function closeSuccessModal(createNew) {
+            if (createNew) {
+                const startDate = document.getElementById('successStartDate').value || localDateStr();
+                const habitDataList = window.currentSuccessHabitsData || [];
+                for (const habitData of habitDataList) {
+                    try {
+                        const { data: newHabit } = await supabaseClient.from('hb_habits').insert([{
+                            name: habitData.name,
+                            description: habitData.description,
+                            category_id: habitData.category_id,
+                            frequency: habitData.frequency,
+                            weekdays: habitData.weekdays,
+                            daily_times: habitData.daily_times,
+                            goal: habitData.goal,
+                            max_failures: habitData.max_failures,
+                            points_reward: habitData.points_reward,
+                            points_penalty: habitData.points_penalty,
+                            started_at: startDate,
+                            status: 'active',
+                            current_failures: 0
+                        }]).select().single();
+                        if (newHabit && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabit.id, startDate, habitData.goal, habitData.savedNotificationRule || null);
+                        console.log(`✅ Nuovo ciclo attivo dal ${startDate} per "${habitData.name}"`);
+                    } catch (err) {
+                        console.error('❌ Errore creazione nuovo ciclo:', err);
+                    }
+                }
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                recalculateTotalScore();
+                renderDashboard();
+                renderHabits();
+                showToast(`🚀 Nuovo ciclo dal ${startDate}!`);
+            }
+            document.getElementById('stackSuccessModal').classList.remove('active');
+            window.currentSuccessHabitsData = null;
+        }
+
+        // Conta i giorni (o settimane) completati al 100% nel periodo started_at→limitDate
+        function countCompletedDaysInPeriod(habit, limitDate) {
+            const startDate = parseDateLocal(habit.started_at);
+            if (!startDate) return 0;
+            startDate.setHours(0, 0, 0, 0);
+            const end = new Date(limitDate);
+            end.setHours(0, 0, 0, 0);
+
+            const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+            let count = 0;
+            const cur = new Date(startDate);
+
+            if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                const required = habit.daily_times.length;
+                while (cur <= end) {
+                    const dateStr = localDateStr(cur);
+                    const done = habitCompletions.filter(c => c.completed_at.startsWith(dateStr) && c.status === 'completed').length;
+                    if (done >= required) count++;
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else if (habit.frequency === 'weekly' && habit.weekdays && habit.weekdays.length > 0) {
+                while (cur <= end) {
+                    const dateStr = localDateStr(cur);
+                    const done = habitCompletions.some(c => c.completed_at.startsWith(dateStr) && c.status === 'completed');
+                    if (done) count++;
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else {
+                while (cur <= end) {
+                    const dateStr = localDateStr(cur);
+                    const done = habitCompletions.some(c => c.completed_at.startsWith(dateStr) && c.status === 'completed');
+                    if (done) count++;
+                    cur.setDate(cur.getDate() + 1);
+                }
+            }
+            return count;
+        }
+
+        async function checkCompletedStacks() {
+            const toComplete = [];
+            for (const habit of habits.filter(h => h.status === 'active')) {
+                if (habit.goal <= 0) continue;
+                const streak = computeHabitStreak(habit);
+                const today = new Date(); today.setHours(0,0,0,0);
+                const completedDays = countCompletedDaysInPeriod(habit, today);
+                if (streak >= habit.goal || completedDays >= habit.goal) {
+                    toComplete.push({ habit, streak: Math.max(streak, completedDays) });
+                }
+            }
+            if (toComplete.length === 0) return;
+
+            const results = [];
+            for (const { habit, streak } of toComplete) {
+                try {
+                    const todayStr = localDateStr();
+                    const pointsReward = habit.points_reward || 0;
+                    const startDate = new Date(habit.started_at);
+                    const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+                    const stackCompletions = completions.filter(c =>
+                        c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                    );
+
+                    // Leggi rule promemoria prima di aggiornare lo stato dell'habit
+                    let _savedNotiRule = null;
+                    if (sbAccessToken) {
+                        const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                        if (_ruleUserId) {
+                            const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habit.id).eq('user_id', _ruleUserId).maybeSingle();
+                            _savedNotiRule = _rd || null;
+                        }
+                    }
+
+                    // Archivia stack completato
+                    await supabaseClient.from('hb_archived_stacks').insert([{
+                        habit_id: habit.id,
+                        habit_name: habit.name,
+                        category_id: habit.category_id,
+                        started_at: habit.started_at,
+                        ended_at: todayStr,
+                        final_streak: streak,
+                        total_days: totalDays,
+                        total_completions: stackCompletions.length,
+                        total_failures: 0,
+                        points_earned: pointsReward,
+                        reason: 'completato'
+                    }]);
+
+                    // Marca vecchio stack come completato
+                    await supabaseClient.from('hb_habits').update({ status: 'completed' }).eq('id', habit.id);
+
+                    results.push({
+                        name: habit.name,
+                        streak,
+                        points: pointsReward,
+                        habitData: {
+                            id: habit.id,
+                            name: habit.name,
+                            description: habit.description,
+                            category_id: habit.category_id,
+                            frequency: habit.frequency,
+                            weekdays: habit.weekdays,
+                            daily_times: habit.daily_times,
+                            goal: habit.goal,
+                            max_failures: habit.max_failures,
+                            points_reward: habit.points_reward,
+                            points_penalty: habit.points_penalty,
+                            savedNotificationRule: _savedNotiRule
+                        }
+                    });
+                    console.log(`🏆 Stack completato (auto): ${habit.name} streak=${streak} punti=+${pointsReward}`);
+                } catch (err) {
+                    console.error(`❌ Errore completamento stack ${habit.name}:`, err);
+                }
+            }
+
+            if (results.length > 0) {
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                await loadArchivedStacks();
+                recalculateTotalScore();
+                showStackSuccessModal(results);
+            }
+        }
+
+        async function checkExpiredStacks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = localDateStr(today);
+
+            const expired = [];
+            for (const habit of habits.filter(h => h.status === 'active' && h.goal > 0)) {
+                const startDate = parseDateLocal(habit.started_at);
+                if (!startDate) continue;
+
+                // Ultimo giorno valido dello stack (incluso)
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + Number(habit.goal) - 1);
+                endDate.setHours(0, 0, 0, 0);
+
+                if (today > endDate) {
+                    // Usa conteggio giorni completati nel periodo (non lo streak che parte da oggi)
+                    const completedDays = countCompletedDaysInPeriod(habit, endDate);
+                    // completedDays >= goal viene già gestito da checkCompletedStacks
+                    if (completedDays < habit.goal) {
+                        expired.push({ habit, completedDays });
+                    }
+                }
+            }
+
+            if (expired.length === 0) return;
+
+            const successResults = []; // completato_con_jolly → modal successo
+
+            for (const { habit, completedDays } of expired) {
+                try {
+                    const startDate = new Date(habit.started_at);
+                    const totalDays = Number(habit.goal);
+                    const missedDays = habit.goal - completedDays;
+                    const maxFailures = habit.max_failures || 0;
+                    const coveredByJolly = maxFailures > 0 && missedDays <= maxFailures;
+
+                    const stackCompletions = completions.filter(c =>
+                        c.habit_id === habit.id && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                    );
+                    const stackFailures = completions.filter(c =>
+                        c.habit_id === habit.id && (c.status === 'failed' || c.status === 'missed') && new Date(c.completed_at) >= startDate
+                    );
+
+                    if (coveredByJolly) {
+                        console.log(`🏆 Stack "${habit.name}" scaduto: ${missedDays} giorni mancati ≤ ${maxFailures} jolly → COMPLETATO`);
+                    } else {
+                        console.log(`⏰ Stack scaduto per calendario: ${habit.name} (giorni completati: ${completedDays}/${habit.goal}, mancati: ${missedDays}, jolly: ${maxFailures})`);
+                    }
+
+                    // Deduplicazione
+                    const { data: existing } = await supabaseClient
+                        .from('hb_archived_stacks')
+                        .select('id')
+                        .eq('habit_id', habit.id)
+                        .eq('started_at', habit.started_at)
+                        .limit(1);
+                    if (existing && existing.length > 0) {
+                        console.log(`⚠️ Stack "${habit.name}" già archiviato — salto duplicato`);
+                        await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
+                        continue;
+                    }
+
+                    // Archivia stack
+                    await supabaseClient
+                        .from('hb_archived_stacks')
+                        .insert([{
+                            habit_id: habit.id,
+                            habit_name: habit.name,
+                            category_id: habit.category_id,
+                            started_at: habit.started_at,
+                            ended_at: todayStr,
+                            final_streak: completedDays,
+                            total_days: totalDays,
+                            total_completions: stackCompletions.length,
+                            total_failures: stackFailures.length,
+                            points_earned: coveredByJolly ? (habit.points_reward || 0) : -(habit.points_penalty || 0),
+                            reason: coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'
+                        }]);
+
+                    // Leggi rule promemoria prima di eliminare l'habit
+                    let _savedNotiRule = null;
+                    if (sbAccessToken) {
+                        const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                        if (_ruleUserId) {
+                            const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habit.id).eq('user_id', _ruleUserId).maybeSingle();
+                            _savedNotiRule = _rd || null;
+                        }
+                    }
+
+                    // Elimina vecchio stack da hb_habits
+                    await supabaseClient.from('hb_habits').delete().eq('id', habit.id);
+
+                    const habitData = {
+                        id: habit.id,
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        savedNotificationRule: _savedNotiRule
+                    };
+
+                    if (coveredByJolly) {
+                        // Usa modal SUCCESSO
+                        successResults.push({
+                            name: habit.name,
+                            streak: completedDays,
+                            points: habit.points_reward || 0,
+                            habitData
+                        });
+                    } else {
+                        // Usa modal GAME OVER
+                        window.gameOverQueue = window.gameOverQueue || [];
+                        window.gameOverQueue.push({
+                            habitId: habit.id,
+                            habitName: habit.name,
+                            streak: completedDays,
+                            days: totalDays,
+                            missedDays,
+                            reason: 'scadenza_calendario',
+                            alreadyProcessed: true,
+                            canUndo: false,
+                            habitData
+                        });
+                    }
+
+                    console.log(`✅ Stack "${habit.name}" → archiviato (${coveredByJolly ? 'completato_con_jolly' : 'scadenza_calendario'}).`);
+                } catch (err) {
+                    console.error(`❌ Errore checkExpiredStacks per ${habit.name}:`, err);
+                }
+            }
+
+            // Ricarica dati dopo chiusure
+            await loadHabits();
+            await loadCompletions();
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
+            await loadArchivedStacks();
+            recalculateTotalScore();
+
+            // Mostra modal successo per stack completati con jolly
+            if (successResults.length > 0) {
+                showStackSuccessModal(successResults);
+            }
+        }
+
         async function renderDashboard() {
+            await checkCompletedStacks();
+            await checkExpiredStacks();
             await checkMissedDays();
             renderHabitsTimeline();
         }
@@ -2504,7 +3210,7 @@
             }
 
             const dayCards = days.map((date) => {
-                const isToday = date.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+                const isToday = localDateStr(date) === localDateStr(today);
                 return renderDayCard(habit, date, isToday);
             }).join('');
 
@@ -2513,14 +3219,14 @@
                     <div class="habit-stack-header" style="border-left-color: ${categoryColor};">
                         <div>
                             <h3 class="habit-stack-title">
-                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : ''; })()}
+                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
+                        <div class="habit-stack-meta" style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="habit-freq-label" style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
-                                ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                                ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                             </div>
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">
@@ -2596,14 +3302,14 @@
                     <div class="habit-stack-header" style="border-left-color: ${categoryColor};">
                         <div>
                             <h3 class="habit-stack-title">
-                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : ''; })()}
+                                ${category ? `${category.icon} ` : ''}${habit.name}${(() => { const pts = calculateCurrentPoints(habit); return pts > 0 ? ` <span data-points-badge="${habit.id}" style="display: inline-block; margin-left: 0.5rem; padding: 0.25rem 0.6rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 50px; color: white; font-weight: bold; font-size: 0.75rem; vertical-align: middle;">🏆 ${pts}</span>` : `<span data-points-badge="${habit.id}" style="display:none"></span>`; })()}
                             </h3>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
+                        <div class="habit-stack-meta" style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="habit-freq-label" style="font-size: 0.85rem; opacity: 0.7;">${getFrequencyLabel(habit)}</span>
                             <div class="habit-stack-progress">
                                 ${completedDays}/${habit.goal}
-                                ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                                ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                             </div>
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">
@@ -2666,14 +3372,15 @@
                 date.setDate(weekStart.getDate() + daysToAdd);
                 date.setHours(12, 0, 0, 0); // Mezzogiorno per evitare problemi fuso orario // IMPORTANTE: normalizza a mezzanotte!
                 
-                const dateStr = date.toISOString().split('T')[0];
-                const completion = completions.find(c => 
+                const dateStr = localDateStr(date);
+                const completion = completions.find(c =>
                     c.habit_id === habit.id && c.completed_at.startsWith(dateStr)
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
-                
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
+
                 // Usa oggi senza conversione UTC
                 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                 const isToday = dateStr === todayStr;
@@ -2697,6 +3404,7 @@
                     dayName: dayNames[dayNum],
                     isCompleted,
                     isFailed,
+                    btnFailClass,
                     isToday,
                     canComplete
                 };
@@ -2719,7 +3427,7 @@
                                     data-action="complete"
                                     ${!day.canComplete ? 'disabled' : ''}
                                     title="Fatto">✓</button>
-                            <button class="simple-btn ${day.isFailed ? 'btn-failed' : ''}" 
+                            <button class="simple-btn ${day.btnFailClass}"
                                     style="width: 35px; height: 35px; font-size: 1rem;"
                                     data-action="fail"
                                     ${!day.canComplete ? 'disabled' : ''}
@@ -2747,7 +3455,7 @@
         }
 
         function renderDayCard(habit, date, isToday) {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = localDateStr(date);
             const dayOfWeek = date.getDay();
             const dayNames = ['DOM', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB'];
             const monthNames = ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
@@ -2792,36 +3500,39 @@
                 const isFuture = date > new Date(new Date().setHours(23, 59, 59, 999));
                 
                 const completedTimes = completionsOnDay.map(c => {
-                    return new Date(c.completed_at).toTimeString().substr(0, 5);
+                    if (c.period_key) return c.period_key.substring(11); // HH:MM from period_key
+                    return c.completed_at.substring(11, 16);
                 });
-                
+
                 const allCompleted = completedTimes.length >= times.length;
-                
+
                 const timeSlots = times.map(time => {
                     const completion = completionsOnDay.find(c => {
-                        const compTime = new Date(c.completed_at).toTimeString().substr(0, 5);
-                        return compTime === time;
+                        if (c.period_key) return c.period_key === buildPeriodKey('daily_multiple', dateStr, time);
+                        return c.completed_at.substring(11, 16) === time;
                     });
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                    const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
                     const canComplete = isToday && !isBeforeStart; // Solo oggi E dopo started_at
-                    
+                    const hideFailBtn = isPast && isCompleted; // giorni passati completati: nascondi ✗
+
                     return `
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.6rem 0.4rem; background: var(--input-bg); margin-bottom: 0.3rem; min-width: 80px;"
                              data-time="${time}">
                             <div class="time-text" style="margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">${time}</div>
                             <div class="state-buttons" style="gap: 0.3rem;">
-                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}" 
+                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}"
                                         style="width: 35px; height: 35px; font-size: 1rem;"
                                         data-action="complete"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
                                         title="Fatto">✓</button>
-                                <button class="simple-btn ${isFailed ? 'btn-failed' : ''}" 
+                                ${hideFailBtn ? '' : `<button class="simple-btn ${btnFailClass}"
                                         style="width: 35px; height: 35px; font-size: 1rem;"
                                         data-action="fail"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
-                                        title="Saltato (Jolly)">✕</button>
+                                        title="Saltato (Jolly)">✕</button>`}
                             </div>
                         </div>
                     `;
@@ -2849,12 +3560,15 @@
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+                const cardStatusClass = completion?.status === 'missed' ? 'missed' : isFailed ? 'failed' : '';
+                const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
                 const canComplete = isToday && !isBeforeStart; // Solo oggi E dopo started_at
+                const hideFailBtn = isPast && isCompleted; // giorni passati completati: nascondi ✗
 
                 return `
-                    <div class="day-card ${isToday ? 'today' : ''} ${isCompleted ? 'completed' : ''} ${isFailed ? 'failed' : ''} ${isFuture ? 'future' : ''}"
-                         data-habit="${habit.id}" 
+                    <div class="day-card ${isToday ? 'today' : ''} ${isCompleted ? 'completed' : ''} ${cardStatusClass} ${isFuture ? 'future' : ''}"
+                         data-habit="${habit.id}"
                          data-date="${dateStr}"
                          data-can-complete="${canComplete && !isFuture}">
                         <div class="day-card-date">
@@ -2864,14 +3578,14 @@
                         </div>
                         <div class="single-completion">
                             <div class="state-buttons">
-                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}" 
+                                <button class="simple-btn ${isCompleted ? 'btn-completed' : ''}"
                                         data-action="complete"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
                                         title="Fatto">✓</button>
-                                <button class="simple-btn ${isFailed ? 'btn-failed' : ''}" 
+                                ${hideFailBtn ? '' : `<button class="simple-btn ${btnFailClass}"
                                         data-action="fail"
                                         ${!canComplete || isFuture ? 'disabled' : ''}
-                                        title="Saltato (Jolly)">✕</button>
+                                        title="Saltato (Jolly)">✕</button>`}
                             </div>
                         </div>
                     </div>
@@ -2908,7 +3622,26 @@
         }
 
         function getCompletedDaysCount(habit) {
-            return habit.current_streak || 0;
+            if (habit.frequency === 'weekly') {
+                // Per weekly manteniamo lo streak (settimane consecutive)
+                return (habit._streak ?? computeHabitStreak(habit)) || 0;
+            }
+            // Per daily/daily_multiple: conta i giorni totali completati dall'inizio
+            return countCompletedDaysInPeriod(habit, new Date()) || 0;
+        }
+
+        function getTotalCompletedDays(habit) {
+            const habitCompletions = completions.filter(c => c.habit_id === habit.id);
+            if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                const required = habit.daily_times.length;
+                const byDate = {};
+                habitCompletions.forEach(c => {
+                    const d = c.completed_at.substring(0, 10);
+                    byDate[d] = (byDate[d] || 0) + 1;
+                });
+                return Object.values(byDate).filter(count => count >= required).length;
+            }
+            return new Set(habitCompletions.map(c => c.completed_at.substring(0, 10))).size;
         }
 
         function calculateCurrentPoints(habit) {
@@ -2966,9 +3699,10 @@
         }
 
         async function setWeekDayState(habitId, dateStr, newState) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const key = buildPeriodKey('weekly', dateStr);
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key || (c.period_key == null && c.completed_at.startsWith(dateStr))));
 
             console.log(`🎯 Imposta stato WEEK-DAY ${newState} per ${dateStr} - habit ${habitId}`);
             console.log(`📦 Existing prima:`, existing);
@@ -2976,9 +3710,9 @@
             try {
                 if (newState === 'none') {
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [WEEKLY] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [WEEKLY] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -3023,13 +3757,14 @@
                     console.log(`✅ Record aggiornato a ${newState}`);
                 } else {
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: newState
+                            status: newState,
+                            period_key: key
                         }])
                         .select();
 
@@ -3038,9 +3773,9 @@
                     completions.push(data[0]);
                     console.log(`✅ Nuovo record creato con stato ${newState}`);
                 }
-                
+
                 // Gestione jolly
-                if (existing && existing.status === 'failed' && newState === 'completed') {
+                if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
                     await restoreJolly(habitId);
                 }
                 else if (newState === 'failed') {
@@ -3060,9 +3795,11 @@
         }
 
         async function setDayState(habitId, dateStr, newState) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const habit = habits.find(h => h.id === habitId);
+            const key = buildPeriodKey(habit?.frequency || 'daily', dateStr);
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key || (c.period_key == null && c.completed_at.startsWith(dateStr))));
 
             console.log(`🎯 [DAILY] setDayState: habit=${habitId}, date=${dateStr}, newState=${newState}`);
             console.log(`📦 [DAILY] existing:`, existing);
@@ -3072,9 +3809,9 @@
                 if (newState === 'none') {
                     // Rimuovi completamento se esiste
                     if (existing) {
-                        // Se stavi rimuovendo un "failed", restituisci il jolly
-                        if (existing.status === 'failed') {
-                            console.log('🃏 [DAILY] Rimozione di failed → Restituisco jolly');
+                        // Se stavi rimuovendo un "failed"/"missed", restituisci il jolly
+                        if (existing.status === 'failed' || existing.status === 'missed') {
+                            console.log('🃏 [DAILY] Rimozione di failed/missed → Restituisco jolly');
                             await restoreJolly(habitId);
                         }
                         
@@ -3126,13 +3863,14 @@
                 } else {
                     // Crea nuovo completamento
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: newState
+                            status: newState,
+                            period_key: key
                         }])
                         .select();
 
@@ -3141,12 +3879,12 @@
                     completions.push(data[0]);
                     console.log(`✅ Nuovo record creato con stato ${newState}`);
                 }
-                
+
                 // Gestione jolly:
                 console.log(`🃏 [DAILY] Controllo jolly: existing=${!!existing}, existing.status=${existing?.status}, newState=${newState}`);
                 
-                // Se cambia da "failed" a "completed" → Restituisci jolly
-                if (existing && existing.status === 'failed' && newState === 'completed') {
+                // Se cambia da "failed"/"missed" a "completed" → Restituisci jolly
+                if (existing && (existing.status === 'failed' || existing.status === 'missed') && newState === 'completed') {
                     console.log('✅ [DAILY] Condizione RESTORE soddisfatta!');
                     await restoreJolly(habitId);
                 }
@@ -3173,98 +3911,166 @@
         }
 
         async function checkMissedDays() {
-            console.log('🔍 Controllo giorni mancati...');
-            
+            console.log('🔍 Controllo giorni mancati e stack falliti...');
+
             const today = new Date();
             today.setHours(12, 0, 0, 0);
             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            
+
+            let anyAutoClosed = false;
+
             for (const habit of habits.filter(h => h.status === 'active')) {
                 try {
                     const startDate = parseDateLocal(habit.started_at);
                     if (!startDate || startDate > today) continue;
-                    
+
                     const maxFailures = habit.max_failures || 3;
+
+                    // Conta le fallite/mancate REALI dai completions (fonte di verità)
+                    // Per daily_multiple: conta GIORNI distinti con fallimenti, non singole sessioni
+                    let actualFailures;
+                    const rawFailedCompletions = completions.filter(c =>
+                        c.habit_id === habit.id &&
+                        (c.status === 'failed' || c.status === 'missed') &&
+                        new Date(c.completed_at) >= startDate
+                    );
+                    if (habit.frequency === 'daily_multiple' && habit.daily_times?.length > 0) {
+                        const failedDates = [...new Set(rawFailedCompletions.map(c => c.completed_at.substring(0, 10)))];
+                        actualFailures = failedDates.length;
+                        console.log(`🃏 [CMD] "${habit.name}" daily_multiple — record failed/missed in DB: ${rawFailedCompletions.length}, giorni distinti: ${actualFailures}/${maxFailures}`, failedDates);
+                    } else {
+                        actualFailures = rawFailedCompletions.length;
+                        console.log(`🃏 [CMD] "${habit.name}" ${habit.frequency} — fallimenti: ${actualFailures}/${maxFailures}`);
+                    }
+
+                    // Sincronizza current_failures se discrepante
+                    if (actualFailures !== (habit.current_failures || 0)) {
+                        console.log(`🔧 Sincronizzazione current_failures per "${habit.name}": DB=${habit.current_failures} → reale=${actualFailures}`);
+                        await supabaseClient.from('hb_habits').update({ current_failures: actualFailures }).eq('id', habit.id);
+                        habit.current_failures = actualFailures;
+                    }
+
+                    // Se già al limite jolly (basato su conteggio reale) → chiudi automaticamente
+                    if (actualFailures >= maxFailures) {
+                        console.log(`💀 Stack già a limite jolly (${actualFailures}/${maxFailures}): ${habit.name}`);
+                        await autoCloseFailedStack(habit.id);
+                        anyAutoClosed = true;
+                        continue;
+                    }
+
                     let missedCount = 0;
-                    let autoFailedDates = [];
-                    
+                    let autoFailedSlots = []; // { date, key }
+
                     // Controlla ogni giorno tra started_at e ieri
                     const currentDate = new Date(startDate);
-                    
+
                     while (currentDate < today) {
                         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-                        
-                        // Verifica se questo giorno era previsto
+
                         let shouldHaveCompleted = false;
-                        
+
                         if (habit.frequency === 'daily' || habit.frequency === 'daily_multiple') {
                             shouldHaveCompleted = true;
                         } else if (habit.frequency === 'weekly' && habit.weekdays) {
                             const dayOfWeek = currentDate.getDay();
                             shouldHaveCompleted = habit.weekdays.includes(dayOfWeek);
                         }
-                        
+
                         if (shouldHaveCompleted) {
-                            // Controlla se ha completion per questo giorno
-                            const hasCompletion = completions.some(c => 
-                                c.habit_id === habit.id && 
-                                c.completed_at.startsWith(dateStr)
-                            );
-                            
-                            if (!hasCompletion) {
-                                missedCount++;
-                                autoFailedDates.push(dateStr);
-                                console.log(`❌ Giorno mancato: ${dateStr} per ${habit.name}`);
+                            if (habit.frequency === 'daily_multiple' && habit.daily_times && habit.daily_times.length > 0) {
+                                // Raccoglie gli slot mancanti per questo giorno
+                                const missingSlotsForDay = [];
+                                for (const timeSlot of habit.daily_times) {
+                                    const slotKey = buildPeriodKey('daily_multiple', dateStr, timeSlot);
+                                    const alreadyExists = completions.some(c =>
+                                        c.habit_id === habit.id &&
+                                        (c.period_key === slotKey ||
+                                         (c.period_key == null && c.completed_at.startsWith(`${dateStr}T${timeSlot}`)))
+                                    );
+                                    if (!alreadyExists) {
+                                        missingSlotsForDay.push({ date: dateStr, key: slotKey });
+                                        console.log(`❌ [CMD] ${dateStr} slot=${timeSlot} per "${habit.name}": mancante (key=${slotKey})`);
+                                    }
+                                }
+                                // Per daily_multiple: 1 fallimento per GIORNO mancato, non per sessione
+                                if (missingSlotsForDay.length > 0) {
+                                    missedCount++;
+                                    autoFailedSlots.push(...missingSlotsForDay);
+                                    console.log(`📅 [CMD] "${habit.name}" giorno ${dateStr}: ${missingSlotsForDay.length}/${habit.daily_times.length} slot mancanti → +1 jolly (tot missedCount=${missedCount})`);
+                                }
+                            } else {
+                                const periodKey = habit.frequency === 'weekly'
+                                    ? buildPeriodKey('weekly', dateStr)
+                                    : buildPeriodKey('daily', dateStr);
+                                const hasCompletion = completions.some(c =>
+                                    c.habit_id === habit.id &&
+                                    (c.period_key === periodKey ||
+                                     c.completed_at.startsWith(dateStr))
+                                );
+                                if (!hasCompletion) {
+                                    missedCount++;
+                                    autoFailedSlots.push({ date: dateStr, key: periodKey });
+                                    console.log(`❌ Giorno mancato: ${dateStr} per ${habit.name}`);
+                                }
                             }
                         }
-                        
-                        // Avanza di un giorno
+
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
-                    
-                    // Se ci sono giorni mancati, aggiorna current_failures
+
                     if (missedCount > 0) {
-                        const newFailures = (habit.current_failures || 0) + missedCount;
-                        
-                        console.log(`⚠️ ${habit.name}: ${missedCount} giorni mancati, totale fallimenti: ${newFailures}/${maxFailures}`);
-                        
-                        // Aggiorna nel database
-                        await supabaseClient
-                            .from('hb_habits')
-                            .update({ current_failures: newFailures })
-                            .eq('id', habit.id);
-                        
-                        // Aggiorna locale
-                        habit.current_failures = newFailures;
-                        
-                        // Crea record "failed" per ogni giorno mancato (opzionale, per storico)
-                        for (const missedDate of autoFailedDates) {
+                        // newFailures basato su fallimenti REALI, non su current_failures
+                        const newFailures = actualFailures + missedCount;
+
+                        console.log(`⚠️ ${habit.name}: ${missedCount} nuovi mancati, totale: ${newFailures}/${maxFailures}`);
+
+                        // Registra i periodi mancati come missed
+                        for (const slot of autoFailedSlots) {
                             await supabaseClient
                                 .from('hb_completions')
                                 .insert([{
                                     habit_id: habit.id,
-                                    completed_at: `${missedDate}T12:00:00`,
-                                    status: 'failed'
+                                    completed_at: `${slot.date}T12:00:00`,
+                                    status: 'missed',
+                                    period_key: slot.key
                                 }]);
                         }
-                        
-                        // Se supera il limite → GAME OVER
+
                         if (newFailures >= maxFailures) {
-                            console.log(`💀 GAME OVER automatico per ${habit.name}`);
-                            await resetStack(habit.id);
-                            return; // Esci subito per mostrare il popup
+                            // Jolly esauriti → chiudi automaticamente
+                            console.log(`💀 Jolly esauriti per ${habit.name} → auto-chiusura`);
+                            await autoCloseFailedStack(habit.id);
+                            anyAutoClosed = true;
+                        } else {
+                            // Aggiorna current_failures in DB
+                            await supabaseClient
+                                .from('hb_habits')
+                                .update({ current_failures: newFailures })
+                                .eq('id', habit.id);
+                            habit.current_failures = newFailures;
                         }
                     }
-                    
+
                 } catch (error) {
-                    console.error(`❌ Errore controllo giorni mancati per ${habit.name}:`, error);
+                    console.error(`❌ Errore controllo per ${habit.name}:`, error);
                 }
             }
-            
-            // Ricarica habits aggiornati
-            await loadHabits();
-            await loadCompletions();
-            
+
+            // Ricarica se ci sono stati auto-close
+            if (anyAutoClosed) {
+                await loadHabits();
+                await loadCompletions();
+                showToast('📦 Stack falliti chiusi automaticamente. Nuovi stack attivi da domani.');
+            } else {
+                await loadHabits();
+                await loadCompletions();
+            }
+            habits.forEach(h => { h._streak = computeHabitStreak(h); });
+            recalculateTotalScore();
+
+            // Mostra i game over accodati da autoCloseFailedStack
+            showNextGameOver();
+
             console.log('✅ Controllo giorni mancati completato');
         }
 
@@ -3344,6 +4150,8 @@
                 // Se supera il limite, reset stack
                 if (newFailures >= maxFailures) {
                     showToast(`🃏 Jolly esauriti! Stack resettato.`);
+                    window.currentResetCanUndo = true;
+                    window.currentResetPrevFailures = currentFailures;
                     await resetStack(habitId);
                 } else {
                     const remaining = maxFailures - newFailures;
@@ -3352,6 +4160,115 @@
             } catch (error) {
                 console.error('❌ Errore in handleFailure:', error);
                 showToast('Errore gestione fallimento');
+            }
+        }
+
+        // Chiude automaticamente uno stack fallito (senza modal) e crea un nuovo record dal giorno dopo
+        async function autoCloseFailedStack(habitId) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return false;
+
+            try {
+                const todayStr = localDateStr();
+                const currentStreak = computeHabitStreak(habit);
+                const startDate = new Date(habit.started_at);
+                const totalDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+
+                const stackCompletions = completions.filter(c =>
+                    c.habit_id === habitId && c.status === 'completed' && new Date(c.completed_at) >= startDate
+                );
+                const stackFailures = completions.filter(c =>
+                    c.habit_id === habitId && (c.status === 'failed' || c.status === 'missed') && new Date(c.completed_at) >= startDate
+                );
+
+                console.log(`💀 Auto-chiusura stack fallito: ${habit.name} (streak: ${currentStreak})`);
+
+                // Deduplicazione: se già archiviato con questo started_at, salta
+                const { data: existingArchive } = await supabaseClient
+                    .from('hb_archived_stacks')
+                    .select('id')
+                    .eq('habit_id', habitId)
+                    .eq('started_at', habit.started_at)
+                    .limit(1);
+                if (existingArchive && existingArchive.length > 0) {
+                    console.log(`⚠️ Stack "${habit.name}" già archiviato — salto duplicato`);
+                    await supabaseClient.from('hb_habits').delete().eq('id', habitId);
+                    return false;
+                }
+
+                // Archivia stack fallito
+                const { data: archivedData } = await supabaseClient
+                    .from('hb_archived_stacks')
+                    .insert([{
+                        habit_id: habitId,
+                        habit_name: habit.name,
+                        category_id: habit.category_id,
+                        started_at: habit.started_at,
+                        ended_at: todayStr,
+                        final_streak: currentStreak,
+                        total_days: totalDays,
+                        total_completions: stackCompletions.length,
+                        total_failures: stackFailures.length,
+                        reason: 'jolly_esauriti'
+                    }])
+                    .select();
+
+                // Penalità punti
+                const penalty = -(habit.points_penalty || 0);
+                if (archivedData && archivedData[0]) {
+                    await supabaseClient
+                        .from('hb_archived_stacks')
+                        .update({ points_earned: penalty })
+                        .eq('id', archivedData[0].id);
+                }
+
+                // Leggi rule promemoria prima di eliminare l'habit
+                let _savedNotiRule = null;
+                if (sbAccessToken) {
+                    const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                    if (_ruleUserId) {
+                        const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habitId).eq('user_id', _ruleUserId).maybeSingle();
+                        _savedNotiRule = _rd || null;
+                    }
+                }
+
+                // Elimina vecchio stack fallito da hb_habits
+                await supabaseClient
+                    .from('hb_habits')
+                    .delete()
+                    .eq('id', habitId);
+
+                console.log(`✅ Stack "${habit.name}" → eliminato e archiviato. In attesa data dal modal.`);
+
+                // Accoda al game over — il nuovo stack verrà creato dal modal con la data scelta
+                window.gameOverQueue = window.gameOverQueue || [];
+                window.gameOverQueue.push({
+                    habitId,
+                    habitName: habit.name,
+                    streak: currentStreak,
+                    days: totalDays,
+                    alreadyProcessed: true,
+                    canUndo: false,
+                    habitData: {
+                        id: habitId,
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        savedNotificationRule: _savedNotiRule
+                    }
+                });
+
+                return true;
+            } catch (err) {
+                console.error(`❌ Errore autoCloseFailedStack per ${habit.name}:`, err);
+                return false;
             }
         }
 
@@ -3364,39 +4281,140 @@
                 const startDate = new Date(habit.started_at);
                 const today = new Date();
                 const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-                
+
                 console.log(`🔄 Reset stack per habit ${habitId}`);
-                
-                // Mostra popup GAME OVER con dati
-                document.getElementById('gameOverHabitName').textContent = habit.name;
-                document.getElementById('gameOverStreak').textContent = habit.current_streak || 0;
-                document.getElementById('gameOverDays').textContent = daysPassed;
-                
-                // Suona la musica!
-                playGameOverSound();
-                
-                // Mostra modal
-                document.getElementById('gameOverModal').classList.add('active');
-                
-                // Salva habitId per il bottone "Ricomincia"
-                window.currentResetHabitId = habitId;
-                
+
+                // Accoda e mostra (con undo, non già processato)
+                window.gameOverQueue = window.gameOverQueue || [];
+                window.gameOverQueue.push({
+                    habitId,
+                    habitName: habit.name,
+                    streak: computeHabitStreak(habit),
+                    days: daysPassed,
+                    alreadyProcessed: false,
+                    canUndo: !!window.currentResetCanUndo,
+                    habitData: null // verrà letto live da habits[] in closeGameOver
+                });
+                window.currentResetCanUndo = false;
+
+                if (!document.getElementById('gameOverModal').classList.contains('active')) {
+                    showNextGameOver();
+                }
+
             } catch (error) {
                 console.error('❌ Errore in resetStack:', error);
                 showToast('Errore reset stack');
             }
         }
         
-        async function closeGameOver() {
+        function showNextGameOver() {
+            window.gameOverQueue = window.gameOverQueue || [];
+            if (window.gameOverQueue.length === 0) return;
+            const next = window.gameOverQueue.shift();
+
+            document.getElementById('gameOverHabitName').textContent = next.habitName;
+            document.getElementById('gameOverStreak').textContent = next.streak;
+            document.getElementById('gameOverDays').textContent = next.days;
+            const _subtitle = document.getElementById('gameOverSubtitle');
+            if (_subtitle) {
+                if (next.reason === 'completato_con_jolly') {
+                    _subtitle.textContent = `Completato! (${next.missedDays} giorn${next.missedDays === 1 ? 'o' : 'i'} coperti dai jolly)`;
+                } else if (next.reason === 'scadenza_calendario') {
+                    _subtitle.textContent = 'Stack Scaduto per Calendario';
+                } else {
+                    _subtitle.textContent = 'Jolly Esauriti!';
+                }
+            }
+            window.currentResetHabitId = next.habitId;
+            window.currentResetAlreadyProcessed = next.alreadyProcessed;
+            window.currentResetHabitData = next.habitData || null;
+            window.currentResetPrevFailures = next.prevFailures ?? window.currentResetPrevFailures;
+
+            // Default data inizio nuovo ciclo = oggi
+            document.getElementById('gameOverStartDate').value = localDateStr();
+
+            const undoBtn = document.getElementById('undoGameOverBtn');
+            if (undoBtn) undoBtn.style.display = next.canUndo ? 'block' : 'none';
+
+            document.getElementById('gameOverModal').classList.add('active');
+            if (!next.alreadyProcessed) playGameOverSound();
+        }
+
+        async function closeGameOver(createNew) {
             const habitId = window.currentResetHabitId;
             if (!habitId) return;
-            
+
+            // Leggi la data di inizio dal campo input
+            const startDateInput = document.getElementById('gameOverStartDate').value || localDateStr();
+
+            // Se già processato (archivio già fatto), crea il nuovo stack solo se richiesto
+            if (window.currentResetAlreadyProcessed) {
+                const habitData = window.currentResetHabitData;
+                if (createNew && habitData) {
+                    try {
+                        const { data: newHabitRow } = await supabaseClient.from('hb_habits').insert([{
+                            name: habitData.name,
+                            description: habitData.description,
+                            category_id: habitData.category_id,
+                            frequency: habitData.frequency,
+                            weekdays: habitData.weekdays,
+                            daily_times: habitData.daily_times,
+                            goal: habitData.goal,
+                            max_failures: habitData.max_failures,
+                            points_reward: habitData.points_reward,
+                            points_penalty: habitData.points_penalty,
+                            started_at: startDateInput,
+                            status: 'active',
+                            current_failures: 0
+                        }]).select().single();
+                        if (newHabitRow && habitData.id) await migrateHabitNotificationRule(habitData.id, newHabitRow.id, startDateInput, habitData.goal, habitData.savedNotificationRule);
+                        console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
+                    } catch (err) {
+                        console.error('❌ Errore creazione nuovo stack:', err);
+                        showToast('Errore creazione nuovo stack');
+                    }
+                }
+                document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
+                window.currentResetAlreadyProcessed = false;
+                window.currentResetHabitData = null;
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                recalculateTotalScore();
+                renderDashboard();
+                renderHabits();
+                showNextGameOver();
+                return;
+            }
+
+            // Se interrompi (createNew=false), chiudi il modal senza creare nuovo stack
+            if (!createNew) {
+                document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
+                await loadHabits();
+                renderDashboard();
+                renderHabits();
+                showNextGameOver();
+                return;
+            }
+
             try {
                 const habit = habits.find(h => h.id === habitId);
                 if (!habit) return;
-                
-                const todayStr = new Date().toISOString().split('T')[0];
-                
+
+                const todayStr = localDateStr();
+
+                // Leggi rule promemoria prima di eliminare l'habit
+                let _savedNotiRule = null;
+                if (sbAccessToken) {
+                    const _ruleUserId = decodeJWT(sbAccessToken)?.sub;
+                    if (_ruleUserId) {
+                        const { data: _rd } = await supabaseClient.from('cm_notification_rules').select('*').eq('app', 'habits').eq('entity_id', habitId).eq('user_id', _ruleUserId).maybeSingle();
+                        _savedNotiRule = _rd || null;
+                    }
+                }
+
                 // Calcola statistiche dello stack da archiviare
                 const startDate = new Date(habit.started_at);
                 const endDate = new Date();
@@ -3408,22 +4426,25 @@
                     new Date(c.completed_at) >= startDate
                 );
                 
-                const stackFailures = completions.filter(c => 
-                    c.habit_id === habitId && 
-                    c.status === 'failed' &&
+                const stackFailures = completions.filter(c =>
+                    c.habit_id === habitId &&
+                    (c.status === 'failed' || c.status === 'missed') &&
                     new Date(c.completed_at) >= startDate
                 );
                 
+                // Calcola streak dinamicamente prima di chiudere lo stack
+                const currentStreak = computeHabitStreak(habit);
+
                 console.log('📦 Archiving stack:', {
                     habit_name: habit.name,
                     started_at: habit.started_at,
                     ended_at: todayStr,
-                    final_streak: habit.current_streak,
+                    final_streak: currentStreak,
                     total_days: totalDays,
                     completions: stackCompletions.length,
                     failures: stackFailures.length
                 });
-                
+
                 // STEP 1: Archivia lo stack vecchio
                 const { data: archivedData, error: archiveError } = await supabaseClient
                     .from('hb_archived_stacks')
@@ -3433,7 +4454,7 @@
                         category_id: habit.category_id,
                         started_at: habit.started_at,
                         ended_at: todayStr,
-                        final_streak: habit.current_streak || 0,
+                        final_streak: currentStreak,
                         total_days: totalDays,
                         total_completions: stackCompletions.length,
                         total_failures: stackFailures.length,
@@ -3459,89 +4480,113 @@
                     .update({ points_earned: penalty })
                     .eq('id', archivedData[0].id);
                 
-                // Aggiorna punteggio totale utente (se esiste tabella user_points)
-                // Se non esiste ancora, salta questo step
-                const { data: userPointsData } = await supabaseClient
-                    .from('hb_user_points')
-                    .select('*')
-                    .limit(1)
-                    .single();
-                
-                if (userPointsData) {
-                    const newTotal = Math.max(0, (userPointsData.total_points || 0) + penalty);
-                    await supabaseClient
-                        .from('hb_user_points')
-                        .update({ total_points: newTotal })
-                        .eq('id', userPointsData.id);
-                    
-                    // Log transazione
-                    await supabaseClient
-                        .from('hb_points_transactions')
-                        .insert([{
-                            habit_id: habitId,
-                            habit_name: habit.name,
-                            points_change: penalty,
-                            reason: 'stack_failed'
-                        }]);
-                    
-                    console.log(`💰 Punteggio aggiornato: ${newTotal}`);
-                    
-                    // Aggiorna sidebar
-                    document.getElementById('totalScore').textContent = newTotal;
-                }
-                
-                // STEP 2: Cancella TUTTI i completions del vecchio stack
-                // (da started_at fino a oggi, così il nuovo stack parte completamente pulito)
-                console.log('🧹 Cancellazione TUTTI i completions del vecchio stack...');
-                const oldStartedAt = habit.started_at;
-                const { error: deleteError } = await supabaseClient
-                    .from('hb_completions')
-                    .delete()
-                    .eq('habit_id', habitId)
-                    .gte('completed_at', `${oldStartedAt}T00:00:00`)
-                    .lte('completed_at', `${todayStr}T23:59:59`);
-                
-                if (deleteError) {
-                    console.error('❌ Errore cancellazione completions vecchio stack:', deleteError);
-                    // Non bloccare il reset per questo
-                } else {
-                    console.log(`✅ Tutti i completions dal ${oldStartedAt} al ${todayStr} cancellati`);
-                }
-                
-                // STEP 3: Reset current_failures e current_streak, aggiorna started_at a oggi
-                const { data, error } = await supabaseClient
+                // STEP 2: Elimina vecchio stack da hb_habits
+                const { error: failError } = await supabaseClient
                     .from('hb_habits')
-                    .update({
-                        current_failures: 0,
-                        current_streak: 0,
-                        started_at: todayStr
-                    })
-                    .eq('id', habitId)
-                    .select();
-                
-                if (error) {
-                    console.error('❌ Errore reset stack:', error);
-                    showToast('Errore reset stack');
+                    .delete()
+                    .eq('id', habitId);
+
+                if (failError) {
+                    console.error('❌ Errore eliminazione stack:', failError);
+                    showToast('Errore eliminazione stack');
                     return;
                 }
-                
-                console.log('✅ Stack resettato:', data);
+                console.log('✅ Stack vecchio eliminato');
+
+                // STEP 3: Crea nuovo stack attivo dalla data scelta dall'utente
+                const { data: newHabitRow, error } = await supabaseClient
+                    .from('hb_habits')
+                    .insert([{
+                        name: habit.name,
+                        description: habit.description,
+                        category_id: habit.category_id,
+                        frequency: habit.frequency,
+                        weekdays: habit.weekdays,
+                        daily_times: habit.daily_times,
+                        goal: habit.goal,
+                        max_failures: habit.max_failures,
+                        points_reward: habit.points_reward,
+                        points_penalty: habit.points_penalty,
+                        started_at: startDateInput,
+                        status: 'active',
+                        current_failures: 0
+                    }]).select().single();
+
+                if (error) {
+                    console.error('❌ Errore creazione nuovo stack:', error);
+                    showToast('Errore creazione nuovo stack');
+                    return;
+                }
+                if (newHabitRow) await migrateHabitNotificationRule(habitId, newHabitRow.id, startDateInput, habit.goal, _savedNotiRule);
+                console.log(`✅ Nuovo stack attivo dal ${startDateInput}`);
                 
                 // Chiudi modal
                 document.getElementById('gameOverModal').classList.remove('active');
-                
+                window.currentResetHabitId = null;
+
                 // Ricarica tutto
                 await loadHabits();
+                await loadCompletions();
                 await loadArchivedStacks();
-                await loadCompletions(); // IMPORTANTE: ricarica completions aggiornati
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                recalculateTotalScore();
                 renderDashboard();
                 renderHabits();
-                
-                showToast('📦 Stack archiviato e ripartito da zero!');
+
+                showToast(`📦 Stack archiviato! Nuovo stack dal ${startDateInput}.`);
+                showNextGameOver();
                 
             } catch (error) {
                 console.error('❌ Errore closeGameOver:', error);
                 showToast('Errore reset stack');
+            }
+        }
+
+        async function undoGameOver() {
+            const habitId = window.currentResetHabitId;
+            if (!habitId) return;
+
+            try {
+                const habit = habits.find(h => h.id === habitId);
+                if (!habit) return;
+
+                const prevFailures = window.currentResetPrevFailures ?? Math.max(0, (habit.current_failures || 1) - 1);
+
+                // Ripristina current_failures al valore precedente
+                await supabaseClient
+                    .from('hb_habits')
+                    .update({ current_failures: prevFailures })
+                    .eq('id', habitId);
+
+                habit.current_failures = prevFailures;
+
+                // Cancella l'ultima completion 'failed' di oggi per questo habit
+                const todayStr = localDateStr();
+                const todayFailed = completions
+                    .filter(c => c.habit_id === habitId && (c.status === 'failed' || c.status === 'missed') && c.completed_at.startsWith(todayStr))
+                    .sort((a, b) => b.completed_at.localeCompare(a.completed_at));
+
+                if (todayFailed.length > 0) {
+                    const toDelete = todayFailed[0];
+                    await supabaseClient.from('hb_completions').delete().eq('id', toDelete.id);
+                    const idx = completions.findIndex(c => c.id === toDelete.id);
+                    if (idx !== -1) completions.splice(idx, 1);
+                }
+
+                // Chiudi modal senza archiviare
+                document.getElementById('gameOverModal').classList.remove('active');
+                window.currentResetHabitId = null;
+
+                await loadHabits();
+                await loadCompletions();
+                habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                renderHabitsTimeline();
+                renderHabits();
+
+                showToast('↩ Fallimento annullato');
+            } catch (error) {
+                console.error('❌ Errore undoGameOver:', error);
+                showToast('Errore durante l\'annullamento');
             }
         }
 
@@ -3559,27 +4604,29 @@
             );
             
             const isCompleted = completion && completion.status === 'completed';
-            const isFailed = completion && completion.status === 'failed';
+            const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+            const cardStatusClass = completion?.status === 'missed' ? 'missed' : isFailed ? 'failed' : '';
+            const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
 
             console.log(`📊 Stato: isCompleted=${isCompleted}, isFailed=${isFailed}`);
 
             // Aggiorna classi card
-            card.classList.remove('completed', 'failed');
+            card.classList.remove('completed', 'failed', 'missed');
             if (isCompleted) card.classList.add('completed');
-            if (isFailed) card.classList.add('failed');
+            if (cardStatusClass) card.classList.add(cardStatusClass);
 
             // Aggiorna bottoni
             const btnComplete = card.querySelector('[data-action="complete"]');
             const btnSkip = card.querySelector('[data-action="fail"]');
-            
+
             if (btnComplete) {
                 btnComplete.classList.remove('btn-completed');
                 if (isCompleted) btnComplete.classList.add('btn-completed');
             }
-            
+
             if (btnSkip) {
-                btnSkip.classList.remove('btn-failed');
-                if (isFailed) btnSkip.classList.add('btn-failed');
+                btnSkip.classList.remove('btn-failed', 'btn-missed');
+                if (btnFailClass) btnSkip.classList.add(btnFailClass);
             }
 
             updateHabitHeader(habitId);
@@ -3602,22 +4649,23 @@
             );
             
             const isCompleted = completion && completion.status === 'completed';
-            const isFailed = completion && completion.status === 'failed';
+            const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+            const btnFailClass = completion?.status === 'missed' ? 'btn-missed' : isFailed ? 'btn-failed' : '';
 
             console.log(`📊 Stato week-day: isCompleted=${isCompleted}, isFailed=${isFailed}`);
 
             // Aggiorna bottoni del week-day
             const btnComplete = weekDay.querySelector('[data-action="complete"]');
             const btnSkip = weekDay.querySelector('[data-action="fail"]');
-            
+
             if (btnComplete) {
                 btnComplete.classList.remove('btn-completed');
                 if (isCompleted) btnComplete.classList.add('btn-completed');
             }
-            
+
             if (btnSkip) {
-                btnSkip.classList.remove('btn-failed');
-                if (isFailed) btnSkip.classList.add('btn-failed');
+                btnSkip.classList.remove('btn-failed', 'btn-missed');
+                if (btnFailClass) btnSkip.classList.add(btnFailClass);
             }
 
             // Aggiorna lo stato della card settimana se tutti i giorni sono completati
@@ -3660,19 +4708,35 @@
 
             const progressEl = stack.querySelector('.habit-stack-progress');
             if (progressEl) {
-                const completedDays = habit.current_streak || 0;
+                const completedDays = (habit._streak ?? computeHabitStreak(habit)) || 0;
                 progressEl.innerHTML = `
                     ${completedDays}/${habit.goal}
-                    ${habit.current_streak > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${habit.current_streak}</span>` : ''}
+                    ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `<span style="margin-left: 0.5rem;">🔥 ${(habit._streak ?? computeHabitStreak(habit))}</span>` : ''}
                                 ${habit.max_failures > 0 ? `<span style="margin-left: 0.5rem; color: #2196F3;">🃏 ${habit.max_failures - (habit.current_failures || 0)}</span>` : ''}
                 `;
             }
+
+            // Aggiorna badge punti guadagnati
+            const badgeEl = stack.querySelector(`[data-points-badge="${habitId}"]`);
+            if (badgeEl) {
+                const pts = calculateCurrentPoints(habit);
+                if (pts > 0) {
+                    badgeEl.textContent = `🏆 ${pts}`;
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+
+            recalculateTotalScore();
         }
 
         async function toggleDayCompletion(habitId, dateStr) {
-            const existing = completions.find(c => 
-                c.habit_id === habitId && c.completed_at.startsWith(dateStr)
-            );
+            const habit = habits.find(h => h.id === habitId);
+            const key = buildPeriodKey(habit?.frequency || 'daily', dateStr);
+            const existing = completions.find(c =>
+                c.habit_id === habitId &&
+                (c.period_key === key || (c.period_key == null && c.completed_at.startsWith(dateStr))));
 
             console.log(`🔄 Toggle 3-state per ${dateStr} - habit ${habitId}`);
 
@@ -3680,13 +4744,14 @@
                 if (!existing) {
                     // Stato 0 → Stato 1: NON FATTO → FATTO (verde)
                     const completionDateTime = `${dateStr}T12:00:00`;
-                    
+
                     const { data, error } = await supabaseClient
                         .from('hb_completions')
                         .insert([{
                             habit_id: habitId,
                             completed_at: completionDateTime,
-                            status: 'completed'
+                            status: 'completed',
+                            period_key: key
                         }])
                         .select();
 
@@ -3772,7 +4837,6 @@
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                             <div>
                                 <h3 style="margin-bottom: 0.5rem;">${habit.name}</h3>
-                                ${habit.description ? `<p style="opacity: 0.7;">${habit.description}</p>` : ''}
                                 ${category ? `<span class="category-pill" style="background: ${category.color}">${category.icon} ${category.name}</span>` : ''}
                                 ${habit.frequency === 'daily_multiple' && habit.daily_times ? `
                                     <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--input-bg); border-left: 3px solid var(--accent);">
@@ -3783,23 +4847,27 @@
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.9rem; opacity: 0.7;">${frequencyLabel}</div>
-                                ${habit.current_streak > 0 ? `<span class="habit-streak">🔥 ${habit.current_streak}</span>` : ''}
                             </div>
                         </div>
-                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-                            <div style="flex: 1;">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(habit.current_streak / habit.goal) * 100}%">
-                                        ${Math.round((habit.current_streak / habit.goal) * 100)}%
-                                    </div>
-                                </div>
-                                <p style="opacity: 0.7; font-size: 0.9rem;">Obiettivo: ${habit.goal} giorni | Completamenti: ${completionCount}</p>
+                        ${(() => {
+                            const done = getTotalCompletedDays(habit);
+                            const pct = habit.goal > 0 ? Math.min(100, Math.round((done / habit.goal) * 100)) : 0;
+                            return `
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">
+                                <span>${done} / ${habit.goal} giorni</span>
+                                <span>${pct}%</span>
                             </div>
-                        </div>
+                            <div class="progress-bar" style="margin: 0; height: 10px; border-radius: 5px;">
+                                <div class="progress-fill" style="width: ${pct}%;"></div>
+                            </div>
+                        </div>`;
+                        })()}
+                        ${habit.status !== 'stopped' ? `
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                             <button class="btn btn-secondary" onclick="showEditHabitModal('${habit.id}')">MODIFICA</button>
-                            <button class="btn btn-danger" onclick="deleteHabit('${habit.id}')">ELIMINA</button>
-                        </div>
+                            <button class="btn btn-danger" onclick="stopHabit('${habit.id}')">INTERROMPI</button>
+                        </div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -3811,7 +4879,7 @@
             // Detailed Stats
             const totalCompletions = completions.length;
             const activeHabits = habits.filter(h => h.status === 'active').length;
-            const totalStreak = habits.reduce((sum, h) => sum + (h.current_streak || 0), 0);
+            const totalStreak = habits.reduce((sum, h) => sum + ((h._streak ?? computeHabitStreak(h)) || 0), 0);
             const avgStreak = activeHabits > 0 ? Math.round(totalStreak / activeHabits) : 0;
 
             const statsHtml = `
@@ -3856,7 +4924,7 @@
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">${habit.current_streak || 0}</div>
+                            <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">${(habit._streak ?? computeHabitStreak(habit)) || 0}</div>
                             <div style="opacity: 0.7; font-size: 0.9rem;">giorni</div>
                         </div>
                     </div>
@@ -3872,7 +4940,7 @@
             
             for (let i = 5; i >= 0; i--) {
                 const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthStr = date.toISOString().slice(0, 7);
+                const monthStr = localDateStr(date).slice(0, 7);
                 const count = completions.filter(c => c.completed_at.startsWith(monthStr)).length;
                 months.push({
                     label: date.toLocaleDateString('it-IT', { month: 'short' }),
@@ -4002,6 +5070,24 @@
         }
 
         // UI Functions
+        function renderActivePage() {
+            const pages = ['dashboard', 'habits', 'archive', 'stats', 'categories', 'calendar', 'settings'];
+            for (const p of pages) {
+                const el = document.getElementById('page-' + p);
+                if (el && el.style.display !== 'none') {
+                    switch (p) {
+                        case 'dashboard':  renderDashboard();  break;
+                        case 'habits':     renderHabits();     break;
+                        case 'archive':    renderArchive();    break;
+                        case 'stats':      renderStats();      break;
+                        case 'categories': renderCategories(); break;
+                    }
+                    return;
+                }
+            }
+            renderDashboard();
+        }
+
         function showPage(pageName) {
             // Hide all pages
             document.querySelectorAll('.page').forEach(page => {
@@ -4155,14 +5241,13 @@
                             <div style="display: flex; justify-content: space-between; align-items: start;">
                                 <div style="flex: 1;">
                                     <h3 style="margin-bottom: 0.5rem;">${habit.name}</h3>
-                                    ${habit.description ? `<p style="opacity: 0.7; margin-bottom: 0.5rem;">${habit.description}</p>` : ''}
                                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                                         <span style="font-size: 0.85rem; opacity: 0.7;">
                                             📅 ${habit.frequency === 'daily' ? 'Giornaliera' : 'Settimanale'}
                                         </span>
-                                        ${habit.current_streak > 0 ? `
+                                        ${(habit._streak ?? computeHabitStreak(habit)) > 0 ? `
                                             <span style="background: var(--warning); color: white; padding: 0.2rem 0.6rem; font-size: 0.85rem; font-weight: 700;">
-                                                🔥 ${habit.current_streak} giorni
+                                                🔥 ${(habit._streak ?? computeHabitStreak(habit))} giorni
                                             </span>
                                         ` : ''}
                                         <span style="font-size: 0.85rem; opacity: 0.7;">
@@ -4173,11 +5258,10 @@
                             </div>
                             <div style="margin-top: 1rem;">
                                 <div class="progress-bar" style="height: 20px;">
-                                    <div class="progress-fill" style="width: ${(habit.current_streak / habit.goal) * 100}%; font-size: 0.8rem;">
-                                        ${Math.round((habit.current_streak / habit.goal) * 100)}%
+                                    <div class="progress-fill" style="width: ${((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100}%; font-size: 0.8rem;">
+                                        ${Math.round(((habit._streak ?? computeHabitStreak(habit)) / habit.goal) * 100)}%
                                     </div>
                                 </div>
-                                <p style="opacity: 0.6; font-size: 0.85rem; margin-top: 0.5rem;">Obiettivo: ${habit.goal} giorni</p>
                             </div>
                         </div>
                     `;
@@ -4210,7 +5294,9 @@
             document.getElementById('editHabitFrequency').value = habit.frequency;
             document.getElementById('editHabitGoal').value = habit.goal;
             document.getElementById('editHabitMaxFailures').value = habit.max_failures || 3;
-            document.getElementById('editHabitStartDate').value = habit.started_at || new Date().toISOString().split('T')[0];
+            document.getElementById('editHabitPointsReward').value = habit.points_reward || 0;
+            document.getElementById('editHabitPointsPenalty').value = habit.points_penalty || 0;
+            document.getElementById('editHabitStartDate').value = habit.started_at || localDateStr();
             
             // Gestisci orari multipli
             editDailyTimes = habit.daily_times ? [...habit.daily_times] : [];
@@ -4223,10 +5309,27 @@
             
             // Mostra/nascondi sezioni
             handleEditFrequencyChange();
-            
+
+            // Carica orario promemoria e chip selezionati
+            const existingRule = habitNotificationRules[habit.id];
+            document.getElementById('editHabitReminderTime').value = existingRule?.times?.[0] || existingRule?.time || '';
+            editHabitReminderIds = existingRule?.reminders ? [...existingRule.reminders] : [];
+            renderHabitReminderChips('editHabitReminderChips', editHabitReminderIds, 'toggleEditHabitChip');
+            // Ripristina flag pulsante completamento Telegram
+            editHabitCompleteButton = existingRule?.telegram_complete_button || false;
+            const editGrp = document.getElementById('editCompleteButtonGroup');
+            if (editGrp) editGrp.style.display = editHabitReminderIds.length > 0 ? '' : 'none';
+            const editCb = document.getElementById('editHabitCompleteButton');
+            if (editCb) editCb.checked = editHabitCompleteButton;
+
             // Aggiorna select categorie
             updateEditCategorySelect();
-            
+
+            // Riservato (visibile solo in modalità nascosta)
+            const editRisCb = document.getElementById('editHabitRiservato');
+            if (editRisCb) editRisCb.checked = !!habit.riservato;
+            document.getElementById('editRiservatoGroup').style.display = hiddenMode ? 'block' : 'none';
+
             document.getElementById('editHabitModal').classList.add('active');
         }
         
@@ -4266,6 +5369,8 @@
             const frequency = document.getElementById('editHabitFrequency').value;
             document.getElementById('editDailyTimesSection').style.display = frequency === 'daily_multiple' ? 'block' : 'none';
             document.getElementById('editWeekdaysSection').style.display = frequency === 'weekly' ? 'block' : 'none';
+            document.getElementById('editReminderTimeGroup').style.display = frequency === 'daily_multiple' ? 'none' : 'block';
+            document.getElementById('editDailyMultipleReminderNote').style.display = frequency === 'daily_multiple' ? 'block' : 'none';
         }
         
         function updateEditCategorySelect() {
@@ -4323,7 +5428,8 @@
                         daily_times,
                         started_at: startedAt,
                         goal,
-                        max_failures: maxFailures
+                        max_failures: maxFailures,
+                        riservato: document.getElementById('editHabitRiservato')?.checked || false
                     })
                     .eq('id', habitId)
                     .select();
@@ -4339,7 +5445,12 @@
                         habits[index].weekdays = habits[index].weekdays.map(day => parseInt(day));
                     }
                 }
-                
+
+                // Aggiorna regola promemoria
+                const editReminderTime = document.getElementById('editHabitReminderTime').value;
+                const editHabitCompleteButtonChecked = document.getElementById('editHabitCompleteButton')?.checked || false;
+                await syncHabitNotificationRule(habitId, frequency, daily_times || [], editReminderTime, name, editHabitReminderIds, weekdays, startedAt, goal, editHabitCompleteButtonChecked);
+
                 closeModal('editHabitModal');
                 showToast('Abitudine aggiornata! 🎉');
                 renderDashboard();
@@ -4353,8 +5464,16 @@
         function showAddHabitModal() {
             updateCategorySelects();
             // Imposta data di oggi come default
-            const today = new Date().toISOString().split('T')[0];
+            const today = localDateStr();
             document.getElementById('habitStartDate').value = today;
+            // Reset reminder e mostra gruppo (default frequency = daily)
+            document.getElementById('habitReminderTime').value = '';
+            document.getElementById('reminderTimeGroup').style.display = 'block';
+            document.getElementById('dailyMultipleReminderNote').style.display = 'none';
+            // Reset e render chip
+            addHabitReminderIds = [];
+            renderHabitReminderChips('addHabitReminderChips', addHabitReminderIds, 'toggleAddHabitChip');
+            document.getElementById('addRiservatoGroup').style.display = hiddenMode ? 'block' : 'none';
             document.getElementById('addHabitModal').classList.add('active');
         }
 
@@ -4452,13 +5571,31 @@
             renderHabits();
         }
 
+        async function stopHabit(habitId) {
+            if (!confirm('Vuoi interrompere questa abitudine? Non verrà eliminata e il punteggio non cambierà.')) return;
+
+            try {
+                const { error } = await supabaseClient.from('hb_habits').update({ status: 'stopped' }).eq('id', habitId);
+                if (error) throw error;
+
+                habits = habits.filter(h => h.id !== habitId);
+                renderHabits();
+                showToast('Abitudine interrotta');
+            } catch (e) {
+                showToast('Errore nell\'interruzione');
+            }
+        }
+
         async function deleteHabit(habitId) {
             if (!confirm('Sei sicuro di voler eliminare questa abitudine?')) return;
 
             try {
                 // Delete completions first
                 await supabaseClient.from('hb_completions').delete().eq('habit_id', habitId);
-                
+
+                // Delete notification rule
+                await deleteHabitNotificationRule(habitId);
+
                 // Delete habit
                 const { error } = await supabaseClient.from('hb_habits').delete().eq('id', habitId);
                 if (error) throw error;
@@ -4506,22 +5643,31 @@
                 freqSelect.addEventListener('change', (e) => {
                     const weekdaysGroup = document.getElementById('weekdaysGroup');
                     const dailyTimesGroup = document.getElementById('dailyTimesGroup');
-                    
+                    const reminderTimeGroup = document.getElementById('reminderTimeGroup');
+                    const dailyMultipleReminderNote = document.getElementById('dailyMultipleReminderNote');
+
                     // Nascondi tutti
                     weekdaysGroup.style.display = 'none';
                     dailyTimesGroup.style.display = 'none';
-                    
+                    reminderTimeGroup.style.display = 'none';
+                    dailyMultipleReminderNote.style.display = 'none';
+
                     // Mostra il gruppo appropriato
                     if (e.target.value === 'weekly') {
                         weekdaysGroup.style.display = 'block';
+                        reminderTimeGroup.style.display = 'block';
                     } else if (e.target.value === 'daily_multiple') {
                         dailyTimesGroup.style.display = 'block';
+                        dailyMultipleReminderNote.style.display = 'block';
+                    } else {
+                        reminderTimeGroup.style.display = 'block';
                     }
                 });
             }
 
-            // Close modals on outside click
+            // Close modals on outside click (escludi editHabitModal per evitare chiusure accidentali)
             document.querySelectorAll('.modal').forEach(modal => {
+                if (modal.id === 'editHabitModal') return;
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
                         modal.classList.remove('active');
@@ -4603,8 +5749,8 @@
                     });
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
-                    
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+
                     addDebugLog(`🕐 ${time}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
                     
                     if (action === 'complete') {
@@ -4627,8 +5773,8 @@
                     );
                     
                     const isCompleted = completion && completion.status === 'completed';
-                    const isFailed = completion && completion.status === 'failed';
-                    
+                    const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
+
                     addDebugLog(`📅 ${dateStr}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
                     
                     if (action === 'complete') {
@@ -4650,7 +5796,7 @@
                 );
                 
                 const isCompleted = completion && completion.status === 'completed';
-                const isFailed = completion && completion.status === 'failed';
+                const isFailed = completion && (completion.status === 'failed' || completion.status === 'missed');
 
                 addDebugLog(`🔘 ${dateStr}: ${action}, completed=${isCompleted}, skipped=${isFailed}`);
 
@@ -4688,6 +5834,335 @@
             return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
         }
 
+        // ==========================================
+        // NOTIFICATION RULES — DB (cm_notification_rules)
+        // ==========================================
+
+        function decodeJWT(token) {
+            try {
+                const payload = token.split('.')[1];
+                return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+            } catch { return null; }
+        }
+
+        // triggerFillQueue rimosso: l'Edge Function non supporta CORS da browser.
+        // La coda viene popolata dallo scheduler Supabase lato server.
+        function triggerFillQueue() {}
+
+        // Elimina fisicamente le notifiche pending/snoozed dalla coda per un habit completato.
+        // Richiede due step perché la RLS DELETE ammette solo righe con status='cancelled'.
+        // dateStr = 'YYYY-MM-DD'. Se time è specificato, filtra solo il time slot (daily_multiple).
+        async function cancelHabitQueueEntries(habitId, dateStr, time = null) {
+            if (!supabaseClient) return;
+            try {
+                const entityId = String(habitId);
+                const applyFilters = (q) => {
+                    q = q.eq('app', 'habits')
+                         .eq('entity_id', entityId)
+                         .gte('fire_at', `${dateStr}T00:00:00Z`)
+                         .lte('fire_at', `${dateStr}T23:59:59Z`);
+                    if (time) q = q.like('body', `%ore ${time}%`);
+                    return q;
+                };
+
+                // Step 1: porta a 'cancelled' le entry pending/snoozed
+                const { error: updErr } = await applyFilters(
+                    supabaseClient.from('cm_notification_queue').update({ status: 'cancelled' }).in('status', ['pending', 'snoozed'])
+                );
+                if (updErr) { console.warn('⚠️ cancelHabitQueueEntries update:', updErr.message); return; }
+
+                // Step 2: elimina fisicamente le entry ora cancelled
+                const { error: delErr } = await applyFilters(
+                    supabaseClient.from('cm_notification_queue').delete().eq('status', 'cancelled')
+                );
+                if (delErr) console.warn('⚠️ cancelHabitQueueEntries delete:', delErr.message);
+                else console.log(`✅ cancelHabitQueueEntries: habit=${entityId} date=${dateStr} time=${time ?? 'all'}`);
+            } catch (e) {
+                console.warn('⚠️ cancelHabitQueueEntries:', e.message);
+            }
+        }
+
+        async function loadHabitReminderPresets() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cm_reminder_presets')
+                    .select('int_id, label, offset_minutes, sort_order')
+                    .eq('active', true)
+                    .order('sort_order', { ascending: true });
+                if (!error && data) {
+                    habitReminderPresets = data;
+                    console.log('🔔 Preset promemoria caricati:', habitReminderPresets.length);
+                }
+            } catch (e) { console.warn('⚠️ loadHabitReminderPresets:', e.message); }
+        }
+
+        function renderHabitReminderChips(containerId, selectedIds, toggleFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (habitReminderPresets.length === 0) {
+                container.innerHTML = '<span style="opacity:0.5;font-size:0.85rem;align-self:center;">Nessun preset disponibile</span>';
+                return;
+            }
+            container.innerHTML = habitReminderPresets.map(p => {
+                const selected = selectedIds.includes(p.int_id);
+                return `<div onclick="${toggleFn}(${p.int_id})" style="
+                    display:inline-flex;align-items:center;gap:0.3rem;
+                    padding:0.25rem 0.7rem;border-radius:20px;cursor:pointer;
+                    font-size:0.85rem;transition:all 0.15s;user-select:none;
+                    ${selected
+                        ? 'background:var(--accent,#2563EB);color:#fff;border:1px solid var(--accent,#2563EB);'
+                        : 'background:#fff;color:#333;border:1px solid #ddd;'}
+                " onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+                    ${p.label}${selected ? ' <span style="font-size:0.9rem;">✕</span>' : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function toggleAddHabitChip(intId) {
+            const idx = addHabitReminderIds.indexOf(intId);
+            if (idx > -1) addHabitReminderIds.splice(idx, 1);
+            else addHabitReminderIds.push(intId);
+            renderHabitReminderChips('addHabitReminderChips', addHabitReminderIds, 'toggleAddHabitChip');
+            const grp = document.getElementById('addCompleteButtonGroup');
+            if (grp) grp.style.display = addHabitReminderIds.length > 0 ? '' : 'none';
+            if (addHabitReminderIds.length === 0) {
+                addHabitCompleteButton = false;
+                const cb = document.getElementById('addHabitCompleteButton');
+                if (cb) cb.checked = false;
+            }
+        }
+
+        function toggleEditHabitChip(intId) {
+            const idx = editHabitReminderIds.indexOf(intId);
+            if (idx > -1) editHabitReminderIds.splice(idx, 1);
+            else editHabitReminderIds.push(intId);
+            renderHabitReminderChips('editHabitReminderChips', editHabitReminderIds, 'toggleEditHabitChip');
+            const grp = document.getElementById('editCompleteButtonGroup');
+            if (grp) grp.style.display = editHabitReminderIds.length > 0 ? '' : 'none';
+            if (editHabitReminderIds.length === 0) {
+                editHabitCompleteButton = false;
+                const cb = document.getElementById('editHabitCompleteButton');
+                if (cb) cb.checked = false;
+            }
+        }
+
+        async function loadHabitNotificationRules() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cm_notification_rules')
+                    .select('entity_id, reminder_presets')
+                    .eq('app', 'habits')
+                    .eq('enabled', true);
+                if (error) { console.warn('⚠️ loadHabitNotificationRules:', error.message); return; }
+                habitNotificationRules = {};
+                (data || []).forEach(r => { habitNotificationRules[r.entity_id] = r.reminder_presets; });
+                console.log('🔔 Regole promemoria caricate:', Object.keys(habitNotificationRules).length);
+            } catch (e) {
+                console.warn('⚠️ loadHabitNotificationRules eccezione:', e.message);
+            }
+        }
+
+        async function syncHabitNotificationRule(habitId, frequency, dailyTimesArr, reminderTime, habitName, reminderIds, weekdays, startedAt, goal, completeButton) {
+            if (!supabaseClient || !sbAccessToken) return;
+            const payload = decodeJWT(sbAccessToken);
+            const userId = payload?.sub;
+            if (!userId) { console.warn('⚠️ syncHabitNotificationRule: userId non trovato'); return; }
+
+            const ids = reminderIds || [];
+            const hasReminder = (frequency === 'daily_multiple') || !!reminderTime || ids.length > 0;
+            if (!hasReminder) {
+                await supabaseClient.from('cm_notification_rules')
+                    .delete()
+                    .eq('app', 'habits')
+                    .eq('entity_id', habitId)
+                    .eq('user_id', userId);
+                delete habitNotificationRules[habitId];
+                triggerFillQueue();
+                return;
+            }
+
+            // Calcola end_date = started_at + goal giorni
+            let endDate = null;
+            if (startedAt && goal) {
+                const d = new Date(startedAt);
+                d.setDate(d.getDate() + Number(goal) - 1);
+                endDate = localDateStr(d);
+            }
+
+            // Blocco aggiuntivo per pulsante Fatto Telegram
+            const periodKeyTpl = frequency === 'daily_multiple'
+                ? '{{fire_date_local}}-{{slot_time}}'
+                : frequency === 'weekly'
+                    ? '{{monday_of_week}}-{{day_of_week_n}}'
+                    : '{{fire_date_local}}';
+
+            const completeButtonExtra = completeButton ? {
+                telegram_complete_button: true,
+                completion_update: {
+                    app: 'habits',
+                    operations: [
+                        {
+                            op: 'insert',
+                            table: 'hb_completions',
+                            fields: {
+                                habit_id: habitId,
+                                completed_at: '{{fire_date_local}}T{{slot_time}}:00',
+                                status: 'completed',
+                                period_key: periodKeyTpl
+                            }
+                        }
+                    ]
+                }
+            } : {};
+
+            let reminderPresetsJson;
+            if (frequency === 'daily_multiple') {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    times: dailyTimesArr,
+                    'from-to': [startedAt || null, endDate],
+                    ...completeButtonExtra
+                };
+            } else if (frequency === 'weekly') {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    days: weekdays || [],
+                    times: reminderTime ? [reminderTime] : [],
+                    'from-to': [startedAt || null, endDate],
+                    ...completeButtonExtra
+                };
+            } else {
+                reminderPresetsJson = {
+                    reminders: ids,
+                    times: reminderTime ? [reminderTime] : [],
+                    'from-to': [startedAt || null, endDate],
+                    ...completeButtonExtra
+                };
+            }
+
+            const { data: existing } = await supabaseClient
+                .from('cm_notification_rules')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('app', 'habits')
+                .eq('entity_id', habitId)
+                .maybeSingle();
+
+            const rule = {
+                user_id: userId,
+                app: 'habits',
+                entity_id: habitId,
+                entity_type: frequency,
+                entity_title: habitName,
+                reminder_presets: reminderPresetsJson,
+                channel: 'telegram',
+                enabled: true
+            };
+
+            let error;
+            if (existing?.id) {
+                ({ error } = await supabaseClient.from('cm_notification_rules').update(rule).eq('id', existing.id));
+            } else {
+                ({ error } = await supabaseClient.from('cm_notification_rules').insert(rule));
+            }
+
+            if (error) {
+                console.error('❌ syncHabitNotificationRule:', error);
+                showToast('Errore salvataggio promemoria: ' + (error.message || ''));
+            } else {
+                habitNotificationRules[habitId] = reminderPresetsJson;
+                console.log('✅ syncHabitNotificationRule:', habitId, reminderPresetsJson);
+                triggerFillQueue();
+            }
+        }
+
+        async function deleteHabitNotificationRule(habitId) {
+            if (!supabaseClient) return;
+            try {
+                // Cancella le notifiche pending/snoozed prima di eliminare la regola
+                await supabaseClient
+                    .from('cm_notification_queue')
+                    .update({ status: 'cancelled' })
+                    .eq('app', 'habits')
+                    .eq('entity_id', String(habitId))
+                    .in('status', ['pending', 'snoozed']);
+
+                await supabaseClient.from('cm_notification_rules')
+                    .delete()
+                    .eq('app', 'habits')
+                    .eq('entity_id', habitId);
+                delete habitNotificationRules[habitId];
+                console.log('🗑️ Regola promemoria eliminata per:', habitId);
+            } catch (e) {
+                console.warn('⚠️ deleteHabitNotificationRule:', e.message);
+            }
+        }
+
+        // Migra la cm_notification_rules dal vecchio habit ID al nuovo (usata dopo ricreazione serie)
+        async function migrateHabitNotificationRule(oldHabitId, newHabitId, newStartedAt, newGoal, savedRule) {
+            if (!supabaseClient || !sbAccessToken) return;
+            const payload = decodeJWT(sbAccessToken);
+            const userId = payload?.sub;
+            if (!userId) return;
+            try {
+                let ruleRecord = savedRule || null;
+                if (!ruleRecord) {
+                    const { data } = await supabaseClient
+                        .from('cm_notification_rules')
+                        .select('*')
+                        .eq('app', 'habits')
+                        .eq('entity_id', oldHabitId)
+                        .eq('user_id', userId)
+                        .maybeSingle();
+                    ruleRecord = data || null;
+                }
+                if (!ruleRecord) return; // nessuna regola da migrare
+
+                // Calcola nuova end_date = newStartedAt + newGoal - 1 giorni
+                let endDate = null;
+                if (newStartedAt && newGoal) {
+                    const d = new Date(newStartedAt);
+                    d.setDate(d.getDate() + Number(newGoal) - 1);
+                    endDate = localDateStr(d);
+                }
+
+                // Aggiorna from-to e habit_id nel completion_update
+                const presets = { ...(ruleRecord.reminder_presets || {}) };
+                presets['from-to'] = [newStartedAt || null, endDate];
+                if (presets.completion_update?.operations?.[0]?.fields) {
+                    presets.completion_update.operations[0].fields.habit_id = newHabitId;
+                }
+
+                // Cancella vecchia regola + notifiche pending
+                await deleteHabitNotificationRule(oldHabitId);
+
+                // Inserisce nuova regola per il nuovo habit
+                const { error } = await supabaseClient.from('cm_notification_rules').insert({
+                    user_id: userId,
+                    app: 'habits',
+                    entity_id: newHabitId,
+                    entity_type: ruleRecord.entity_type,
+                    entity_title: ruleRecord.entity_title,
+                    reminder_presets: presets,
+                    channel: ruleRecord.channel || 'telegram',
+                    enabled: true
+                });
+
+                if (error) {
+                    console.error('❌ migrateHabitNotificationRule:', error);
+                } else {
+                    habitNotificationRules[newHabitId] = presets;
+                    delete habitNotificationRules[oldHabitId];
+                    console.log(`✅ cm_notification_rules migrata: ${oldHabitId} → ${newHabitId}`);
+                    triggerFillQueue();
+                }
+            } catch (e) {
+                console.warn('⚠️ migrateHabitNotificationRule:', e.message);
+            }
+        }
+
         // Notifications
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
@@ -4695,65 +6170,101 @@
             }
         }
 
-        function scheduleNotifications() {
+        function startHabitReminderChecks() {
             if (!settings.notificationsEnabled) return;
-            
-            const [hours, minutes] = settings.notificationTime.split(':');
-            const now = new Date();
-            const scheduled = new Date();
-            scheduled.setHours(hours, minutes, 0, 0);
-
-            if (scheduled <= now) {
-                scheduled.setDate(scheduled.getDate() + 1);
-            }
-
-            const timeout = scheduled - now;
-            
-            setTimeout(() => {
-                sendNotification();
-                setInterval(sendNotification, 24 * 60 * 60 * 1000); // Daily
-            }, timeout);
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            checkHabitReminders();
+            setInterval(checkHabitReminders, 60 * 1000);
         }
 
-        function sendNotification() {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                const today = new Date().toISOString().split('T')[0];
-                const todayCompletions = completions.filter(c => c.completed_at.startsWith(today));
-                const activeHabits = habits.filter(h => h.status === 'active');
-                const remaining = activeHabits.length - todayCompletions.length;
+        function checkHabitReminders() {
+            if (!settings.notificationsEnabled || Notification.permission !== 'granted') return;
+            const now = new Date();
+            const todayStr = localDateStr(now);
 
-                if (remaining > 0) {
-                    new Notification('Habit Stack Tracker', {
-                        body: `Hai ancora ${remaining} abitudini da completare oggi! 💪`,
-                        icon: '🔥'
-                    });
+            habits.filter(h => h.status === 'active').forEach(habit => {
+                const rule = habitNotificationRules[habit.id];
+                if (!rule) return;
+
+                const presetIds = rule.reminders || [];
+                if (presetIds.length === 0) return;
+
+                // Controlla from-to: salta se oggi è fuori dall'intervallo
+                const fromTo = rule['from-to'];
+                if (fromTo) {
+                    const [fromDate, toDate] = fromTo;
+                    if (fromDate && todayStr < fromDate) return;
+                    if (toDate && todayStr > toDate) return;
                 }
-            }
+
+                // Determina gli orari base dalla nuova struttura
+                let baseTimes = rule.times || [];
+                if (baseTimes.length === 0) return;
+
+                if (habit.frequency === 'weekly') {
+                    const days = rule.days || [];
+                    if (!days.includes(now.getDay())) return;
+                }
+
+                baseTimes.forEach(baseTime => {
+                    const [bh, bm] = baseTime.split(':').map(Number);
+                    const baseDate = new Date(now); baseDate.setHours(bh, bm, 0, 0);
+
+                    presetIds.forEach(presetId => {
+                        const preset = habitReminderPresets.find(p => p.int_id === presetId);
+                        if (!preset) return;
+
+                        const fireTime = new Date(baseDate.getTime() - preset.offset_minutes * 60000);
+                        const diff = now - fireTime;
+                        if (diff < 0 || diff > 120000) return;
+
+                        const flagKey = `habit_notified_${habit.id}_${baseTime}_${presetId}_${todayStr}`;
+                        if (localStorage.getItem(flagKey)) return;
+
+                        let done;
+                        if (habit.frequency === 'daily_multiple') {
+                            done = completions.some(c =>
+                                c.habit_id === habit.id && c.completed_at.startsWith(`${todayStr}T${baseTime}`));
+                        } else {
+                            done = completions.some(c =>
+                                c.habit_id === habit.id && c.completed_at.startsWith(todayStr));
+                        }
+                        if (!done) {
+                            const isMultiple = habit.frequency === 'daily_multiple';
+                            const msg = preset.offset_minutes === 0
+                                ? `È ora di: ${habit.name}${isMultiple ? ' (' + baseTime + ')' : ''}`
+                                : `${preset.label} — ${habit.name}${isMultiple ? ' (' + baseTime + ')' : ''}`;
+                            new Notification(`⏰ ${habit.name}`, { body: msg, icon: '🔥' });
+                            localStorage.setItem(flagKey, 'true');
+                        }
+                    });
+                });
+            });
         }
 
         // Settings
         function loadSettings() {
             const saved = localStorage.getItem('habitTrackerSettings');
             if (saved) {
-                settings = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                settings.notificationsEnabled = parsed.notificationsEnabled || false;
                 document.getElementById('notificationsEnabled').checked = settings.notificationsEnabled;
-                document.getElementById('notificationTime').value = settings.notificationTime;
-                
+
                 if (settings.notificationsEnabled) {
-                    scheduleNotifications();
+                    startHabitReminderChecks();
                 }
             }
         }
 
         function saveSettings() {
             settings.notificationsEnabled = document.getElementById('notificationsEnabled').checked;
-            settings.notificationTime = document.getElementById('notificationTime').value;
-            
+
             localStorage.setItem('habitTrackerSettings', JSON.stringify(settings));
             showToast('Impostazioni salvate');
 
             if (settings.notificationsEnabled) {
-                scheduleNotifications();
+                requestNotificationPermission();
+                startHabitReminderChecks();
             }
         }
 
@@ -4809,7 +6320,9 @@
                             await loadCategories();
                             await loadHabits();
                             await loadCompletions();
-                            
+                            habits.forEach(h => { h._streak = computeHabitStreak(h); });
+                            recalculateTotalScore();
+
                             renderDashboard();
                             showToast('Dati importati con successo!');
                         }
@@ -4827,62 +6340,153 @@
 
         function renderArchive() {
             const container = document.getElementById('archivedStacksList');
-            
-            if (archivedStacks.length === 0) {
-                container.innerHTML = '<p style="opacity: 0.7; text-align: center; padding: 2rem;">Nessuno stack archiviato ancora. 📦</p>';
-                return;
-            }
-            
-            const html = archivedStacks.map(stack => {
-                const category = categories.find(c => c.id === stack.category_id);
-                const duration = `${stack.started_at} → ${stack.ended_at}`;
-                const reasonText = stack.reason === 'jolly_esauriti' ? '💀 Jolly Esauriti' : '✅ Completato';
-                
-                return `
-                    <div class="card" style="margin-bottom: 1rem; border-left: 4px solid ${category?.color || '#ccc'};">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                            <div>
-                                <h3 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                                    ${category ? category.icon : '📌'} ${stack.habit_name}
-                                </h3>
-                                <p style="opacity: 0.7; margin: 0; font-size: 0.9rem;">${duration}</p>
+
+            const reasonLabel = { completato: '✅ Completato', fallito: '💀 Fallito', interrotto: '⏹ Interrotto', stopped: '⏹ Interrotto' };
+            const reasonBg    = { completato: '#e8f5e9', fallito: '#ffebee', interrotto: '#fff8e1', stopped: '#fff8e1' };
+            const statusLabel = { completed: '✅ Completata', failed: '💀 Fallita', stopped: '⏹ Interrotta' };
+            const statusBg    = { completed: '#e8f5e9', failed: '#ffebee', stopped: '#fff8e1' };
+
+            // Sezione 1: stack archiviati (cicli completati/falliti con statistiche)
+            let stacksHtml = '';
+            if (archivedStacks.length > 0) {
+                stacksHtml = `
+                    <h2 style="font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.75rem 0;">
+                        Cicli archiviati (${archivedStacks.length})
+                    </h2>
+                ` + archivedStacks.map(stack => {
+                    const category = categories.find(c => c.id === stack.category_id);
+                    const label = reasonLabel[stack.reason] || stack.reason;
+                    const bg    = reasonBg[stack.reason] || '#f5f5f5';
+                    const pct   = stack.total_days > 0 ? Math.min(100, Math.round((stack.total_completions / stack.total_days) * 100)) : 0;
+                    return `
+                        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid ${category?.color || '#ccc'};">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div>
+                                    <h3 style="margin: 0 0 0.3rem 0;">
+                                        ${category ? category.icon : '📌'} ${stack.habit_name}
+                                    </h3>
+                                    <div style="font-size: 0.85rem; opacity: 0.6;">
+                                        ${stack.started_at || ''} → ${stack.ended_at || ''}
+                                    </div>
+                                </div>
+                                <span style="padding: 0.3rem 0.8rem; background: ${bg}; border-radius: 20px; font-size: 0.85rem; white-space: nowrap;">
+                                    ${label}
+                                </span>
                             </div>
-                            <span style="padding: 0.3rem 0.8rem; background: ${stack.reason === 'jolly_esauriti' ? '#ffebee' : '#e8f5e9'}; border-radius: 20px; font-size: 0.85rem;">
-                                ${reasonText}
-                            </span>
+                            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.9rem; margin-bottom: 0.75rem;">
+                                <span>📅 ${stack.total_completions ?? 0} sessioni · ${stack.total_days ?? 0} giorni</span>
+                                <span>🔥 Streak max: ${stack.final_streak ?? 0}</span>
+                                <span>⭐ ${stack.points_earned ?? 0} punti</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.25rem;">
+                                <span>${pct}% completato</span>
+                            </div>
+                            <div class="progress-bar" style="margin: 0; height: 8px; border-radius: 4px;">
+                                <div class="progress-fill" style="width: ${pct}%;"></div>
+                            </div>
                         </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem;">
-                            <div style="text-align: center;">
-                                <div style="font-size: 1.5rem;">🔥</div>
-                                <div style="font-size: 1.2rem; font-weight: bold;">${stack.final_streak}</div>
-                                <div style="opacity: 0.7; font-size: 0.85rem;">Streak</div>
+                    `;
+                }).join('');
+            }
+
+            // Sezione 2: abitudini non attive (stopped/failed senza ciclo archiviato)
+            const inactiveHtml = inactiveHabits.length === 0 ? '' : `
+                <h2 style="font-size: 1rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; margin: 1.5rem 0 0.75rem 0;">
+                    Abitudini non attive (${inactiveHabits.length})
+                </h2>
+            ` + inactiveHabits.map(habit => {
+                const category = categories.find(c => c.id === habit.category_id);
+                const label = statusLabel[habit.status] || habit.status;
+                const bg    = statusBg[habit.status] || '#f5f5f5';
+                return `
+                    <div class="card" style="margin-bottom: 0.75rem; border-left: 4px solid ${category?.color || '#ccc'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin: 0 0 0.25rem 0; font-size: 1rem;">
+                                    ${category ? category.icon : '📌'} ${habit.name}
+                                </h3>
+                                <div style="font-size: 0.8rem; opacity: 0.6;">${habit.updated_at ? habit.updated_at.split('T')[0] : ''}</div>
                             </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 1.5rem;">📅</div>
-                                <div style="font-size: 1.2rem; font-weight: bold;">${stack.total_days}</div>
-                                <div style="opacity: 0.7; font-size: 0.85rem;">Giorni</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 1.5rem;">✅</div>
-                                <div style="font-size: 1.2rem; font-weight: bold;">${stack.total_completions}</div>
-                                <div style="opacity: 0.7; font-size: 0.85rem;">Successi</div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div style="font-size: 1.5rem;">❌</div>
-                                <div style="font-size: 1.2rem; font-weight: bold;">${stack.total_failures}</div>
-                                <div style="opacity: 0.7; font-size: 0.85rem;">Fallimenti</div>
-                            </div>
+                            <span style="padding: 0.25rem 0.7rem; background: ${bg}; border-radius: 20px; font-size: 0.8rem; white-space: nowrap;">
+                                ${label}
+                            </span>
                         </div>
                     </div>
                 `;
             }).join('');
-            
-            container.innerHTML = html;
+
+            if (!stacksHtml && !inactiveHtml) {
+                container.innerHTML = '<p style="opacity: 0.7; text-align: center; padding: 2rem;">Nessun archivio disponibile.</p>';
+            } else {
+                container.innerHTML = stacksHtml + inactiveHtml;
+            }
         }
 
-        // Initialize app when page loads
-        window.addEventListener('load', init);
+        // ==========================================
+        // AUTH — token da launcher via postMessage o sessionStorage
+        // ==========================================
+        window.addEventListener('message', (e) => {
+            if (!e.data) return;
+            if (e.data.type === 'SB_TOKEN' && e.data.token) {
+                console.log('✅ SB_TOKEN ricevuto dal launcher (Habit Stack)');
+                initWithToken(e.data.token);
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0');
+                console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
+                if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
+            }
+        });
+
+        // Logout/token refresh/hidden mode broadcast da AppSphere
+        const _authChannel = new BroadcastChannel('appsphere_auth');
+        _authChannel.onmessage = (e) => {
+            if (!e.data) return;
+            if (e.data.type === 'LOGOUT') {
+                supabaseClient = null;
+                sbAccessToken  = null;
+                localStorage.removeItem('sb_token');
+                document.getElementById('authOverlay').style.display = 'flex';
+                console.log('🔒 Sessione invalidata da AppSphere (logout)');
+            } else if (e.data.type === 'TOKEN_REFRESH' && e.data.sbToken) {
+                const newToken = e.data.sbToken;
+                localStorage.setItem('sb_token', newToken);
+                sbAccessToken = newToken;
+                if (supabaseClient) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                        auth:   { persistSession: false, autoRefreshToken: false },
+                        global: { headers: { Authorization: 'Bearer ' + newToken } }
+                    });
+                }
+                console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                riservatoFilter = false;
+                console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
+                if (supabaseClient) Promise.all([loadHabits(), loadArchivedStacks()]).then(() => renderActivePage());
+            }
+        };
+
+        window.addEventListener('load', () => {
+            // Legge hidden_mode impostato dal launcher (navigazione stessa pagina)
+            const storedHidden = sessionStorage.getItem('hidden_mode');
+            if (storedHidden !== null) {
+                hiddenMode = storedHidden === '1';
+                riservatoFilter = hiddenMode && sessionStorage.getItem('riservato_filter') === '1';
+                updateHiddenModeFab();
+            }
+
+            const stored = localStorage.getItem('sb_token');
+            if (stored) {
+                initWithToken(stored);
+            } else {
+                // Mostra overlay di blocco e attende postMessage dal launcher
+                document.getElementById('authOverlay').style.display = 'flex';
+                console.warn('⚠️ Nessun SB_TOKEN — attendo dal launcher (AppSphere)');
+            }
+        });
     </script>
 </body>
 </html>

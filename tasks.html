@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="it-IT">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasks v19.17.48</title>
+    <title>Tasks v19.18.33</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -46,6 +46,43 @@
             background: var(--light);
             color: var(--dark);
             min-height: 100vh;
+            padding-top: 56px;
+        }
+
+        /* ── GARSAL TOP BAR ── */
+        #garsal-top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0081C8;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 10px;
+            z-index: 3000;
+        }
+        #garsal-top-bar-icon {
+            width: 22px;
+            height: 22px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            flex-shrink: 0;
+        }
+        #garsal-top-bar-text {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
         }
 
         .app-container {
@@ -100,6 +137,48 @@
             transform: scale(0.95);
         }
 
+        /* Hidden Mode FAB */
+        .hidden-mode-fab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: var(--muted);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            transition: all 0.3s ease;
+        }
+
+        .hidden-mode-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.35);
+        }
+
+        .hidden-mode-fab:active {
+            transform: scale(0.95);
+        }
+
+        .hidden-mode-fab.active {
+            background: var(--secondary);
+            box-shadow: 0 4px 20px rgba(108, 92, 231, 0.5);
+            animation: pulse-hidden 2s infinite;
+        }
+
+        @keyframes pulse-hidden {
+            0%   { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+            50%  { box-shadow: 0 4px 28px rgba(108,92,231,0.8); }
+            100% { box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+        }
+
         /* Responsive Design */
         @media (min-width: 769px) {
             /* Desktop: assicurati che sidebar sia sempre visibile */
@@ -149,9 +228,9 @@
             .sidebar {
                 position: fixed;
                 left: -100%;
-                top: 0;
+                top: 56px;
                 width: 280px;
-                height: 100vh;
+                height: calc(100vh - 56px);
                 z-index: 1500;
                 transition: left 0.3s ease;
                 overflow-y: auto;
@@ -912,7 +991,7 @@
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
-                top: 0;
+                top: 56px;
                 left: 0;
                 width: 100%;
                 height: auto;
@@ -969,7 +1048,7 @@
             .sidebar {
                 display: flex !important;
                 position: fixed !important;
-                top: 0 !important;
+                top: 56px !important;
                 left: 0 !important;
                 right: 0 !important;
                 width: 100% !important;
@@ -1331,12 +1410,32 @@
 </style>
 </head>
 <body>
+
+    <!-- GARSAL TOP BAR -->
+    <div id="garsal-top-bar">
+        <a href="app-launcher.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="15" r="7" fill="rgba(255,255,255,0.85)"/><circle cx="20" cy="7" r="4.5" fill="#00A651"/><circle cx="6" cy="6" r="3.5" fill="#FCB131"/><circle cx="3" cy="17" r="2.5" fill="#1A1A1A"/></svg>
+            <div id="garsal-top-bar-text">Garsal Apps</div>
+        </a>
+    </div>
+
+    <!-- AUTH OVERLAY — mostrato se app aperta senza token -->
+    <div id="authOverlay" style="display:none; position:fixed; inset:0; background:rgba(15,15,30,0.97); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; font-family:inherit;">
+        <div style="font-size:3.5rem;">🔐</div>
+        <h2 style="color:#fff; margin:0; font-size:1.4rem; font-weight:700;">Accesso richiesto</h2>
+        <p style="color:#aaa; margin:0; text-align:center; max-width:320px; line-height:1.6;">Apri <strong style="color:#FF3366;">Tasks</strong> da AppSphere per accedere con il tuo account Google.</p>
+        <a href="app-launcher.html" style="margin-top:0.5rem; padding:0.8rem 2rem; background:#FF3366; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:0.95rem;">Vai ad AppSphere</a>
+    </div>
+
     <div class="app-container">
         <!-- Mobile Menu Toggle -->
         <button class="menu-toggle" onclick="toggleMenu()">☰</button>
         
         <!-- Quick Add Note Button (opposite to hamburger) -->
         <button class="quick-add-note" onclick="showQuickNoteModal()" title="Aggiungi Appunto Veloce">+</button>
+
+        <!-- Hidden Mode FAB -->
+        <button class="hidden-mode-fab" id="hiddenModeFab" onclick="toggleHiddenMode()" title="Modalità Nascosta">🙈</button>
         
         <!-- Sidebar Overlay (mobile) -->
         <div class="sidebar-overlay" onclick="toggleMenu()"></div>
@@ -1586,6 +1685,17 @@
                 </div>
                 
                 <div class="card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                        <h3 style="margin:0;">🐛 Console Debug</h3>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-accent" onclick="document.getElementById('debugLog').innerHTML=''" style="font-size:0.8rem; padding:0.3rem 0.7rem;">🗑 Svuota</button>
+                            <button class="btn btn-primary" onclick="toggleDebugEnabled()" id="debugEnabledBtn" style="font-size:0.8rem; padding:0.3rem 0.7rem;">● Attiva</button>
+                        </div>
+                    </div>
+                    <div id="debugLog" style="background:#0a0a0a; color:#0f0; font-family:monospace; font-size:11px; padding:0.6rem; border-radius:4px; max-height:300px; overflow-y:auto; border:1px solid #333; white-space:pre-wrap; word-break:break-all;"></div>
+                </div>
+
+                <div class="card">
                     <h3 style="margin-bottom: 1rem;">Informazioni Sistema</h3>
                     <div class="task-detail-row">
                         <span class="task-detail-label">Versione:</span>
@@ -1607,23 +1717,13 @@
                 <div class="page-header">
                     <button class="btn btn-primary" onclick="showAddNoteModal()">Nuovo Appunto</button>
                 </div>
-                
+
                 <div id="notesList"></div>
             </div>
+
         </main>
     </div>
 
-    <!-- Debug Console (mobile) - TOP -->
-    <div id="debugConsole" style="position: fixed; top: 0; left: 0; right: 0; background: #000; color: #0f0; font-family: monospace; font-size: 11px; max-height: 250px; overflow-y: auto; padding: 0.25rem; display: none; z-index: 10000; border-bottom: 2px solid #0f0;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <strong>🔍 DEBUG CONSOLE</strong>
-            <button onclick="toggleDebugConsole()" style="background: #f00; color: #fff; border: none; padding: 0.1rem 0.25rem; cursor: pointer;">Nascondi</button>
-        </div>
-        <div id="debugLog" style="max-height: 180px; overflow-y: auto;"></div>
-    </div>
-    
-    <!-- Debug Toggle Button (fixed bottom right) -->
-    <button id="debugToggle" onclick="toggleDebugConsole()" style="position: fixed; bottom: 20px; right: 20px; z-index: 10001; background: #0f0; color: #000; border: none; padding: 0.25rem; border-radius: 0; width: 50px; height: 50px; font-size: 20px; cursor: pointer; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">🐛</button>
 
     <!-- Snooze Modal -->
     <div id="snoozeModal" class="modal" onclick="if(event.target===this)closeSnoozeModal()">
@@ -1947,6 +2047,14 @@
                     </div>
                 </div>
 
+                <!-- NASCOSTO -->
+                <div class="form-group" id="riservatoGroup" style="margin-top: 0.5rem; display:none;">
+                    <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="taskRiservato" style="width:18px;height:18px;accent-color:var(--secondary);cursor:pointer;">
+                        <span class="form-label" style="margin:0;">Task nascosto (riservato)</span>
+                    </label>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Salva Task</button>
             </form>
         </div>
@@ -2069,8 +2177,8 @@
     </div>
 
     <script>
-        const APP_VERSION = 'v19.17.50';
-        const BUILD_TIME  = '2026-03-01T15:00:00Z';
+        const APP_VERSION = 'v19.18.33';
+        const BUILD_TIME  = '2026-03-21T16:00:00Z';
 
         console.log('%c● Tasks ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#FF3366;color:#fff;font-weight:bold;padding:2px 8px;border-radius:3px 0 0 3px',
@@ -2079,20 +2187,18 @@
         console.log('Script started');
         console.log('window.supabase:', window.supabase);
         
-        // DEBUG CONSOLE FOR MOBILE
+        // DEBUG CONSOLE
         let debugEnabled = true;
-        
+
+        function toggleDebugEnabled() {
+            debugEnabled = !debugEnabled;
+            const btn = document.getElementById('debugEnabledBtn');
+            if (btn) btn.textContent = debugEnabled ? '● Attiva' : '○ Disattiva';
+        }
+
         function toggleDebugConsole() {
-            const debugConsole = document.getElementById('debugConsole');
-            const debugToggle = document.getElementById('debugToggle');
-            
-            if (debugConsole.style.display === 'none') {
-                debugConsole.style.display = 'block';
-                debugToggle.innerHTML = '🐛';
-            } else {
-                debugConsole.style.display = 'none';
-                debugToggle.innerHTML = '🐛';
-            }
+            // mantenuto per compatibilità con eventuali chiamate esistenti
+            toggleDebugEnabled();
         }
         
         function debugLog(...args) {
@@ -2100,14 +2206,8 @@
             if (!debugEnabled) return;
             
             setTimeout(() => {
-                const debugConsole = document.getElementById('debugConsole');
                 const debugLogDiv = document.getElementById('debugLog');
-                const debugToggle = document.getElementById('debugToggle');
-                
-                if (debugConsole && debugLogDiv) {
-                    // Mostra il pulsante toggle al primo log
-                    if (debugToggle) debugToggle.style.display = 'block';
-                    
+                if (debugLogDiv) {
                     const msg = args.map(a => {
                         if (typeof a === 'object') {
                             try { return JSON.stringify(a, null, 2); }
@@ -2126,28 +2226,108 @@
             debugLog('❌ ERROR:', e.message, 'at line', e.lineno);
         });
         
-        const SUPABASE_URL = 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
+        // ── AMBIENTE: dev vs produzione ─────────────────────────────────────────────
+        const _DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
+        const _IS_DEV = _DEV_HOSTS.includes(window.location.hostname)
+                     || (window.location.hostname.endsWith('.netlify.app')
+                        && window.location.hostname.startsWith('dev--'));
+        const SUPABASE_URL = _IS_DEV
+            ? 'https://hcmmywitrbmcsmytjbaf.supabase.co'
+            : 'https://jajlmmdsjlvzgcxiiypk.supabase.co';
+        const SUPABASE_KEY = _IS_DEV
+            ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjbW15d2l0cmJtY3NteXRqYmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODE1NDUsImV4cCI6MjA4OTM1NzU0NX0.pAtj6THjWXibrMulU1IVGH-BFx4YkjkNT_x07lNUfWE'
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamxtbWRzamx2emdjeGlpeXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NTU0NjYsImV4cCI6MjA4NTUzMTQ2Nn0.ikaipwxOvIn43epayQ4mSZQkXtin3aaGEPouafwJFxU';
         
         if (!window.supabase) {
             alert('ERRORE: Supabase non è caricato! Verifica la connessione internet.');
             console.error('Supabase library not loaded!');
         }
-        
-        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('Supabase client created:', sb);
+
+        // sb inizializzato dopo ricezione token (in initWithToken)
+        let sb            = null;
+        let sbAccessToken = localStorage.getItem('sb_token') || null;
+        let hiddenMode      = false; // modalità nascosta: attivata dal launcher
+        let riservatoFilter = false; // filtro FAB: mostra solo task riservati
+
+        function updateHiddenModeFab() {
+            const fab = document.getElementById('hiddenModeFab');
+            if (!fab) return;
+            if (riservatoFilter) {
+                fab.classList.add('active');
+                fab.title = 'Solo riservati — clicca per mostrare tutti';
+                fab.textContent = '👁';
+            } else {
+                fab.classList.remove('active');
+                fab.title = hiddenMode ? 'Mostra solo riservati' : 'Modalità nascosta non attiva';
+                fab.textContent = '🙈';
+            }
+            // FAB visibile solo in modalità nascosta
+            fab.style.display = hiddenMode ? 'flex' : 'none';
+        }
+
+        function updateRiservatoVisibility() {
+            const group = document.getElementById('riservatoGroup');
+            if (!group) return;
+            group.style.display = hiddenMode ? 'block' : 'none';
+            if (!hiddenMode) document.getElementById('taskRiservato').checked = false;
+        }
+
+        function toggleHiddenMode() {
+            // Toggling del filtro riservati (FAB): funziona solo se hiddenMode è attivo
+            if (!hiddenMode) return;
+            riservatoFilter = !riservatoFilter;
+            sessionStorage.setItem('riservato_filter', riservatoFilter ? '1' : '0');
+            console.log('👁 Filtro riservati:', riservatoFilter ? 'SOLO RISERVATI' : 'TUTTI');
+            updateHiddenModeFab();
+            if (sb) loadTasks().then(() => {
+                const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
+                if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
+            });
+        }
+
+        function initWithToken(token) {
+            if (sb) return; // già inizializzato
+            sbAccessToken = token;
+            localStorage.setItem('sb_token', token);
+            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth:   { persistSession: false, autoRefreshToken: false },
+                global: { headers: { Authorization: 'Bearer ' + token } }
+            });
+            console.log('✅ Supabase autenticato con token Google (Tasks ' + APP_VERSION + ')');
+            document.getElementById('authOverlay').style.display = 'none';
+            init();
+        }
+
+        // Rileva errori JWT scaduto/non autenticato e mostra l'overlay di login.
+        // Ritorna true se era un errore auth (il chiamante deve abortire), false altrimenti.
+        function handleAuthError(error) {
+            if (!error) return false;
+            const msg = (error.message || '').toLowerCase();
+            const isAuthError = error.status === 401
+                || msg.includes('jwt expired')
+                || msg.includes('invalid jwt')
+                || msg.includes('not authenticated')
+                || msg.includes('pgjwt');
+            if (!isAuthError) return false;
+            console.warn('🔒 Token scaduto — sessione invalidata');
+            sb = null;
+            sbAccessToken = null;
+            localStorage.removeItem('sb_token');
+            document.getElementById('authOverlay').style.display = 'flex';
+            return true;
+        }
 
         let categories = [];
         let tasks = [];
         let history = [];
         let settings = {};
         let reminders = [];
+        let telegramCompleteButton = true; // Toggle bottone "Fatto" Telegram per il task corrente
         let selectedCategories = [];
         let currentViewTaskId = null;
         let notes = []; // Appunti
         let priorities = []; // Livelli di priorità
         let reminderPresets = []; // Preset promemoria da DB
-        let sbAccessToken = sessionStorage.getItem('sb_token') || null; // Token Supabase: da sessionStorage o postMessage
         let fpStart = null;
         let fpDeadline = null;
         let fpNoteDate = null;
@@ -2180,9 +2360,7 @@
             // Banner versione nel debug console in-app
             setTimeout(() => {
                 const debugLogDiv = document.getElementById('debugLog');
-                const debugToggle = document.getElementById('debugToggle');
                 if (debugLogDiv) {
-                    if (debugToggle) debugToggle.style.display = 'block';
                     debugLogDiv.innerHTML =
                         `<div style="margin:0 0 0.4rem;padding:0.3rem 0.6rem;background:#1a0010;border-left:4px solid #FF3366;color:#FF3366;font-weight:bold;letter-spacing:.04em;">` +
                         `● Tasks ${APP_VERSION} ` +
@@ -2252,22 +2430,10 @@
         // NOTIFICATION RULES (cm_notification_rules)
         // ========================================
 
-        // Restituisce un client Supabase autenticato con il token ricevuto dal launcher.
-        // Il client globale `sb` usa solo la chiave anonima; per tabelle con RLS su user_id
-        // serve il JWT dell'utente nell'header Authorization.
-        let _authSbInstance = null;
-        let _authSbToken    = null;
-
+        // Restituisce il client Supabase autenticato (sb è già creato con Bearer token).
+        // Mantenuto per compatibilità con le chiamate esistenti.
         function getAuthSb() {
-            const token = sbAccessToken;
-            if (!token) return null;
-            if (_authSbInstance && _authSbToken === token) return _authSbInstance;
-            _authSbToken    = token;
-            _authSbInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                auth: { persistSession: false, autoRefreshToken: false },
-                global: { headers: { Authorization: `Bearer ${token}` } }
-            });
-            return _authSbInstance;
+            return sb || null;
         }
 
         // Decodifica il JWT (senza chiamate di rete) e restituisce il payload
@@ -2279,21 +2445,6 @@
 
         async function syncNotificationRules(taskId, taskType, reminderLabels, dueDate, entityTitle) {
             try {
-                // Fallback: se sbAccessToken non è disponibile, lo legge dalla sessione Supabase
-                // (il client sb salva la sessione in localStorage — condivisa tra le tab della stessa origin)
-                if (!sbAccessToken) {
-                    try {
-                        const { data: { session } } = await sb.auth.getSession();
-                        if (session?.access_token) {
-                            sbAccessToken = session.access_token;
-                            sessionStorage.setItem('sb_token', sbAccessToken);
-                            console.log('✅ syncNotificationRules: token recuperato da sb.auth.getSession()');
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ syncNotificationRules: getSession fallback fallito:', e.message);
-                    }
-                }
-
                 const token = sbAccessToken;
                 if (!token) {
                     console.warn('⚠️ syncNotificationRules: nessun SB_TOKEN, skip');
@@ -2367,13 +2518,16 @@
                     .eq('entity_id', String(taskId))
                     .maybeSingle();
 
+                const rulePresets = { reminders: presetIds, due_at: dueDate || null };
+                if (taskType !== 'workflow' && telegramCompleteButton) rulePresets.telegram_complete_button = true;
+
                 const rule = {
                     user_id:          userId,
                     app:              'tasks',
                     entity_id:        String(taskId),
                     entity_type:      taskType,
                     entity_title:     entityTitle || null,
-                    reminder_presets: { reminders: presetIds, due_at: dueDate || null },
+                    reminder_presets: rulePresets,
                     channel:          'telegram',
                     enabled:          true
                 };
@@ -2670,7 +2824,16 @@
             console.log('Loading tasks...');
             debugLog('Loading tasks...');
             try {
-                const { data, error } = await sb.from('ts_tasks').select('*');
+                let taskQuery = sb.from('ts_tasks').select('*');
+                if (riservatoFilter) {
+                    // FAB attivo: mostra solo riservati
+                    taskQuery = taskQuery.eq('riservato', true);
+                } else if (!hiddenMode) {
+                    // Modalità normale: escludi riservati
+                    taskQuery = taskQuery.or('riservato.eq.false,riservato.is.null');
+                }
+                // hiddenMode=true + riservatoFilter=false: nessun filtro → tutti i task
+                const { data, error } = await taskQuery;
                 if (error) {
                     console.error('Error loading tasks:', error);
                     debugLog('❌ Error loading tasks:', error.message || JSON.stringify(error));
@@ -3121,7 +3284,23 @@
             const minutes = m[5] ? parseInt(m[5]) : 0;
             const d = new Date(year, month, day, hours, minutes);
             if (isNaN(d.getTime())) return null;
-            return d.toISOString();
+            return localDateTimeStr(d);
+        }
+
+        // Estrae "YYYY-MM-DD" nell'ora locale (evita il bug UTC a mezzanotte)
+        function localDateStr(d) {
+            const dt = d || new Date();
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        // Restituisce ISO UTC "YYYY-MM-DDTHH:MM:SS.sssZ" per il salvataggio su DB.
+        // Usare sempre questa funzione per valori destinati a Supabase: PostgreSQL
+        // interpreta stringhe senza offset come UTC, quindi inviare esplicitamente
+        // l'orario UTC evita lo shift di +1h (CET) nei calcoli della Edge Function.
+        function localDateTimeStr(d) {
+            const dt = d || new Date();
+            return dt.toISOString();
         }
 
         // Formatta data in formato GG-MM-AAAA HH:MM (orario italiano)
@@ -4500,7 +4679,7 @@
         function renderCategories(containerElement = document) {
             // Aggiungi conteggio task per ordinamento
             const categoriesWithCount = categories.map(cat => {
-                const taskCount = tasks.filter(t => t.categories?.includes(cat.id) && t.status === 'active').length;
+                const taskCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id)).length;
                 return { ...cat, taskCount };
             });
             
@@ -4509,7 +4688,7 @@
             
             const html = categoriesWithCount.map(cat => {
                 const taskCount = cat.taskCount;
-                const freeRepeatCount = tasks.filter(t => t.categories?.includes(cat.id) && t.type === 'free_repeat' && t.status === 'active').length;
+                const freeRepeatCount = tasks.filter(t => t.categories?.some(cid => cid == cat.id) && t.type === 'free_repeat').length;
                 const canDelete = taskCount === 0;
                 const showInDash = cat.show_in_dashboard || false;
                 
@@ -4645,7 +4824,7 @@
                     // Verifica se il promemoria è scaduto nelle ultime 24 ore
                     if (reminderTime >= twentyFourHoursAgo && reminderTime <= now) {
                         // Salta i promemoria nascosti manualmente
-                        const dateKey = targetDate.toISOString().split('T')[0];
+                        const dateKey = localDateStr(targetDate);
                         if (localStorage.getItem(`dismissed_${task.id}_${reminder}_${dateKey}`)) return;
 
                         expiredReminders.push({
@@ -4715,7 +4894,7 @@
                                 ${taskRemindersCount > 1 ? `
                                     <button class="btn btn-warning btn-small" onclick="completeAllRemindersForTask('${item.task.id}')" title="Completa tutti i ${taskRemindersCount} promemoria di questo task">✓✓ Completa Tutti</button>
                                 ` : ''}
-                                <button class="btn btn-secondary btn-small" onclick="dismissReminder('${item.task.id}', '${item.reminder}', '${item.targetDate.toISOString().split('T')[0]}')">✕ Nascondi</button>
+                                <button class="btn btn-secondary btn-small" onclick="dismissReminder('${item.task.id}', '${item.reminder}', '${localDateStr(item.targetDate)}')">✕ Nascondi</button>
                             </div>
                         </div>
                     </div>
@@ -5297,6 +5476,7 @@
             document.getElementById('taskForm').reset();
             selectedCategories = [];
             reminders = [];
+            telegramCompleteButton = true;
             console.log('🟢 reminders reset to:', reminders);
             yearlyDates = []; // Reset date annuali
             multipleDates = []; // Reset date multiple
@@ -5316,6 +5496,10 @@
             const deadlineDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
             fpDeadline.setDate(deadlineDate, false);
             
+            // Campo riservato: visibile e pre-selezionato solo in modalità nascosta
+            updateRiservatoVisibility();
+            document.getElementById('taskRiservato').checked = hiddenMode;
+
             updateTaskFields();
         }
 
@@ -5395,7 +5579,12 @@
             
             // Promemoria
             reminders = task.reminders || [];
+            telegramCompleteButton = true; // default true; l'utente può cambiarlo nel form
             
+            // Nascosto: visibile solo in modalità nascosta
+            updateRiservatoVisibility();
+            document.getElementById('taskRiservato').checked = hiddenMode && !!task.riservato;
+
             // Punti
             document.getElementById('successPoints').value = task.success_points;
             document.getElementById('failurePoints').value = task.failure_points;
@@ -5426,7 +5615,7 @@
             // Conta task per categoria
             const categoriesWithCount = categories.map(cat => ({
                 ...cat,
-                taskCount: tasks.filter(t => t.categories?.includes(cat.id) && t.status === 'active').length
+                taskCount: tasks.filter(t => t.categories?.some(cid => cid == cat.id)).length
             }));
             
             // Ordina per numero task (decrescente)
@@ -6180,6 +6369,9 @@
             // Lista promemoria da DB (cm_reminder_presets)
             const availableReminders = reminderPresets.map(p => p.label);
             
+            const currentType = document.getElementById('taskType')?.value || '';
+            const showTelegramToggle = currentType !== 'workflow';
+
             listEl.innerHTML = `
                 <!-- Disponibili: chip cliccabili a tutta larghezza -->
                 <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.5rem; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; min-height: 36px; margin-bottom: 0.5rem;">
@@ -6189,8 +6381,8 @@
                             display: inline-flex; align-items: center; gap: 0.3rem;
                             padding: 0.25rem 0.6rem; border-radius: 20px; cursor: pointer;
                             font-size: 0.85rem; transition: all 0.15s; user-select: none;
-                            ${isSelected 
-                                ? 'background: var(--accent); color: #fff; border: 1px solid var(--accent);' 
+                            ${isSelected
+                                ? 'background: var(--accent); color: #fff; border: 1px solid var(--accent);'
                                 : 'background: #fff; color: #333; border: 1px solid #ddd;'}
                         " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                             ${r}
@@ -6198,8 +6390,18 @@
                         </div>`;
                     }).join('')}
                 </div>
+                ${showTelegramToggle ? `
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.15rem 0.1rem;">
+                    <input type="checkbox" id="telegramCompleteToggle"
+                           ${telegramCompleteButton ? 'checked' : ''}
+                           onchange="telegramCompleteButton = this.checked"
+                           style="width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0;">
+                    <span style="font-size: 0.82rem; color: var(--muted); user-select: none;">
+                        Bottone "Fatto" su Telegram
+                    </span>
+                </label>` : ''}
             `;
-            
+
             console.log('🔵 Chip+textbox rendered');
         }
         
@@ -6239,12 +6441,13 @@
                 type: taskType,
                 categories: selectedCategories,
                 priority_id: document.getElementById('taskPriority').value || null,
-                start_date: startDateValue || new Date().toISOString(),
+                start_date: startDateValue || localDateTimeStr(),
                 reminders: reminders,
                 success_points: parseInt(document.getElementById('successPoints').value),
                 failure_points: parseInt(document.getElementById('failurePoints').value),
                 skip_points: parseInt(document.getElementById('skipPoints').value),
                 late_points: parseInt(document.getElementById('latePoints').value) || 0,
+                riservato: hiddenMode && document.getElementById('taskRiservato').checked,
                 status: 'started'
             };
 
@@ -6302,7 +6505,7 @@
                     alert('Un workflow deve avere almeno 2 step');
                     return;
                 }
-                const taskStartDate = startDateValue || new Date().toISOString();
+                const taskStartDate = startDateValue || localDateTimeStr();
                 
                 if (taskId) {
                     // UPDATE: preserva stato degli step già completati/falliti
@@ -6335,7 +6538,7 @@
                                 });
                                 if (allDepsDone) {
                                     step.status = step.status === 'locked' ? 'active' : (step.status || 'active');
-                                    step.start_date = step.start_date || new Date().toISOString();
+                                    step.start_date = step.start_date || localDateTimeStr();
                                 } else {
                                     step.start_date = null;
                                     step.status = 'locked';
@@ -6430,28 +6633,20 @@
             try {
                 const task = tasks.find(t => t.id === taskId);
                 if (!task || !task.workflow_steps) return;
-                
+
                 const steps = JSON.parse(JSON.stringify(task.workflow_steps));
                 const step = steps.find(s => s.id === stepId);
                 if (!step || step.status !== 'active') return;
-                
-                const now = new Date().toISOString();
+
+                const now = localDateTimeStr();
                 const wfPoints = task.workflow_points || { step_success: 5, step_failure: -3, task_success: 20, task_failure: -10 };
-                
-                // Segna come completato
+
+                // Segna come completato e sblocca step dipendenti
                 step.status = 'completed';
                 step.completed_at = now;
-                
-                // Sblocca step dipendenti (completed O failed contano come "fatto")
                 wfUnlockSuccessors(steps, now);
-                
-                // Controlla se workflow finito (nessuno step locked o active)
-                const allDone = steps.every(s => s.status === 'completed' || s.status === 'failed');
-                
-                // Calcola next_occurrence_date = min(start_date) degli step active
-                const nextOccurrence = wfCalcNextOccurrence(steps, allDone);
-                
-                // Salva history per lo step completato
+
+                // Salva history per lo step
                 await sb.from('ts_history').insert([{
                     task_id: taskId,
                     from_status: 'active',
@@ -6460,23 +6655,34 @@
                     points: wfPoints.step_success,
                     timestamp: now
                 }]);
-                
-                // Aggiorna task (NON auto-completa, l'utente decide dal popup)
-                const updateData = {
+
+                // Aggiorna workflow_steps nel DB (il completamento del task è delegato a task_complete)
+                const allDone = steps.every(s => s.status === 'completed' || s.status === 'failed');
+                await sb.from('ts_tasks').update({
                     workflow_steps: steps,
                     last_completed_date: now,
-                    next_occurrence_date: nextOccurrence
-                };
-                
-                await sb.from('ts_tasks').update(updateData).eq('id', taskId);
-                
+                    next_occurrence_date: wfCalcNextOccurrence(steps, allDone)
+                }).eq('id', taskId);
+
+                // Delega il completamento del task all'RPC (logica unica)
+                const today = localDateStr();
+                const { data: rpcResult } = await sb.rpc('task_complete', {
+                    p_task_id: taskId,
+                    p_today:   today
+                });
+
                 await loadTasks();
                 await loadHistory();
                 renderDashboard();
                 renderCalendar();
                 renderManagement();
-                
-                showToast(`✅ Step "${step.title}" completato! +${wfPoints.step_success} pt`);
+
+                const action = rpcResult?.action;
+                if (action === 'completed') {
+                    showToast(`🎉 Workflow completato! +${rpcResult?.points ?? 0} pt`);
+                } else {
+                    showToast(`✅ Step "${step.title}" completato! +${wfPoints.step_success} pt`);
+                }
             } catch (error) {
                 console.error('Error completing workflow step:', error);
                 showToast('❌ Errore nel completare lo step');
@@ -6487,27 +6693,20 @@
             try {
                 const task = tasks.find(t => t.id === taskId);
                 if (!task || !task.workflow_steps) return;
-                
+
                 const steps = JSON.parse(JSON.stringify(task.workflow_steps));
                 const step = steps.find(s => s.id === stepId);
                 if (!step || step.status !== 'active') return;
-                
-                const now = new Date().toISOString();
+
+                const now = localDateTimeStr();
                 const wfPoints = task.workflow_points || { step_success: 5, step_failure: -3, task_success: 20, task_failure: -10 };
-                
-                // Segna come fallito (il workflow prosegue)
+
+                // Segna come fallito e sblocca successori (failed conta come "fatto")
                 step.status = 'failed';
                 step.completed_at = now;
-                
-                // Sblocca successori (failed conta come "fatto")
                 wfUnlockSuccessors(steps, now);
-                
-                // Controlla se workflow finito
-                const allDone = steps.every(s => s.status === 'completed' || s.status === 'failed');
-                
-                const nextOccurrence = wfCalcNextOccurrence(steps, allDone);
-                
-                // Salva history per step fallito
+
+                // Salva history per lo step fallito
                 await sb.from('ts_history').insert([{
                     task_id: taskId,
                     from_status: 'active',
@@ -6516,22 +6715,27 @@
                     points: wfPoints.step_failure,
                     timestamp: now
                 }]);
-                
-                // Aggiorna task (NON auto-completa, l'utente decide dal popup)
-                const updateData = {
+
+                // Aggiorna workflow_steps nel DB
+                const allDone = steps.every(s => s.status === 'completed' || s.status === 'failed');
+                await sb.from('ts_tasks').update({
                     workflow_steps: steps,
                     last_completed_date: now,
-                    next_occurrence_date: nextOccurrence
-                };
-                
-                await sb.from('ts_tasks').update(updateData).eq('id', taskId);
-                
+                    next_occurrence_date: wfCalcNextOccurrence(steps, allDone)
+                }).eq('id', taskId);
+
+                // Delega il completamento del task all'RPC (logica unica)
+                await sb.rpc('task_complete', {
+                    p_task_id: taskId,
+                    p_today:   localDateStr()
+                });
+
                 await loadTasks();
                 await loadHistory();
                 renderDashboard();
                 renderCalendar();
                 renderManagement();
-                
+
                 showToast(`❌ Step "${step.title}" fallito (${wfPoints.step_failure} pt)`);
             } catch (error) {
                 console.error('Error failing workflow step:', error);
@@ -6816,22 +7020,22 @@
         // Azioni dal popup
         async function wfPopupCompleteStep(taskId, stepId) {
             await completeWorkflowStep(taskId, stepId);
-            // Riapri popup aggiornato
             const task = tasks.find(t => t.id === taskId);
-            if (task && ['started', 'completed', 'failed', 'skipped'].includes(task.status)) {
-                renderWorkflowPopup(task);
-            } else {
+            // Se il workflow è stato auto-completato (terminato), chiudi il popup
+            if (!task || task.status === 'terminated') {
                 closeWorkflowPopup();
+            } else {
+                renderWorkflowPopup(task);
             }
         }
         
         async function wfPopupFailStep(taskId, stepId) {
             await failWorkflowStep(taskId, stepId);
             const task = tasks.find(t => t.id === taskId);
-            if (task && ['started', 'completed', 'failed', 'skipped'].includes(task.status)) {
-                renderWorkflowPopup(task);
-            } else {
+            if (!task || task.status === 'terminated') {
                 closeWorkflowPopup();
+            } else {
+                renderWorkflowPopup(task);
             }
         }
         
@@ -6848,12 +7052,12 @@
             if (!confirm('Segnare il workflow come completato?')) return;
             
             const wfPts = task.workflow_points || {};
-            const now = new Date().toISOString();
-            
+            const now = localDateTimeStr();
+
             await sb.from('ts_history').insert([{
                 task_id: taskId,
                 from_status: task.status,
-                to_status: 'completed',
+                to_status: 'terminated',
                 action: 'completed',
                 points: wfPts.task_success || 0,
                 timestamp: now
@@ -6861,9 +7065,9 @@
 
             const completedDates = steps.filter(s => s.completed_at).map(s => new Date(s.completed_at));
             const maxDate = completedDates.length > 0 ? new Date(Math.max(...completedDates)).toISOString() : now;
-            
+
             await sb.from('ts_tasks').update({
-                status: 'completed',
+                status: 'terminated',
                 last_completed_date: now,
                 next_occurrence_date: maxDate
             }).eq('id', taskId);
@@ -6884,8 +7088,8 @@
             if (!task) return;
             
             const wfPts = task.workflow_points || {};
-            const now = new Date().toISOString();
-            
+            const now = localDateTimeStr();
+
             await sb.from('ts_history').insert([{
                 task_id: taskId,
                 from_status: task.status,
@@ -6900,11 +7104,11 @@
             const maxDate = completedDates.length > 0 ? new Date(Math.max(...completedDates)).toISOString() : now;
             
             await sb.from('ts_tasks').update({
-                status: 'completed',
+                status: 'terminated',
                 last_completed_date: now,
                 next_occurrence_date: maxDate
             }).eq('id', taskId);
-            
+
             await loadTasks();
             await loadHistory();
             renderDashboard();
@@ -6916,141 +7120,42 @@
 
         async function completeTask(id) {
             if (!confirm('Segnare task come completato?')) return;
-            
+
             try {
                 const task = tasks.find(t => t.id === id);
                 if (!task) {
                     showToast('❌ Task non trovato');
                     return;
                 }
-                
+
                 debugLog('✅ Completing task:', task.title, 'type:', task.type);
-                
-                // Per task singoli, verifica se il completamento è in ritardo rispetto alla deadline
-                let completionPoints = task.success_points;
-                let completionAction = 'completed';
-                
-                if (task.type === 'single' && task.deadline) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const deadlineStr = task.deadline.includes('T') ? task.deadline.split('T')[0] : task.deadline;
-                    const deadline = new Date(deadlineStr + 'T00:00:00');
-                    
-                    if (today > deadline) {
-                        completionPoints = task.late_points || 0;
-                        completionAction = 'completed_late';
-                        debugLog('⏰ LATE! Using late_points:', completionPoints);
-                    }
+
+                const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD locale
+
+                const { data: result, error: rpcErr } = await sb.rpc('task_complete', {
+                    p_task_id: id,
+                    p_today:   todayStr,
+                });
+
+                if (rpcErr) {
+                    console.error('Error completing task (rpc):', rpcErr);
+                    showToast('❌ Errore nel completare il task: ' + (rpcErr.message || rpcErr));
+                    return;
                 }
-                
-                const fromStatus = task.status;
-                await sb.from('ts_history').insert([historyRecord(id, fromStatus, 'completed', 'completed', completionPoints)]);
-
-                // Determina la data di completamento (next_occurrence_date o start_date)
-                const completedDate = task.next_occurrence_date || task.start_date || new Date().toISOString();
-
-                if (task.type === 'single') {
-                    debugLog('📅 Type: SINGLE - marking as terminated');
-                    await sb.from('ts_tasks').update({
-                        status: 'terminated',
-                        last_completed_date: completedDate
-                    }).eq('id', id);
-                    await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-                    await deleteNotificationRules(id);
-                } else if (task.type === 'simple_recurring') {
-                    debugLog('🔁 Type: SIMPLE_RECURRING - calculating next date');
-                    // Calcola la prossima occorrenza dalla next_occurrence_date + repeat_after_days
-                    const baseDate = new Date(task.next_occurrence_date || task.start_date);
-                    const nextDate = new Date(baseDate);
-                    nextDate.setDate(baseDate.getDate() + (task.repeat_after_days || 7));
-                    debugLog('🔁 Next date:', nextDate.toISOString());
-                    
-                    await sb.from('ts_tasks').update({
-                        status: 'completed',
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextDate.toISOString()
-                    }).eq('id', id);
-
-                    debugLog('🔁 Updated simple_recurring task');
-                } else if (task.type === 'recurring') {
-                    debugLog('♾️ Type: RECURRING - calculating next date');
-                    // Calcola la prossima occorrenza dalla next_occurrence_date (o start_date se non esiste)
-                    const baseDate = task.next_occurrence_date ? new Date(task.next_occurrence_date) : new Date(task.start_date);
-                    debugLog('📅 BaseDate for next calc:', baseDate.toISOString());
-                    
-                    const nextDate = getNextRecurringDate(task, baseDate);
-                    debugLog('📅 Calculated nextDate:', nextDate ? nextDate.toISOString() : 'NULL');
-                    
-                    await sb.from('ts_tasks').update({
-                        status: nextDate ? 'completed' : 'terminated',
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextDate ? nextDate.toISOString() : null
-                    }).eq('id', id);
-                    if (!nextDate) await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-
-                    debugLog('✅ Updated recurring task');
-                } else if (task.type === 'multiple') {
-                    debugLog('📅 Type: MULTIPLE - moving to next date');
-                    
-                    // Assicurati che multiple_dates sia un array
-                    let datesArray = task.multiple_dates;
-                    if (typeof datesArray === 'string') {
-                        datesArray = JSON.parse(datesArray);
-                    }
-                    
-                    // Ordina le date
-                    const sortedDates = [...datesArray].sort();
-                    
-                    debugLog('🔵 sortedDates: ' + JSON.stringify(sortedDates));
-                    debugLog('🔵 next_occurrence_date: ' + task.next_occurrence_date);
-                    
-                    // Trova l'indice della data corrente
-                    // IMPORTANTE: Estrarre la data SENZA conversione UTC
-                    const currentDateStr = task.next_occurrence_date.split('T')[0]; // Prende solo YYYY-MM-DD
-                    const currentIndex = sortedDates.indexOf(currentDateStr);
-                    
-                    debugLog('🔵 currentDateStr: ' + currentDateStr);
-                    debugLog('🔵 currentIndex: ' + currentIndex);
-                    debugLog('🔵 array length: ' + sortedDates.length);
-                    
-                    // Calcola la prossima data
-                    let nextOccurrence = null;
-                    
-                    if (currentIndex !== -1 && currentIndex < sortedDates.length - 1) {
-                        // C'è ancora una data successiva
-                        nextOccurrence = sortedDates[currentIndex + 1] + 'T00:00:00';
-                        debugLog('✅ Next date found: ' + nextOccurrence);
-                    } else {
-                        if (currentIndex === -1) {
-                            debugLog('❌ currentDate NOT FOUND in array!');
-                        } else {
-                            debugLog('❌ Was last date in array');
-                        }
-                    }
-                    // Se nextOccurrence è null, era l'ultima data
-                    
-                    await sb.from('ts_tasks').update({
-                        last_completed_date: completedDate,
-                        next_occurrence_date: nextOccurrence,
-                        status: nextOccurrence === null ? 'terminated' : 'completed'
-                    }).eq('id', id);
-                    if (nextOccurrence === null) await sb.from('ts_history').insert([termRecord(id, 'completed')]);
-
-                    debugLog('✅ Updated multiple task, next: ' + nextOccurrence);
-                } else {
-                    // free_repeat
-                    await sb.from('ts_tasks').update({ status: 'completed', last_completed_date: completedDate }).eq('id', id);
+                if (result?.ok === false) {
+                    console.warn('task_complete ok=false:', result);
+                    showToast('❌ ' + (result.error || 'Errore completamento'));
+                    return;
                 }
-                
+
                 await loadTasks();
                 await loadHistory();
-                
-                // Refresh della vista corrente
+
                 renderDashboard();
                 renderCalendar();
                 renderManagement();
-                
-                showToast(completionAction === 'completed_late' ? '⏰ Task completato in ritardo!' : '✅ Task completato!');
+
+                showToast(result?.action === 'completed_late' ? '⏰ Task completato in ritardo!' : '✅ Task completato!');
             } catch (error) {
                 console.error('Error completing task:', error);
                 showToast('❌ Errore nel completare il task');
@@ -8322,8 +8427,9 @@ Per attivarle:
         }
 
         async function deleteCategory(id) {
-            const cat = categories.find(c => c.id === id);
-            const taskCount = tasks.filter(t => t.categories?.includes(id)).length;
+            const cat = categories.find(c => c.id == id);
+            if (!cat) return;
+            const taskCount = tasks.filter(t => t.categories?.some(cid => cid == id)).length;
             
             if (taskCount > 0) {
                 alert('Impossibile eliminare: ci sono ancora task associati a questa categoria');
@@ -8954,7 +9060,7 @@ Per attivarle:
             
             // Test con data di oggi
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            const todayStr = localDateStr(today);
             console.log('Testing for today:', todayStr);
             
             // Controlla task con start_date
@@ -9837,16 +9943,78 @@ Per attivarle:
             return fmtDate(date);
         }
 
-        // Riceve token dal launcher (app-launcher.html) via postMessage
+
+        // Riceve token e stato hidden mode dal launcher (app-launcher.html) via postMessage
         window.addEventListener('message', (e) => {
-            if (e.data?.type === 'SB_TOKEN' && e.data.token) {
-                sbAccessToken = e.data.token;
-                sessionStorage.setItem('sb_token', e.data.token);
-                console.log('✅ SB_TOKEN ricevuto dal launcher');
+            if (!e.data) return;
+            if (e.data.type === 'SB_TOKEN' && e.data.token) {
+                console.log('✅ SB_TOKEN ricevuto dal launcher (Tasks)');
+                initWithToken(e.data.token);
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
+                console.log('👁 Modalità nascosta:', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
+                updateRiservatoVisibility();
+                if (sb) loadTasks().then(() => {
+                    const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
+                    if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
+                });
             }
         });
 
-        window.addEventListener('load', init);
+        // Logout/token refresh/hidden mode broadcast da AppSphere
+        const _authChannel = new BroadcastChannel('appsphere_auth');
+        _authChannel.onmessage = (e) => {
+            if (!e.data) return;
+            if (e.data.type === 'LOGOUT') {
+                sb = null;
+                sbAccessToken = null;
+                localStorage.removeItem('sb_token');
+                document.getElementById('authOverlay').style.display = 'flex';
+                console.log('🔒 Sessione invalidata da AppSphere (logout)');
+            } else if (e.data.type === 'TOKEN_REFRESH' && e.data.sbToken) {
+                const newToken = e.data.sbToken;
+                localStorage.setItem('sb_token', newToken);
+                sbAccessToken = newToken;
+                if (sb) {
+                    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                        auth:   { persistSession: false, autoRefreshToken: false },
+                        global: { headers: { Authorization: 'Bearer ' + newToken } }
+                    });
+                }
+                console.log('🔄 Token rinnovato silenziosamente (AppSphere)');
+            } else if (e.data.type === 'HIDDEN_MODE') {
+                hiddenMode = !!e.data.active;
+                riservatoFilter = false; sessionStorage.setItem('riservato_filter', '0'); // reset filtro al cambio di modalità
+                console.log('👁 Modalità nascosta (broadcast):', hiddenMode ? 'ATTIVA' : 'DISATTIVA');
+                updateHiddenModeFab();
+                updateRiservatoVisibility();
+                if (sb) loadTasks().then(() => {
+                    const activeDiv = document.querySelector('.main-content > div:not(.hidden)');
+                    if (activeDiv) showPage(activeDiv.id.replace('Page', ''), document.querySelector('.nav-item.active'));
+                });
+            }
+        };
+
+        window.addEventListener('load', () => {
+            // Legge hidden_mode impostato dal launcher (navigazione stessa pagina)
+            const storedHidden = sessionStorage.getItem('hidden_mode');
+            if (storedHidden !== null) {
+                hiddenMode = storedHidden === '1';
+                riservatoFilter = hiddenMode && sessionStorage.getItem('riservato_filter') === '1';
+                updateHiddenModeFab();
+            }
+
+            const stored = localStorage.getItem('sb_token');
+            if (stored) {
+                initWithToken(stored);
+            } else {
+                // Mostra overlay di blocco e attende postMessage dal launcher
+                document.getElementById('authOverlay').style.display = 'flex';
+                console.warn('⚠️ Nessun SB_TOKEN — attendo dal launcher (AppSphere)');
+            }
+        });
     </script>
 </body>
 </html>

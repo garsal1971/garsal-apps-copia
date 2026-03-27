@@ -1,0 +1,69 @@
+name: Dev branch — preview deploy
+
+on:
+  push:
+    branches:
+      - 'dev/**'
+
+# I branch dev/** NON vengono mai mergiati su master automaticamente.
+# Il push trigghera il branch deploy su Netlify (via webhook nativo).
+# URL preview: dev--<branch>--<sitename>.netlify.app
+#
+# Opzionalmente applica migrazioni e funzioni al progetto Supabase DEV
+# se i file corrispondenti sono cambiati.
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rilevamento modifiche
+        id: check_changes
+        run: |
+          FILES=$(git diff HEAD~1 HEAD --name-only 2>/dev/null || git diff --name-only HEAD)
+          if echo "$FILES" | grep -q '^supabase/functions/'; then
+            echo "functions=true" >> $GITHUB_OUTPUT
+          else
+            echo "functions=false" >> $GITHUB_OUTPUT
+          fi
+          if echo "$FILES" | grep -q '^supabase/migrations/'; then
+            echo "migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Supabase CLI
+        if: steps.check_changes.outputs.functions == 'true' || steps.check_changes.outputs.migrations == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Applica migrazioni al progetto Supabase DEV
+        if: steps.check_changes.outputs.migrations == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "▶ Applying migrations to DEV project..."
+          supabase db push --project-ref ${{ secrets.SUPABASE_DEV_PROJECT_REF }}
+
+      - name: Deploy Edge Functions al progetto Supabase DEV
+        if: steps.check_changes.outputs.functions == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for FN in $(git diff HEAD~1 HEAD --name-only | grep '^supabase/functions/' | awk -F/ '{print $3}' | sort -u); do
+            echo "▶ Deploy edge function DEV: $FN"
+            EXTRA=""
+            if grep -q "verify_jwt = false" "supabase/functions/$FN/config.toml" 2>/dev/null; then
+              EXTRA="--no-verify-jwt"
+              echo "   ↳ verify_jwt=false → aggiunto --no-verify-jwt"
+            fi
+            supabase functions deploy "$FN" --project-ref ${{ secrets.SUPABASE_DEV_PROJECT_REF }} $EXTRA
+          done

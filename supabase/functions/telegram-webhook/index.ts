@@ -1,20 +1,26 @@
 // ============================================================
 // telegram-webhook — gestisce i callback_query dai bottoni inline
+// verify_jwt = false (vedi config.toml) — Telegram non invia JWT
 //
 // Telegram invia un POST a questo endpoint ogni volta che l'utente
 // clicca un bottone inline su un messaggio del bot.
 //
 // Azioni supportate (callback_data):
-//   snooze:<minutes>:<queue_id>  — sospende il promemoria per N minuti
-//   cancel:<queue_id>            — annulla definitivamente il promemoria
+//   snooze:<minutes>:<queue_id>  — reinserisce il promemoria con nuovo fire_at
+//   cancel:<queue_id>            — annulla i pending della stessa occorrenza (senza completamento)
+//   complete:<queue_id>          — annulla i pending della stessa occorrenza + esegue completamento
 //
-// Flusso:
-//   1. Verifica header di sicurezza X-Telegram-Bot-Api-Secret-Token
-//   2. Parsa il body JSON di Telegram (callback_query)
-//   3. Aggiorna cm_notification_queue (status + fire_at)
-//   4. Risponde a Telegram con answerCallbackQuery (obbligatorio)
-//   5. Modifica il messaggio originale via editMessageText
-//      (rimuove i bottoni + aggiunge riga di stato)
+// Flusso snooze:
+//   1. Legge il row originale per copiarne i campi
+//   2. Cancella i pending siblings (stesso occurrence_id) per evitare duplicati
+//   3. INSERT nuovo row pending con il nuovo fire_at
+//   4. Elimina il messaggio Telegram corrente
+//
+// Flusso cancel:
+//   Cancella tutti i pending con stesso occurrence_id. Nessun completamento.
+//
+// Flusso complete:
+//   Cancella tutti i pending con stesso occurrence_id. Esegue l'azione di completamento.
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -45,36 +51,47 @@ async function answerCallbackQuery(callbackQueryId: string, text: string): Promi
   })
 }
 
-async function editMessageText(
-  chatId: number,
-  messageId: number,
-  text: string
-): Promise<void> {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`
-  await fetch(url, {
+async function deleteMessage(chatId: number, messageId: number): Promise<void> {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`
+  const res = await fetch(url, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({
-      chat_id:      chatId,
-      message_id:   messageId,
-      text,
-      parse_mode:   'HTML',
-      reply_markup: { inline_keyboard: [] },  // rimuove i bottoni
-    }),
+    body:    JSON.stringify({ chat_id: chatId, message_id: messageId }),
   })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    console.warn(`[telegram-webhook] deleteMessage failed msg=${messageId}:`, body)
+  }
 }
 
-// Formatta un'ora in formato HH:MM italiano
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
+// Elimina i messaggi Telegram degli item con lo stesso occurrence_id
+async function deleteSiblingsByOccurrence(occId: string, excludeQueueId: string, chatId: number): Promise<void> {
+  const { data, error } = await sb
+    .from('cm_notification_queue')
+    .select('id, telegram_message_id')
+    .eq('occurrence_id', occId)
+    .neq('id', excludeQueueId)
+    .not('telegram_message_id', 'is', null)
+  if (error) { console.error('[telegram-webhook] deleteSiblings query error:', error); return }
+  if (!data || data.length === 0) { console.log(`[telegram-webhook] deleteSiblings: nessun sibling per occId=${occId}`); return }
+  console.log(`[telegram-webhook] deleteSiblings: ${data.length} sibling(s) per occId=${occId}`)
+  for (const row of data) {
+    if (row.telegram_message_id) {
+      await deleteMessage(chatId, row.telegram_message_id as number)
+    }
+  }
 }
 
-// Formatta data e ora in formato italiano (dd/mm/yyyy HH:MM)
-function formatDateTime(date: Date): string {
-  const dd   = String(date.getDate()).padStart(2, '0')
-  const mm   = String(date.getMonth() + 1).padStart(2, '0')
-  const yyyy = date.getFullYear()
-  return `${dd}/${mm}/${yyyy} ${formatTime(date)}`
+// Cancella gli item pending con lo stesso occurrence_id
+// (usato per complete e snooze: opera solo sulla specifica occorrenza giorno+slot)
+async function cancelByOccurrence(occId: string, excludeQueueId: string): Promise<void> {
+  const { error } = await sb
+    .from('cm_notification_queue')
+    .update({ status: 'cancelled' })
+    .eq('occurrence_id', occId)
+    .neq('id', excludeQueueId)
+    .eq('status', 'pending')
+  if (error) console.error('[telegram-webhook] errore cancelByOccurrence:', error)
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +142,6 @@ Deno.serve(async (req) => {
   const message         = cq.message as Record<string, unknown> | undefined
   const chatId          = (message?.chat as Record<string, unknown>)?.id as number | undefined
   const messageId       = message?.message_id as number | undefined
-  const originalText    = message?.text as string | undefined
 
   console.log(`[telegram-webhook] callback_data="${callbackData}" chat=${chatId} msg=${messageId}`)
 
@@ -135,7 +151,7 @@ Deno.serve(async (req) => {
   }
 
   // ── Parsing del callback_data ─────────────────────────────────────────────
-  // Formati: "snooze:<minutes>:<uuid>" | "cancel:<uuid>"
+  // Formati: "snooze:<minutes>:<uuid>" | "cancel:<uuid>" | "complete:<uuid>"
   const parts = callbackData.split(':')
   const action = parts[0]
 
@@ -150,15 +166,43 @@ Deno.serve(async (req) => {
 
     const newFireAt = new Date(Date.now() + minutes * 60 * 1000)
 
-    const { error } = await sb
+    // Leggi il row originale per copiarne i campi nel nuovo insert
+    const { data: original } = await sb
       .from('cm_notification_queue')
-      .update({ status: 'snoozed', fire_at: newFireAt.toISOString() })
+      .select('rule_id, user_id, app, entity_id, title, body, channel, occurrence_id, metadata')
       .eq('id', queueId)
+      .maybeSingle()
 
-    if (error) {
-      console.error('[telegram-webhook] errore snooze:', error)
+    if (!original) {
+      await answerCallbackQuery(callbackQueryId, '❌ Promemoria non trovato')
+      return json({ ok: false, error: 'queue row not found' })
+    }
+
+    // Cancella i pending siblings (stesso occurrence_id) per non duplicare
+    await cancelByOccurrence(original.occurrence_id as string, queueId)
+    await deleteSiblingsByOccurrence(original.occurrence_id as string, queueId, chatId)
+
+    // Inserisce un nuovo row pending con il nuovo fire_at
+    const { error: insertErr } = await sb
+      .from('cm_notification_queue')
+      .insert({
+        rule_id:       original.rule_id,
+        user_id:       original.user_id,
+        app:           original.app,
+        entity_id:     original.entity_id,
+        title:         original.title,
+        body:          original.body,
+        channel:       original.channel,
+        fire_at:       newFireAt.toISOString(),
+        status:        'pending',
+        occurrence_id: original.occurrence_id,
+        metadata:      original.metadata,
+      })
+
+    if (insertErr) {
+      console.error('[telegram-webhook] errore snooze insert:', insertErr)
       await answerCallbackQuery(callbackQueryId, '❌ Errore durante la sospensione')
-      return json({ ok: false, error: String(error) })
+      return json({ ok: false, error: String(insertErr) })
     }
 
     // Etichetta leggibile per la durata
@@ -167,12 +211,18 @@ Deno.serve(async (req) => {
     else if (minutes < 1440) label = `${minutes / 60} h`
     else                     label = 'domani'
 
-    const newText = `${originalText ?? ''}\n\n⏸ <i>Sospeso — nuovo invio alle ${formatDateTime(newFireAt)}</i>`
     await answerCallbackQuery(callbackQueryId, `⏸ Sospeso per ${label}`)
-    await editMessageText(chatId, messageId, newText)
+    await deleteMessage(chatId, messageId)
 
   } else if (action === 'cancel' && parts.length === 2) {
     const queueId = parts[1]
+
+    // Leggi occurrence_id e rule_id per cancellare solo la stessa occorrenza
+    const { data: cancelRow } = await sb
+      .from('cm_notification_queue')
+      .select('rule_id, occurrence_id')
+      .eq('id', queueId)
+      .maybeSingle()
 
     const { error } = await sb
       .from('cm_notification_queue')
@@ -185,9 +235,170 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: String(error) })
     }
 
-    const newText = `${originalText ?? ''}\n\n❌ <i>Promemoria annullato</i>`
     await answerCallbackQuery(callbackQueryId, '❌ Promemoria annullato')
-    await editMessageText(chatId, messageId, newText)
+
+    // Cancella TUTTI i row della stessa occorrenza, qualsiasi stato (no completamento)
+    const cancelOccId = cancelRow?.occurrence_id as string | null
+    if (cancelOccId) {
+      await deleteSiblingsByOccurrence(cancelOccId, queueId, chatId)
+      const { error: cancelAllErr } = await sb
+        .from('cm_notification_queue')
+        .update({ status: 'cancelled' })
+        .eq('occurrence_id', cancelOccId)
+        .neq('id', queueId)
+      if (cancelAllErr) console.error('[telegram-webhook] errore cancelAll:', cancelAllErr)
+    }
+    await deleteMessage(chatId, messageId)
+
+  } else if (action === 'complete' && parts.length === 2) {
+    const queueId = parts[1]
+
+    // Leggi la queue entry per ottenere metadata.completion_update
+    const { data: queueRow, error: fetchErr } = await sb
+      .from('cm_notification_queue')
+      .select('metadata, entity_id, fire_at, rule_id, occurrence_id')
+      .eq('id', queueId)
+      .maybeSingle()
+
+    if (fetchErr || !queueRow) {
+      console.error('[telegram-webhook] errore lettura queue:', fetchErr)
+      await answerCallbackQuery(callbackQueryId, '❌ Errore: promemoria non trovato')
+      return json({ ok: false, error: 'queue row not found' })
+    }
+
+    const cu = (queueRow.metadata as Record<string, unknown> | null)?.completion_update as {
+      app?:        string
+      operations?: Array<{
+        op:      string
+        table:   string
+        fields?: Record<string, unknown>
+      }>
+    } | undefined
+
+    if (!cu) {
+      await answerCallbackQuery(callbackQueryId, '❌ Dati completamento non disponibili')
+      return json({ ok: false, error: 'no completion_update in metadata' })
+    }
+
+    // Leggi slot_time dal metadata (orario reale del habit, es. "08:00")
+    const metadata  = queueRow.metadata as Record<string, unknown> | null
+    const slotTime  = metadata?.slot_time as string | undefined
+
+    // Risolvi i template variables
+    // {{fire_date_local}}: data locale (Europe/Rome) del fire_at
+    // {{slot_time}}: orario del slot habit (da metadata) — fallback a fire_at locale
+    // {{monday_of_week}}: lunedì della settimana del fire_date_local (per habit weekly)
+    // {{day_of_week_n}}: numero del giorno 1=Lun…7=Dom (per habit weekly)
+    const fireAt       = new Date(queueRow.fire_at as string)
+    const localDateStr = fireAt.toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' }) // YYYY-MM-DD
+    const localTimeStr = slotTime
+      ?? fireAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })
+
+    // Calcola lunedì della settimana e numero giorno (1=Lun…7=Dom) per habit weekly
+    const [_y, _m, _d] = localDateStr.split('-').map(Number)
+    const localDateMid  = new Date(Date.UTC(_y, _m - 1, _d, 12, 0, 0))
+    const utcDay        = localDateMid.getUTCDay()          // 0=Dom,1=Lun,…,6=Sab
+    const dayOfWeekN    = utcDay === 0 ? 7 : utcDay         // 1=Lun…7=Dom
+    const mondayOffset  = utcDay === 0 ? -6 : 1 - utcDay
+    const mondayDate    = new Date(localDateMid)
+    mondayDate.setUTCDate(mondayDate.getUTCDate() + mondayOffset)
+    const mondayStr     = mondayDate.toISOString().slice(0, 10) // YYYY-MM-DD
+
+    function resolveTemplates(val: unknown): unknown {
+      if (typeof val !== 'string') return val
+      return val
+        .replace('{{fire_date_local}}', localDateStr)
+        .replace('{{slot_time}}',       localTimeStr)
+        .replace('{{monday_of_week}}',  mondayStr)
+        .replace('{{day_of_week_n}}',   String(dayOfWeekN))
+    }
+
+    // Esegui ogni operazione nell'array (può essere vuoto per i task)
+    for (const operation of (cu.operations ?? [])) {
+      if (operation.op === 'insert' && operation.fields) {
+        const resolved: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(operation.fields)) {
+          resolved[k] = resolveTemplates(v)
+        }
+        const { error: insertErr } = await sb.from(operation.table).insert(resolved)
+        if (insertErr) {
+          console.error('[telegram-webhook] errore insert completamento:', insertErr)
+          await answerCallbackQuery(callbackQueryId, '❌ Errore durante il completamento')
+          return json({ ok: false, error: String(insertErr) })
+        }
+      }
+    }
+
+    // Per i task, chiama l'RPC di completamento
+    if (cu.app === 'tasks') {
+      const taskId = queueRow.entity_id as string | undefined
+      if (taskId) {
+        const { data: rpcResult, error: rpcErr } = await sb.rpc('task_complete', {
+          p_task_id: taskId,
+          p_today:   localDateStr,
+        })
+        if (rpcErr) {
+          console.error('[telegram-webhook] errore task_complete:', rpcErr)
+          const errMsg = (rpcErr as { message?: string }).message ?? String(rpcErr)
+          const shortErr = errMsg.length > 150 ? errMsg.slice(0, 147) + '…' : errMsg
+          await answerCallbackQuery(callbackQueryId, `❌ ${shortErr}`)
+          return json({ ok: false, error: errMsg })
+        }
+        // RPC può restituire { ok: false } senza errore Postgres
+        const rpcData = rpcResult as { ok?: boolean; error?: string } | null
+        if (rpcData?.ok === false) {
+          console.warn('[telegram-webhook] task_complete ok=false:', rpcData)
+          const shortErr = (rpcData.error ?? 'completamento non riuscito').slice(0, 150)
+          await answerCallbackQuery(callbackQueryId, `❌ ${shortErr}`)
+          return json({ ok: false, error: rpcData.error })
+        }
+        console.log('[telegram-webhook] task_complete:', JSON.stringify(rpcResult))
+      }
+    }
+
+    // Per gli habit, calcola streak e assegna punti se lo stack è completato
+    if (cu.app === 'habits') {
+      const habitInsertOp = cu.operations.find(o => o.op === 'insert' && o.table === 'hb_completions')
+      const habitId = habitInsertOp?.fields?.habit_id as string | undefined
+      if (habitId) {
+        const { data: rpcResult, error: rpcErr } = await sb.rpc('habit_post_completion', {
+          p_habit_id:   habitId,
+          p_local_date: localDateStr,
+        })
+        if (rpcErr) {
+          console.error('[telegram-webhook] errore habit_post_completion:', rpcErr)
+        } else {
+          console.log('[telegram-webhook] habit_post_completion:', JSON.stringify(rpcResult))
+        }
+      }
+    }
+
+    // Cancella TUTTI i row della stessa occorrenza (qualsiasi stato) + rimuovi i messaggi Telegram
+    const occId = queueRow.occurrence_id as string | null
+    if (occId) {
+      // Elimina messaggi Telegram di tutti i sibling (status qualsiasi, telegram_message_id set)
+      await deleteSiblingsByOccurrence(occId, queueId, chatId)
+      // Marca tutti i sibling come cancelled (qualsiasi stato)
+      await sb
+        .from('cm_notification_queue')
+        .update({ status: 'cancelled' })
+        .eq('occurrence_id', occId)
+        .neq('id', queueId)
+    }
+    // Segna il row cliccato come completed
+    const { error: completeErr } = await sb
+      .from('cm_notification_queue')
+      .update({ status: 'completed' })
+      .eq('id', queueId)
+    if (completeErr) console.error('[telegram-webhook] errore set completed:', completeErr)
+
+    await answerCallbackQuery(callbackQueryId, '✅ Completato!')
+    await deleteMessage(chatId, messageId)
+
+  } else if (action === 'dismiss' && parts.length === 2) {
+    // Chiudi senza operazioni DB — elimina solo il messaggio Telegram
+    await answerCallbackQuery(callbackQueryId, '🗑 Messaggio rimosso')
+    await deleteMessage(chatId, messageId)
 
   } else {
     console.warn('[telegram-webhook] callback_data non riconosciuto:', callbackData)

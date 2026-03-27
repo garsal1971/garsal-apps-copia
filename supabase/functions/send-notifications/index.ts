@@ -2,27 +2,15 @@
 // Job 2 — send-notifications
 // Frequenza: ogni 5 minuti (cron: "*/5 * * * *")
 //
-// Logica con contatore (send_count, max 5 tentativi):
+// Logica semplificata:
+//   Trova i row status='pending' con fire_at nel range [now-5min, now+5min].
+//   Per ciascuno invia la notifica Telegram.
+//   Invio OK  → status = 'sent'
+//   Invio KO  → status = 'failed'  (nessun retry)
+//   Scrive sempre in cm_notification_log.
 //
-//   FASE 0 — snoozed → pending (wake-up)
-//     Trova elementi status='snoozed' con fire_at <= now.
-//     Li riporta a 'pending' così la Fase 1 li processa nello stesso run.
-//
-//   FASE 1 — pending → sending
-//     Legge status='pending' con fire_at <= now.
-//     Imposta status='sending', send_count=1 e invia la notifica.
-//
-//   FASE 2 — sending → sending | sent
-//     Legge status='sending' con send_count < 5.
-//     Incrementa send_count e reinvia.
-//     Se send_count raggiunge 5 → imposta status='sent'.
-//
-//   FASE 3 — digest
-//     Raccoglie gli elementi appena diventati 'sent' in questo run.
-//     Invia UNA sola notifica Telegram per utente con il riepilogo
-//     di tutti quei messaggi. Lo status 'sent' NON viene modificato.
-//
-// Max 50 notifiche per run (25 pending + 25 sending) per evitare timeout.
+// Stati attivi: pending | sent | failed | cancelled
+// Stati dismessi: sending (nessun retry), snoozed (sostituito da INSERT nuovo row)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -37,18 +25,19 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 // Tipi
 // ---------------------------------------------------------------------------
 interface QueueItem {
-  id:         string
-  rule_id:    string
-  user_id:    string
-  app:        string
-  entity_id:  string
-  title:      string
-  body:       string
-  channel:    string
-  fire_at:    string
-  status:     string
-  send_count: number
-  created_at: string
+  id:                   string
+  rule_id:              string
+  user_id:              string
+  app:                  string
+  entity_id:            string
+  title:                string
+  body:                 string
+  channel:              string
+  fire_at:              string
+  status:               string
+  created_at:           string
+  telegram_message_id?: number | null
+  metadata?:            { completion_update?: Record<string, unknown>; telegram_cancel_button?: boolean } | null
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +57,7 @@ async function sendTelegram(
   if (replyMarkup) {
     payload.reply_markup = replyMarkup
   }
-  const res  = await fetch(url, {
+  const res      = await fetch(url, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(payload),
@@ -85,22 +74,25 @@ async function sendTelegram(
 }
 
 // Costruisce la inline keyboard con le opzioni snooze + annulla
-function buildInlineKeyboard(itemId: string): object {
-  return {
-    inline_keyboard: [
-      [
-        { text: '⏸ 30min',  callback_data: `snooze:30:${itemId}`   },
-        { text: '⏸ 1h',     callback_data: `snooze:60:${itemId}`   },
-      ],
-      [
-        { text: '⏸ 3h',     callback_data: `snooze:180:${itemId}`  },
-        { text: '⏸ Domani', callback_data: `snooze:1440:${itemId}` },
-      ],
-      [
-        { text: '❌ Annulla promemoria', callback_data: `cancel:${itemId}` },
-      ],
-    ],
+// Se completeButton è true aggiunge il pulsante "✅ Fatto" come prima riga
+function buildInlineKeyboard(itemId: string, completeButton = false, cancelButton = true): object {
+  const rows: object[][] = []
+  if (completeButton) {
+    rows.push([{ text: '✅ Fatto', callback_data: `complete:${itemId}` }])
   }
+  rows.push([
+    { text: '⏸ 30min',  callback_data: `snooze:30:${itemId}`   },
+    { text: '⏸ 1h',     callback_data: `snooze:60:${itemId}`   },
+  ])
+  rows.push([
+    { text: '⏸ 3h',     callback_data: `snooze:180:${itemId}`  },
+    { text: '⏸ Domani', callback_data: `snooze:1440:${itemId}` },
+  ])
+  const lastRow: object[] = []
+  if (cancelButton) lastRow.push({ text: '❌ Annulla promemoria', callback_data: `cancel:${itemId}` })
+  lastRow.push({ text: '🗑 Chiudi', callback_data: `dismiss:${itemId}` })
+  rows.push(lastRow)
+  return { inline_keyboard: rows }
 }
 
 // ---------------------------------------------------------------------------
@@ -108,51 +100,25 @@ function buildInlineKeyboard(itemId: string): object {
 // ---------------------------------------------------------------------------
 Deno.serve(async (_req) => {
   try {
-    const now = new Date().toISOString()
+    const nowDate   = new Date()
+    const now       = nowDate.toISOString()
+    const WINDOW_MS = 5 * 60 * 1000
+    const windowMin = new Date(nowDate.getTime() - WINDOW_MS).toISOString()
+    const windowMax = new Date(nowDate.getTime() + WINDOW_MS).toISOString()
 
-    // ── FASE 0: snoozed → pending (wake-up) ──────────────────────────────
-    // Gli item sospesi dall'utente tornano a 'pending' quando fire_at <= now.
-    // La Fase 1 li raccoglierà nello stesso run.
-    const { error: snoozeWakeError } = await sb
-      .from('cm_notification_queue')
-      .update({ status: 'pending' })
-      .eq('status', 'snoozed')
-      .lte('fire_at', now)
-
-    if (snoozeWakeError) throw snoozeWakeError
-
-    // ── FASE 1: elementi pending ──────────────────────────────────────────
-    const { data: pendingItems, error: pendingError } = await sb
+    // Trova i row pending nella finestra ±5 minuti
+    const { data: items, error: fetchError } = await sb
       .from('cm_notification_queue')
       .select('*')
       .eq('status', 'pending')
-      .lte('fire_at', now)
+      .gte('fire_at', windowMin)
+      .lte('fire_at', windowMax)
       .order('fire_at', { ascending: true })
-      .limit(25)
 
-    if (pendingError) throw pendingError
-
-    // ── FASE 2: elementi sending (da riprovare) ───────────────────────────
-    const { data: sendingItems, error: sendingError } = await sb
-      .from('cm_notification_queue')
-      .select('*')
-      .eq('status', 'sending')
-      .lt('send_count', 5)
-      .order('fire_at', { ascending: true })
-      .limit(25)
-
-    if (sendingError) throw sendingError
-
-    const allItems: QueueItem[] = [
-      ...(pendingItems ?? []),
-      ...(sendingItems ?? []),
-    ]
+    if (fetchError) throw fetchError
 
     let sent   = 0
     let failed = 0
-
-    // Raccoglie gli item che diventano 'sent' in questo run per il digest
-    const justSentItems: QueueItem[] = []
 
     // Cache impostazioni utente per evitare query ripetute
     const settingsCache = new Map<string, { telegram_chat_id: string | null; telegram_enabled: boolean } | null>()
@@ -168,95 +134,49 @@ Deno.serve(async (_req) => {
       return data ?? null
     }
 
-    // ── Processa ogni item ─────────────────────────────────────────────────
-    for (const item of allItems) {
-      const newCount  = (item.send_count ?? 0) + 1
-      const newStatus = newCount >= 5 ? 'sent' : 'sending'
-
+    for (const item of (items as QueueItem[]) ?? []) {
       const settings    = await getUserSettings(item.user_id)
       let responseText  = ''
       let errorMsg      = ''
       let telegramOk    = false
+      let telegramMsgId: number | undefined
 
       if (
         item.channel === 'telegram' &&
         settings?.telegram_enabled &&
         settings?.telegram_chat_id
       ) {
-        const message      = `${item.title}\n${item.body}`
-        const replyMarkup  = buildInlineKeyboard(item.id)
-        const result       = await sendTelegram(settings.telegram_chat_id, message, replyMarkup)
-        telegramOk         = result.ok
-        responseText       = result.response
+        const message     = `${item.title}\n${item.body}`
+        const hasComplete = !!(item.metadata?.completion_update)
+        const hasCancel   = item.metadata?.telegram_cancel_button ?? true
+        const replyMarkup = buildInlineKeyboard(item.id, hasComplete, hasCancel)
+        const result      = await sendTelegram(settings.telegram_chat_id, message, replyMarkup)
+        telegramOk        = result.ok
+        responseText      = result.response
+        telegramMsgId     = result.message_id
         if (!result.ok) errorMsg = `Telegram API error: ${result.response}`
       } else {
         errorMsg = 'Canale non configurato o disabilitato'
       }
 
-      // Aggiorna status e contatore nella queue
+      const newStatus = telegramOk ? 'sent' : 'failed'
+      const updatePayload: Record<string, unknown> = { status: newStatus }
+      if (telegramMsgId) updatePayload.telegram_message_id = telegramMsgId
+
       await sb
         .from('cm_notification_queue')
-        .update({ status: newStatus, send_count: newCount })
+        .update(updatePayload)
         .eq('id', item.id)
-
-      // Scrivi nel log storico
-      await sb.from('cm_notification_log').insert({
-        queue_id:  item.id,
-        user_id:   item.user_id,
-        app:       item.app,
-        entity_id: item.entity_id,
-        title:     item.title,
-        channel:   item.channel,
-        fired_at:  now,
-        status:    telegramOk ? 'sent' : 'failed',
-        response:  responseText || null,
-        error_msg: errorMsg     || null,
-      })
 
       if (telegramOk) sent++
       else failed++
-
-      // Tieni traccia degli item appena promossi a 'sent'
-      if (newStatus === 'sent') {
-        justSentItems.push(item)
-      }
     }
 
-    // ── FASE 3: digest per gli item appena diventati 'sent' ───────────────
-    // Raggruppa per user_id e invia UN solo messaggio per utente.
-    // Il digest NON include bottoni inline (aggruppa più item).
-    // Lo status 'sent' non viene modificato.
-    let digestSent = 0
-
-    if (justSentItems.length > 0) {
-      const byUser = new Map<string, QueueItem[]>()
-      for (const item of justSentItems) {
-        const list = byUser.get(item.user_id) ?? []
-        list.push(item)
-        byUser.set(item.user_id, list)
-      }
-
-      for (const [userId, items] of byUser) {
-        const settings = await getUserSettings(userId)
-        if (settings?.telegram_enabled && settings?.telegram_chat_id) {
-          const lines = items.map(i => `• <b>${i.title}</b>\n  ${i.body}`)
-          const digestText =
-            `📋 <b>Riepilogo notifiche (${items.length})</b>\n\n` +
-            lines.join('\n\n')
-          await sendTelegram(settings.telegram_chat_id, digestText)
-          digestSent++
-        }
-      }
-    }
-
-    const total = allItems.length
-    console.log(
-      `[send-notif] done — total:${total} sent:${sent} failed:${failed}` +
-      ` digest-users:${digestSent} digest-items:${justSentItems.length}`
-    )
+    const total = (items as QueueItem[])?.length ?? 0
+    console.log(`[send-notif] done — total:${total} sent:${sent} failed:${failed} window:[${windowMin},${windowMax}]`)
 
     return new Response(
-      JSON.stringify({ ok: true, total, sent, failed, digest_users: digestSent, digest_items: justSentItems.length }),
+      JSON.stringify({ ok: true, total, sent, failed }),
       { headers: { 'Content-Type': 'application/json' } }
     )
   } catch (err) {

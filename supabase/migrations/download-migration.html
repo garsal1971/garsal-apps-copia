@@ -11,12 +11,11 @@ const sql = `-- ============================================================
 --   1. cm_user_notification_settings  -- config per utente (Telegram, Push)
 --   2. cm_notification_rules          -- regole scritte/cancellate dalle app
 --   3. cm_notification_queue          -- coda pre-calcolata da Job 1, letta da Job 2
---   4. cm_notification_log            -- storico immutabile inviati/falliti
 --
 -- Flusso:
 --   [APP] -> cm_notification_rules
 --   [Job 1 / ogni 6h] -> legge regole + popola cm_notification_queue
---   [Job 2 / ogni 1m] -> legge queue + manda Telegram + scrive cm_notification_log
+--   [Job 2 / ogni 1m] -> legge queue + manda Telegram
 -- ============================================================
 
 
@@ -117,32 +116,6 @@ CREATE POLICY "Utente legge la propria queue"
     USING (auth.uid() = user_id);
 
 
--- ============================================================
--- 4. cm_notification_log
--- ============================================================
-CREATE TABLE IF NOT EXISTS cm_notification_log (
-    id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    queue_id    uuid        REFERENCES cm_notification_queue(id) ON DELETE SET NULL,
-    user_id     uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    app         text        NOT NULL,
-    entity_id   text        NOT NULL,
-    title       text        NOT NULL,
-    channel     text        NOT NULL,
-    fired_at    timestamptz NOT NULL DEFAULT now(),
-    status      text        NOT NULL CHECK (status IN ('sent', 'failed')),
-    response    text,
-    error_msg   text
-);
-
-CREATE INDEX idx_log_user_fired_at ON cm_notification_log (user_id, fired_at DESC);
-CREATE INDEX idx_log_queue_id      ON cm_notification_log (queue_id);
-
-ALTER TABLE cm_notification_log ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Utente legge solo il proprio log"
-    ON cm_notification_log
-    FOR SELECT
-    USING (auth.uid() = user_id);
 `;
 
 const blob = new Blob([sql], { type: 'text/plain' });

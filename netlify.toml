@@ -1,8 +1,24 @@
 [build]
   publish = "."
   base = "."
+  functions = "netlify/functions"
 
 [[redirects]]
   from = "/"
   to = "/app-launcher.html"
   status = 200
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"
+
+# ── Branch deploy per dev/** ──────────────────────────────────────────────────
+# I branch dev/** ottengono un URL preview: dev--<branch>--<sitename>.netlify.app
+# NON vengono auto-mergiati su master (workflow separato deploy-dev.yml).
+# Attivare in Netlify dashboard → Site configuration → Build & deploy →
+#   Branch deploys → Branch deploy controls → aggiungere pattern: dev/*
+[context.branch-deploy]
+  command = ""
+  publish = "."
