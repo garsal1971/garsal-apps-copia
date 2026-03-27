@@ -1,6 +1,7 @@
 [build]
   publish = "."
   base = "."
+  functions = "netlify/functions"
 
 [[redirects]]
   from = "/"
