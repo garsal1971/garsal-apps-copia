@@ -38,9 +38,10 @@
     font-size: 10px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px;
   }
-  .tag.sql-t { background: #78350F44; color: #FCD34D; border: 1px solid #78350F44; }
-  .tag.warn  { background: #78350F66; color: #FDE68A;  border: 1px solid #B45309; }
-  .tag.db    { background: #064E3B44; color: #34D399;  border: 1px solid #065F4644; }
+  .tag.sql-t  { background: #78350F44; color: #FCD34D; border: 1px solid #78350F44; }
+  .tag.warn   { background: #78350F66; color: #FDE68A;  border: 1px solid #B45309; }
+  .tag.db     { background: #064E3B44; color: #34D399;  border: 1px solid #065F4644; }
+  .tag.secret { background: #1E3A5F44; color: #7DD3FC;  border: 1px solid #1E3A5F; }
 
   .code-block { position: relative; padding: 14px 16px; background: #0B1423; }
   .code-block pre {
@@ -69,47 +70,122 @@
 
   <header>
     <h1>Comandi — garsal-apps</h1>
-    <p>// aggiornato 2026-03-20</p>
+    <p>// aggiornato 2026-03-27</p>
   </header>
 
-  <div class="item" id="item-check-constraint">
+  <!-- 1. cm_profile -->
+  <div class="item" id="item-cm-profile">
     <div class="item-header">
       <div class="check">!</div>
       <div class="item-body">
-        <div class="item-title">ALTER TABLE — allarga CHECK constraint per <code>app='quick'</code></div>
+        <div class="item-title">CREATE TABLE cm_profile — profilo personale utente</div>
         <div class="item-desc">
-          La tabella ha un CHECK che ammette solo <code>tasks / habits / events / weight</code>.
-          Esegui questo SQL per aggiungere <code>quick</code> ad entrambi i constraint.
+          Crea la tabella <code>cm_profile</code> con dati anagrafici e clinici (patologie, farmaci).
+          Un solo record per utente (UNIQUE su user_id). Include RLS e trigger <code>updated_at</code>.
         </div>
         <div class="tags">
           <span class="tag sql-t">SQL</span>
           <span class="tag warn">PROD</span>
-          <span class="tag db">cm_notification_rules</span>
+          <span class="tag db">cm_profile</span>
         </div>
       </div>
     </div>
-    <div class="code-block" id="cb-check-constraint">
-      <button class="copy-btn" onclick="copyCode('cb-check-constraint', this)">Copia</button>
-      <pre>-- 1. Allarga il CHECK su app
-ALTER TABLE cm_notification_rules
-    DROP CONSTRAINT IF EXISTS cm_notification_rules_app_check;
-ALTER TABLE cm_notification_rules
-    ADD CONSTRAINT cm_notification_rules_app_check
-        CHECK (app IN ('tasks', 'habits', 'events', 'weight', 'quick'));
+    <div class="code-block" id="cb-cm-profile">
+      <button class="copy-btn" onclick="copyCode('cb-cm-profile', this)">Copia</button>
+      <pre>CREATE TABLE IF NOT EXISTS cm_profile (
+  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
 
--- 2. Allarga il CHECK su entity_type
-ALTER TABLE cm_notification_rules
-    DROP CONSTRAINT IF EXISTS chk_entity_type;
-ALTER TABLE cm_notification_rules
-    ADD CONSTRAINT chk_entity_type
-        CHECK (entity_type IN ('task', 'habit', 'event', 'objective', 'quick'));</pre>
+  -- Anagrafica
+  nome          text,
+  cognome       text,
+  email         text,
+  avatar_url    text,
+  data_nascita  date,
+  sesso         text        CHECK (sesso IN ('M', 'F', 'Altro')),
+  altezza_cm    smallint    CHECK (altezza_cm > 50 AND altezza_cm < 300),
+
+  -- Clinica
+  patologie     text,       -- testo libero, una patologia per riga
+  farmaci       text,       -- testo libero, un farmaco per riga
+  note_mediche  text,
+
+  -- Meta
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+
+  UNIQUE (user_id)
+);
+
+-- Trigger updated_at
+CREATE OR REPLACE FUNCTION cm_profile_set_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER cm_profile_updated_at
+  BEFORE UPDATE ON cm_profile
+  FOR EACH ROW EXECUTE FUNCTION cm_profile_set_updated_at();
+
+-- RLS
+ALTER TABLE cm_profile ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "profilo: lettura proprio record"
+  ON cm_profile FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "profilo: inserimento proprio record"
+  ON cm_profile FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "profilo: aggiornamento proprio record"
+  ON cm_profile FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "profilo: eliminazione proprio record"
+  ON cm_profile FOR DELETE
+  USING (auth.uid() = user_id);</pre>
     </div>
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
   </div>
 
+  <!-- 2. Supabase secret ANTHROPIC_API_KEY -->
+  <div class="item" id="item-anthropic-secret">
+    <div class="item-header">
+      <div class="check">!</div>
+      <div class="item-body">
+        <div class="item-title">Supabase Secret — ANTHROPIC_API_KEY per Edge Function claude-diet</div>
+        <div class="item-desc">
+          La Edge Function <code>claude-diet</code> legge la API key Anthropic dalla variabile d'ambiente.
+          Aggiungila nei Supabase Secrets oppure via CLI (sostituisci <code>sk-ant-...</code> con la tua chiave reale).
+        </div>
+        <div class="tags">
+          <span class="tag secret">SECRET</span>
+          <span class="tag warn">PROD</span>
+          <span class="tag db">claude-diet</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-anthropic-secret">
+      <button class="copy-btn" onclick="copyCode('cb-anthropic-secret', this)">Copia</button>
+      <pre>-- Opzione A: via Supabase Dashboard
+-- Project Settings → Edge Functions → Secrets → Add new secret
+-- Nome:  ANTHROPIC_API_KEY
+-- Valore: sk-ant-...
+
+-- Opzione B: via CLI (da terminale locale)
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... \
+  --project-ref jajlmmdsjlvzgcxiiypk</pre>
+    </div>
+    <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → Project Settings → Edge Functions → Secrets</div>
+  </div>
+
 </div>
 
-<footer>garsal-apps · 2026-03-20</footer>
+<footer>garsal-apps · 2026-03-27</footer>
 
 <script>
 function copyCode(blockId, btn) {
