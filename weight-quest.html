@@ -1073,6 +1073,32 @@
                             <div id="claudeRispostaCopiatoMsg" style="display:none; text-align:center; color:#6C5CE7; font-weight:bold; padding:8px 0; font-size:0.9rem;">✅ Risposta copiata!</div>
                         </div>
                     </div>
+
+                    <!-- Card: Invia a Qwen API -->
+                    <div class="card" style="margin-top:1.5rem;">
+                        <h3 style="margin-bottom:6px; font-size:1rem; color:#333;">🐉 Invia a Qwen (Alibaba)</h3>
+                        <p style="font-size:0.78rem; color:#888; margin-bottom:14px;">Alternativa a Claude usando il modello Qwen-plus di Alibaba Cloud.</p>
+
+                        <!-- Bottone invio -->
+                        <button id="btnInviaAQwen" onclick="inviaAQwenAPI()"
+                            style="width:100%; background:linear-gradient(135deg,#FF6B35,#F7931E); color:white; padding:14px; font-size:1rem; border:none; cursor:pointer; font-weight:bold; margin-bottom:14px;">
+                            🐉 Invia a Qwen e ottieni piano dieta
+                        </button>
+
+                        <!-- Stato invio -->
+                        <div id="qwenInvioStatus" style="display:none; padding:10px; background:#f9fafb; border:1px solid #E5E7EB; font-size:0.85rem; color:#555; margin-bottom:12px;"></div>
+
+                        <!-- Risposta Qwen -->
+                        <div id="qwenRispostaBox" style="display:none;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                                <span style="font-size:0.88rem; font-weight:bold; color:#FF6B35;">Risposta di Qwen</span>
+                                <button onclick="copiaRispostaQwen()" style="background:#FF6B35; color:white; padding:6px 14px; font-size:0.8rem; border:none; cursor:pointer;">📋 Copia risposta</button>
+                            </div>
+                            <pre id="qwenRispostaText"
+                                style="white-space:pre-wrap; word-break:break-word; background:#f9fafb; border:2px solid #E5E7EB; padding:14px; font-size:0.82rem; font-family:'Courier New',monospace; line-height:1.6; color:#333; max-height:600px; overflow-y:auto; margin:0;"></pre>
+                            <div id="qwenRispostaCopiatoMsg" style="display:none; text-align:center; color:#FF6B35; font-weight:bold; padding:8px 0; font-size:0.9rem;">✅ Risposta copiata!</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -5488,6 +5514,94 @@
                 statusEl.textContent = '❌ Errore: ' + e.message;
                 btn.textContent = '🤖 Riprova';
                 log('Claude API errore: ' + e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ── QWEN API ────────────────────────────────────────────────
+
+        function copiaRispostaQwen() {
+            var pre = document.getElementById('qwenRispostaText');
+            if (!pre || !pre.textContent) return;
+            var msg = document.getElementById('qwenRispostaCopiatoMsg');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(pre.textContent).then(function() {
+                    msg.style.display = 'block';
+                    setTimeout(function() { msg.style.display = 'none'; }, 2500);
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = pre.textContent;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                msg.style.display = 'block';
+                setTimeout(function() { msg.style.display = 'none'; }, 2500);
+            }
+        }
+
+        async function inviaAQwenAPI() {
+            var prompt = document.getElementById('dietaPromptText').value;
+            if (!prompt) {
+                alert('Genera prima il prompt con il bottone "Analizza e Genera Prompt".');
+                return;
+            }
+
+            var btn      = document.getElementById('btnInviaAQwen');
+            var statusEl = document.getElementById('qwenInvioStatus');
+            var boxEl    = document.getElementById('qwenRispostaBox');
+            var preEl    = document.getElementById('qwenRispostaText');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Invio in corso…';
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Elaborazione con Qwen (può richiedere 30-60 secondi)…';
+            boxEl.style.display = 'none';
+            preEl.textContent = '';
+
+            // Animazione punti durante l'attesa
+            var dots = 0;
+            var dotsTimer = setInterval(function() {
+                dots = (dots + 1) % 4;
+                statusEl.textContent = '⏳ Elaborazione con Qwen' + '.'.repeat(dots + 1) + ' (può richiedere 30-60 secondi)';
+            }, 600);
+
+            try {
+                // Chiama la Supabase Edge Function per Qwen
+                var qwenEndpoint = CONFIG.supabaseUrl + '/functions/v1/qwen-diet';
+                var response = await fetch(qwenEndpoint, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: prompt,
+                        period_days: 7 // Default 7 giorni, personalizzabile
+                    })
+                });
+
+                clearInterval(dotsTimer);
+
+                var data = await response.json().catch(function() { return null; });
+                if (!response.ok || !data) {
+                    var errMsg = (data && data.error) ? data.error : ('HTTP ' + response.status);
+                    throw new Error(errMsg);
+                }
+
+                if (data.success && data.plan) {
+                    boxEl.style.display = 'block';
+                    preEl.textContent = data.plan;
+                    statusEl.style.display = 'none';
+                    btn.textContent = '✅ Completato — invia di nuovo';
+                    log('Qwen API: risposta ricevuta (' + data.plan.length + ' caratteri)');
+                } else {
+                    throw new Error('Risposta non valida da Qwen');
+                }
+            } catch(e) {
+                clearInterval(dotsTimer);
+                statusEl.textContent = '❌ Errore: ' + e.message;
+                btn.textContent = '🐉 Riprova';
+                log('Qwen API errore: ' + e.message);
             } finally {
                 btn.disabled = false;
             }
