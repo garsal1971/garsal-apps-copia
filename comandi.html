@@ -208,7 +208,127 @@ CREATE POLICY "profilo: eliminazione proprio record"
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
   </div>
 
-  <!-- 2. Supabase secret ANTHROPIC_API_KEY -->
+  <!-- 2. Fix RLS ps_objectives + ps_weight_tracking -->
+  <div class="item" id="item-ps-objectives-fix">
+    <div class="item-header">
+      <div class="check">!</div>
+      <div class="item-body">
+        <div class="item-title">FIX — RLS ps_objectives + ps_weight_tracking (pagina obiettivi vuota)</div>
+        <div class="item-desc">
+          Se la pagina Obiettivi è vuota nonostante ci siano record in DB, mancano GRANT e/o policy RLS.<br>
+          Questo script aggiunge <code>user_id DEFAULT auth.uid()</code>, GRANT e policy RLS per entrambe le tabelle.
+          Esegui poi il secondo blocco per aggiornare i record esistenti con <code>user_id = null</code>.
+        </div>
+        <div class="tags">
+          <span class="tag sql-t">SQL</span>
+          <span class="tag warn">FIX</span>
+          <span class="tag db">ps_objectives</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-ps-objectives-fix">
+      <button class="copy-btn" onclick="copyCode('cb-ps-objectives-fix', this)">Copia</button>
+      <pre>-- ══════════════════════════════════════════
+-- FIX ps_objectives
+-- ══════════════════════════════════════════
+
+-- 1. Aggiungi user_id se non esiste, con DEFAULT auth.uid()
+ALTER TABLE ps_objectives
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ps_objectives
+  ALTER COLUMN user_id SET DEFAULT auth.uid();
+
+-- 2. GRANT
+GRANT ALL ON TABLE ps_objectives TO authenticated;
+GRANT ALL ON TABLE ps_objectives TO service_role;
+
+-- 3. Abilita RLS
+ALTER TABLE ps_objectives ENABLE ROW LEVEL SECURITY;
+
+-- 4. Policy RLS
+DROP POLICY IF EXISTS "obiettivi: select"  ON ps_objectives;
+DROP POLICY IF EXISTS "obiettivi: insert"  ON ps_objectives;
+DROP POLICY IF EXISTS "obiettivi: update"  ON ps_objectives;
+DROP POLICY IF EXISTS "obiettivi: delete"  ON ps_objectives;
+
+CREATE POLICY "obiettivi: select" ON ps_objectives FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+CREATE POLICY "obiettivi: insert" ON ps_objectives FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "obiettivi: update" ON ps_objectives FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id);
+CREATE POLICY "obiettivi: delete" ON ps_objectives FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+
+-- ══════════════════════════════════════════
+-- FIX ps_weight_tracking
+-- ══════════════════════════════════════════
+
+ALTER TABLE ps_weight_tracking
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ps_weight_tracking
+  ALTER COLUMN user_id SET DEFAULT auth.uid();
+
+GRANT ALL ON TABLE ps_weight_tracking TO authenticated;
+GRANT ALL ON TABLE ps_weight_tracking TO service_role;
+
+ALTER TABLE ps_weight_tracking ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "peso: select"  ON ps_weight_tracking;
+DROP POLICY IF EXISTS "peso: insert"  ON ps_weight_tracking;
+DROP POLICY IF EXISTS "peso: update"  ON ps_weight_tracking;
+DROP POLICY IF EXISTS "peso: delete"  ON ps_weight_tracking;
+
+CREATE POLICY "peso: select" ON ps_weight_tracking FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+CREATE POLICY "peso: insert" ON ps_weight_tracking FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "peso: update" ON ps_weight_tracking FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id);
+CREATE POLICY "peso: delete" ON ps_weight_tracking FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);</pre>
+    </div>
+    <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
+  </div>
+
+  <!-- 2b. Aggiorna record esistenti con user_id null -->
+  <div class="item" id="item-ps-fix-userid">
+    <div class="item-header">
+      <div class="check">!</div>
+      <div class="item-body">
+        <div class="item-title">FIX — Aggiorna user_id nei record esistenti (dopo aver eseguito il blocco sopra)</div>
+        <div class="item-desc">
+          I record inseriti prima del fix hanno <code>user_id = null</code> e non sono visibili dall'app.<br>
+          Questo script assegna il tuo <code>user_id</code> a tutti i record orfani.<br>
+          <strong>Sostituisci</strong> <code>TUO-USER-UUID</code> con il tuo UUID da
+          <em>Authentication → Users → copia UUID</em>.
+        </div>
+        <div class="tags">
+          <span class="tag sql-t">SQL</span>
+          <span class="tag warn">FIX</span>
+          <span class="tag db">ps_objectives</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-ps-fix-userid">
+      <button class="copy-btn" onclick="copyCode('cb-ps-fix-userid', this)">Copia</button>
+      <pre>-- Sostituisci TUO-USER-UUID con il tuo UUID reale
+-- (Authentication → Users → clic sull'utente → copia UUID)
+
+UPDATE ps_objectives
+  SET user_id = 'TUO-USER-UUID'
+  WHERE user_id IS NULL;
+
+UPDATE ps_weight_tracking
+  SET user_id = 'TUO-USER-UUID'
+  WHERE user_id IS NULL;</pre>
+    </div>
+    <div class="platform-note">📍 supabase.com → progetto PROD → SQL Editor → Run  (dopo aver sostituito TUO-USER-UUID)</div>
+  </div>
+
+  <!-- 3. Supabase secret ANTHROPIC_API_KEY -->
   <div class="item" id="item-anthropic-secret">
     <div class="item-header">
       <div class="check">!</div>
