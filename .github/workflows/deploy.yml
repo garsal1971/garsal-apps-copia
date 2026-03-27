@@ -3,6 +3,7 @@ name: Deploy claude branch → master
 on:
   push:
     branches:
+      - 'master'
       - 'claude/**'
 
 jobs:
