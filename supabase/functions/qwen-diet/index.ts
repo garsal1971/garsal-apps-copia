@@ -1,92 +1,58 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
-  // Gestione CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // 1. Recupera la chiave API dalle variabili d'ambiente di Supabase
-    const apiKey = Deno.env.get('QWEN_API_KEY');
-    
-    // Debug: Se la chiave manca, restituisci errore 500 chiaro invece di 401 silenzioso
-    if (!apiKey) {
-      console.error('ERRORE CRITICO: QWEN_API_KEY non trovata nei secrets di Supabase!');
-      return new Response(
-        JSON.stringify({ error: 'Configurazione server errata: manca QWEN_API_KEY' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // --- INSERISCI LA TUA CHIAVE QUI SOTTO ---
+    const QWEN_API_KEY = "sk-..." // Incolla qui la tua chiave completa che inizia con sk-
+    // -----------------------------------------
 
-    const { prompt } = await req.json();
+    const { prompt } = await req.json()
 
     if (!prompt) {
-      throw new Error('Prompt mancante nella richiesta');
+      throw new Error('Prompt mancante')
     }
 
-    // 2. Prepara la chiamata alle API di Alibaba DashScope (Qwen)
-    // URL ufficiale per Qwen-Turbo o Qwen-Plus
-    const url = 'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
-    
-    const payload = {
-      model: 'qwen-turbo', // O 'qwen-plus', 'qwen-max' a seconda dei tuoi crediti
-      input: {
-        messages: [
-          { role: 'system', content: 'Sei un esperto nutrizionista. Crea piani dietetici dettagliati.' },
-          { role: 'user', content: prompt }
-        ]
-      },
-      parameters: {
-        result_format: 'message'
-      }
-    };
-
-    // 3. Esegui la fetch con l'header CORRETTO
-    const response = await fetch(url, {
-      method: 'POST',
+    const response = await fetch("https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`, // <-- Qui era probabilmente l'errore
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${"sk-6e392204983a40d2997ebc9f87048e25"}`
       },
-      body: JSON.stringify(payload)
-    });
+      body: JSON.stringify({
+        model: "qwen-plus", // O il modello che preferisci (es. qwen-turbo, qwen-max)
+        messages: [
+          { role: "system", content: "Sei un esperto nutrizionista. Crea un piano dietetico dettagliato basato sulla richiesta dell'utente." },
+          { role: "user", content: prompt }
+        ]
+      })
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (!response.ok) {
-      console.error('Errore API Qwen:', data);
-      throw new Error(data.message || 'Errore nella chiamata a Qwen');
+      console.error("Errore API Qwen:", data)
+      throw new Error(data.error?.message || `Errore HTTP ${response.status}`)
     }
 
-    // Estrai la risposta dal formato di Qwen
-    const answer = data.output?.choices?.[0]?.message?.content || 'Nessuna risposta generata.';
-
-    return new Response(
-      JSON.stringify({ result: answer }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify({ result: data.choices[0].message.content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    })
 
   } catch (error) {
-    console.error('Errore interno funzione:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    console.error("Errore nella funzione qwen-diet:", error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    })
   }
-});
+})
