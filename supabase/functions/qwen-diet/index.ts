@@ -1,4 +1,4 @@
-// Follow the setup instructions on https://docs.deno.com/deploy/tutorials/guide#initialize-a-new-project 800A
+// Follow the setup instructions on https://docs.deno.com/deploy/tutorials/guide#initialize-a-new-project 800AB
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
