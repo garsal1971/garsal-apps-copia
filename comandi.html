@@ -147,7 +147,36 @@ CREATE POLICY "profilo: aggiornamento proprio record"
 
 CREATE POLICY "profilo: eliminazione proprio record"
   ON cm_profile FOR DELETE
-  USING (auth.uid() = user_id);</pre>
+  USING (auth.uid() = user_id);
+
+-- GRANT (obbligatorio: senza questi l'RLS blocca tutto)
+GRANT ALL ON TABLE cm_profile TO authenticated;
+GRANT ALL ON TABLE cm_profile TO service_role;</pre>
+    </div>
+    <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
+  </div>
+
+  <!-- 1b. Fix GRANT se tabella già creata senza grant -->
+  <div class="item" id="item-cm-profile-grant">
+    <div class="item-header">
+      <div class="check">!</div>
+      <div class="item-body">
+        <div class="item-title">FIX — GRANT su cm_profile (se tabella già esistente)</div>
+        <div class="item-desc">
+          Se hai già creato la tabella ma ottieni <em>"new row violates row-level security policy"</em>,
+          significa che mancano i GRANT al ruolo <code>authenticated</code>. Esegui solo questo blocco.
+        </div>
+        <div class="tags">
+          <span class="tag sql-t">SQL</span>
+          <span class="tag warn">FIX</span>
+          <span class="tag db">cm_profile</span>
+        </div>
+      </div>
+    </div>
+    <div class="code-block" id="cb-cm-profile-grant">
+      <button class="copy-btn" onclick="copyCode('cb-cm-profile-grant', this)">Copia</button>
+      <pre>GRANT ALL ON TABLE cm_profile TO authenticated;
+GRANT ALL ON TABLE cm_profile TO service_role;</pre>
     </div>
     <div class="platform-note">📍 supabase.com → progetto PROD (jajlmmdsjlvzgcxiiypk) → SQL Editor → Run</div>
   </div>

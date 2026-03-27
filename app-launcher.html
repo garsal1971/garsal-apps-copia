@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AppSphere v1.5.70</title>
+<title>AppSphere v1.5.71</title>
 <meta name="theme-color" content="#0081C8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1628,8 +1628,8 @@ const OLYMPIC = ['#0081C8','#FCB131','#1A1A1A','#00A651','#EE334E'];
 const PAD = 12;
 const GAP = 8; // minimum gap between circles
 
-const APP_VERSION = 'v1.5.70';
-const BUILD_TIME  = '2026-03-27T14:30:00Z';
+const APP_VERSION = 'v1.5.71';
+const BUILD_TIME  = '2026-03-27T15:30:00Z';
 
 // ── COOKIE helpers (per refresh_token persistente su mobile) ──────────────────
 function setCookie(name, value, days) {
@@ -2486,7 +2486,7 @@ async function saveProfilo() {
   const btn = document.getElementById('profilo-save-btn');
   btn.disabled = true;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_profile`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/cm_profile?on_conflict=user_id`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
