@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weight Quest v3.5.54</title>
+    <title>Weight Quest v3.5.55</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -1050,18 +1050,8 @@
 
                     <!-- Card: Invia a Claude API -->
                     <div class="card" style="margin-top:1.5rem;">
-                        <h3 style="margin-bottom:14px; font-size:1rem; color:#333;">🤖 Invia a Claude</h3>
-
-                        <!-- API key -->
-                        <div style="margin-bottom:12px;">
-                            <label style="display:block; font-size:0.78rem; color:#666; margin-bottom:5px;">API Key Anthropic <span style="color:#aaa;">(salvata in localStorage)</span></label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="password" id="claudeApiKeyInput" placeholder="sk-ant-api03-..."
-                                    style="flex:1; padding:9px 12px; border:2px solid #E5E7EB; background:#f9fafb; font-size:0.88rem; font-family:'Courier New',monospace; color:#333;">
-                                <button onclick="salvaApiKeyClaude()" style="background:#6C5CE7; color:white; padding:9px 16px; font-size:0.85rem; border:none; cursor:pointer; white-space:nowrap;">💾 Salva</button>
-                            </div>
-                            <div id="apiKeySalvataMsg" style="display:none; font-size:0.8rem; color:#00B894; margin-top:5px;">✅ API key salvata</div>
-                        </div>
+                        <h3 style="margin-bottom:6px; font-size:1rem; color:#333;">🤖 Invia a Claude</h3>
+                        <p style="font-size:0.78rem; color:#888; margin-bottom:14px;">La richiesta passa attraverso il server Netlify — funziona anche dalla rete aziendale.</p>
 
                         <!-- Bottone invio -->
                         <button id="btnInviaAClaude" onclick="inviaAClaudeAPI()"
@@ -1120,8 +1110,8 @@
     <div id="debugLog"></div>
 
     <script>
-        var APP_VERSION = 'v3.5.54';
-        var BUILD_TIME  = '2026-03-27T12:00:00Z';
+        var APP_VERSION = 'v3.5.55';
+        var BUILD_TIME  = '2026-03-27T13:00:00Z';
         console.log('%c WEIGHT QUEST ' + APP_VERSION + ' %c build: ' + BUILD_TIME,
             'background:#4caf50;color:#fff;font-weight:bold;padding:2px 6px;border-radius:3px 0 0 3px',
             'background:#222;color:#aaa;padding:2px 6px;border-radius:0 3px 3px 0');
@@ -1834,11 +1824,6 @@
                 document.getElementById('btnDeleteObjective').onclick  = deleteObjective;
                 document.getElementById('objectiveSelect').onchange    = onObjectiveSelectChange;
                 
-                // Precompila API key Claude se già salvata
-                var savedApiKey = localStorage.getItem('claude_api_key');
-                if (savedApiKey) {
-                    document.getElementById('claudeApiKeyInput').value = savedApiKey.substring(0, 12) + '…';
-                }
 
                 log('Event listeners OK');
 
@@ -5382,16 +5367,6 @@
         }
 
         // ── CLAUDE API ────────────────────────────────────────────────
-        function salvaApiKeyClaude() {
-            var input = document.getElementById('claudeApiKeyInput');
-            var key = (input.value || '').trim().replace(/[^\x20-\x7E]/g, '');
-            if (!key) { alert('Inserisci la API key prima di salvare.'); return; }
-            localStorage.setItem('claude_api_key', key);
-            input.value = key.substring(0, 12) + '…';
-            var msg = document.getElementById('apiKeySalvataMsg');
-            msg.style.display = 'block';
-            setTimeout(function() { msg.style.display = 'none'; }, 2500);
-        }
 
         function copiaRispostaClaude() {
             var pre = document.getElementById('claudeRispostaText');
@@ -5415,11 +5390,6 @@
         }
 
         async function inviaAClaudeAPI() {
-            var apiKey = (localStorage.getItem('claude_api_key') || '').replace(/[^\x20-\x7E]/g, '');
-            if (!apiKey) {
-                alert('Inserisci e salva prima la API key Anthropic.');
-                return;
-            }
             var prompt = document.getElementById('dietaPromptText').value;
             if (!prompt) {
                 alert('Genera prima il prompt con il bottone "Analizza e Genera Prompt".');
@@ -5446,41 +5416,21 @@
             }, 600);
 
             try {
-                var response = await fetch('https://api.anthropic.com/v1/messages', {
+                // Chiama la Netlify function (server-side → nessun blocco firewall)
+                var response = await fetch('/.netlify/functions/claude-diet', {
                     method: 'POST',
-                    headers: {
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01',
-                        'content-type': 'application/json',
-                        'anthropic-dangerous-direct-browser-access': 'true'
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-opus-4-6',
-                        max_tokens: 8000,
-                        messages: [{ role: 'user', content: prompt }]
-                    })
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
                 });
 
                 clearInterval(dotsTimer);
 
-                // Controlla Content-Type: se HTML, la rete sta intercettando la richiesta
-                var ct = response.headers.get('content-type') || '';
-                if (!ct.includes('application/json')) {
-                    var rawText = await response.text().catch(function() { return '(non leggibile)'; });
-                    throw new Error(
-                        'La rete aziendale (firewall/proxy) sta bloccando la richiesta verso api.anthropic.com.\n' +
-                        'Prova da una rete diversa (hotspot mobile) oppure usa una VPN.\n\n' +
-                        'Risposta ricevuta: ' + rawText.substring(0, 120)
-                    );
-                }
-
-                if (!response.ok) {
-                    var errBody = await response.json().catch(function() { return {}; });
-                    var errMsg = (errBody.error && errBody.error.message) ? errBody.error.message : ('HTTP ' + response.status);
+                var data = await response.json().catch(function() { return null; });
+                if (!response.ok || !data) {
+                    var errMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
                     throw new Error(errMsg);
                 }
 
-                var data = await response.json();
                 var fullText = '';
                 if (data.content && Array.isArray(data.content)) {
                     data.content.forEach(function(block) {
