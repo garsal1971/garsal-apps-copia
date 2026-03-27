@@ -19,11 +19,13 @@ serve(async (req) => {
       throw new Error('Prompt è obbligatorio')
     }
 
-    const apiKey = Deno.env.get('QWEN_API_KEY')
+    const apiKey = Deno.env.get("QWEN_API_KEY");
     if (!apiKey) {
-      throw new Error('QWEN_API_KEY non configurata in Supabase Secrets')
+        return new Response(JSON.stringify({ error: "Missing QWEN_API_KEY in environment" }), { status: 500 });
     }
 
+
+    
     // Costruisci il prompt completo per Qwen
     const fullPrompt = `${prompt}
 
