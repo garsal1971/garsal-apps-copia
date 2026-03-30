@@ -5569,17 +5569,27 @@
             }, 600);
 
             try {
+                // DEBUG: Inizio processo
+                console.log('[DEBUG Frontend] Invio richiesta a Qwen API...');
+                
                 // Recupera il token JWT dell'utente autenticato
                 var authToken = localStorage.getItem('sb-' + CONFIG.supabaseUrl.split('//')[1].split('.')[0] + '-auth-token');
+                console.log('[DEBUG Frontend] Auth token dal localStorage:', authToken ? 'PRESENTE' : 'ASSENTE');
+                
                 var tokenData = authToken ? JSON.parse(atob(authToken.split('.')[1])) : null;
                 var jwtToken = tokenData ? tokenData.access_token : null;
                 
+                console.log('[DEBUG Frontend] JWT Token:', jwtToken ? 'PRESENTE (' + jwtToken.substring(0, 20) + '...)' : 'ASSENTE');
+                
                 if (!jwtToken) {
+                    console.error('[DEBUG Frontend] Utente non autenticato!');
                     throw new Error('Utente non autenticato. Effettua il login.');
                 }
                 
                 // Chiama la Supabase Edge Function per Qwen
                 var qwenEndpoint = CONFIG.supabaseUrl + '/functions/v1/qwen-diet';
+                console.log('[DEBUG Frontend] Endpoint:', qwenEndpoint);
+                
                 var response = await fetch(qwenEndpoint, {
                     method: 'POST',
                     headers: { 
@@ -5592,9 +5602,13 @@
                     })
                 });
 
+                console.log('[DEBUG Frontend] Risposta ricevuta, status:', response.status);
+
                 clearInterval(dotsTimer);
 
                 var data = await response.json().catch(function() { return null; });
+                console.log('[DEBUG Frontend] Dati risposta:', data);
+                
                 if (!response.ok || !data) {
                     var errMsg = (data && data.error) ? data.error : ('HTTP ' + response.status);
                     throw new Error(errMsg);
@@ -5611,6 +5625,7 @@
                 }
             } catch(e) {
                 clearInterval(dotsTimer);
+                console.error('[DEBUG Frontend] Errore:', e.message);
                 statusEl.textContent = '❌ Errore: ' + e.message;
                 btn.textContent = '🐉 Riprova';
                 log('Qwen API errore: ' + e.message);
