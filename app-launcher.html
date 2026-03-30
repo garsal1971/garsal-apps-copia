@@ -2080,9 +2080,9 @@ function loginWithGoogle() {
   if (isAndroidApp) {
     redirect = 'garsalapps://oauth';
   } else {
-    // Usa SEMPRE garsal.netlify.app come redirect principale per evitare problemi di whitelist
-    // Entrambe le app (garsal-qwen e garsal) condividono lo stesso backend Supabase
-    redirect = 'https://garsal.netlify.app';
+    // Usa window.location.origin per reindirizzare sempre allo stesso dominio da cui parte la richiesta
+    // Questo risolve i problemi di autenticazione tra garsal-qwen.netlify.app e garsal.netlify.app
+    redirect = window.location.origin;
   }
   
   const scopes = [
