@@ -2075,9 +2075,16 @@ function loginWithGoogle() {
   // Se l'app gira nel WebView Android, usa il custom scheme come redirect_to
   // in modo che il deep link torni direttamente all'app dopo il login Google.
   const isAndroidApp = (typeof window.AndroidBridge !== 'undefined') && window.AndroidBridge.isNativeApp();
-  const redirect = isAndroidApp
-    ? 'garsalapps://oauth'
-    : window.location.href.split('#')[0].split('?')[0];
+  
+  let redirect;
+  if (isAndroidApp) {
+    redirect = 'garsalapps://oauth';
+  } else {
+    // Costruisci un URL assoluto pulito senza parametri o hash
+    const baseUrl = window.location.origin + window.location.pathname;
+    redirect = baseUrl.replace(/\/$/, ''); // rimuovi slash finale se presente
+  }
+  
   const scopes = [
     'email',
     'profile',
@@ -2086,6 +2093,9 @@ function loginWithGoogle() {
     'https://www.googleapis.com/auth/fitness.nutrition.read',
     'https://www.googleapis.com/auth/calendar.readonly',
   ].join(' ');
+  
+  console.log('🔐 Redirect URL per OAuth:', redirect);
+  
   window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google`
     + `&redirect_to=${encodeURIComponent(redirect)}`
     + `&scopes=${encodeURIComponent(scopes)}`
