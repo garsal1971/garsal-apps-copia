@@ -2080,9 +2080,9 @@ function loginWithGoogle() {
   if (isAndroidApp) {
     redirect = 'garsalapps://oauth';
   } else {
-    // Costruisci un URL assoluto pulito senza parametri o hash
-    const baseUrl = window.location.origin + window.location.pathname;
-    redirect = baseUrl.replace(/\/$/, ''); // rimuovi slash finale se presente
+    // Usa SEMPRE garsal.netlify.app come redirect principale per evitare problemi di whitelist
+    // Entrambe le app (garsal-qwen e garsal) condividono lo stesso backend Supabase
+    redirect = 'https://garsal.netlify.app';
   }
   
   const scopes = [
