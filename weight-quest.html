@@ -5569,11 +5569,23 @@
             }, 600);
 
             try {
+                // Recupera il token JWT dell'utente autenticato
+                var authToken = localStorage.getItem('sb-' + CONFIG.supabaseUrl.split('//')[1].split('.')[0] + '-auth-token');
+                var tokenData = authToken ? JSON.parse(atob(authToken.split('.')[1])) : null;
+                var jwtToken = tokenData ? tokenData.access_token : null;
+                
+                if (!jwtToken) {
+                    throw new Error('Utente non autenticato. Effettua il login.');
+                }
+                
                 // Chiama la Supabase Edge Function per Qwen
                 var qwenEndpoint = CONFIG.supabaseUrl + '/functions/v1/qwen-diet';
                 var response = await fetch(qwenEndpoint, {
                     method: 'POST',
-                    headers: { 'content-type': 'application/json' },
+                    headers: { 
+                        'content-type': 'application/json',
+                        'Authorization': 'Bearer ' + jwtToken
+                    },
                     body: JSON.stringify({ 
                         prompt: prompt,
                         period_days: 7 // Default 7 giorni, personalizzabile

@@ -11,12 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Recupera la chiave: prima dai secret, poi fallback hardcoded se manca
-    // SOSTITUISCI 'sk-...' CON LA TUA CHIAVE REALE SE I SECRET NON FUNZIONANO
-    let apiKey = Deno.env.get('QWEN_API_KEY') || 'sk-6e392204983a40d2997ebc9f87048e25';
+    // 1. Recupera la chiave API dalle variabili d'ambiente sicure (Secrets)
+    const apiKey = Deno.env.get('QWEN_API_KEY');
 
-    if (!apiKey || apiKey.includes('INSERISCI')) {
-      throw new Error('Chiave API Qwen mancante o non configurata correttamente.');
+    if (!apiKey) {
+      throw new Error('Chiave API Qwen mancante. Configurare il secret QWEN_API_KEY su Supabase.');
     }
 
     const { prompt } = await req.json()
