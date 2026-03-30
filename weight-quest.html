@@ -5573,11 +5573,12 @@
                 console.log('[DEBUG Frontend] Invio richiesta a Qwen API...');
                 
                 // Recupera il token JWT dell'utente autenticato
-                var authToken = localStorage.getItem('sb-' + CONFIG.supabaseUrl.split('//')[1].split('.')[0] + '-auth-token');
-                console.log('[DEBUG Frontend] Auth token dal localStorage:', authToken ? 'PRESENTE' : 'ASSENTE');
+                // Usa la stessa chiave usata da app-launcher.html: 'sb_token'
+                var authToken = localStorage.getItem('sb_token');
+                console.log('[DEBUG Frontend] Auth token dal localStorage (sb_token):', authToken ? 'PRESENTE' : 'ASSENTE');
                 
-                var tokenData = authToken ? JSON.parse(atob(authToken.split('.')[1])) : null;
-                var jwtToken = tokenData ? tokenData.access_token : null;
+                // Il token salvato è già un JWT diretto, non c'è bisogno di estrarre access_token
+                var jwtToken = authToken;
                 
                 console.log('[DEBUG Frontend] JWT Token:', jwtToken ? 'PRESENTE (' + jwtToken.substring(0, 20) + '...)' : 'ASSENTE');
                 
